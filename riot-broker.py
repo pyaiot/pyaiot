@@ -102,8 +102,7 @@ class UDPServer(object):
 
 def custom_on_receive(data, address):
     """Callback triggered when a message is received."""
-    ip = data.decode().replace('\n', '')
-    _NODE_LIST.update({ip: int(time.time())})
+    _NODE_LIST.update({address[0]: int(time.time())})
     logging.info('CUSTOM: %s - %s', address, data)
 
 
