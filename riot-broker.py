@@ -48,7 +48,7 @@ class UDPServer(object):
     """UDP server class."""
 
     def __init__(self, name, port, on_receive, address=None,
-                 family=socket.AF_INET, io_loop=None):
+                 family=socket.AF_INET6, io_loop=None):
         """Constructor."""
         self.io_loop = io_loop or IOLoop.instance()
         self._on_receive = on_receive

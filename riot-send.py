@@ -13,7 +13,7 @@ def send(args):
     print("UDP target port:{0}".format(target_port))
     print("Source IP:{0}".format(source_ip))
 
-    sock = socket.socket(socket.AF_INET,  # Internet
+    sock = socket.socket(socket.AF_INET6,  # Internet
                          socket.SOCK_DGRAM)  # UDP
     sock.sendto(source_ip.encode(), (target_ip, target_port))
 
