@@ -4,13 +4,13 @@ from errno import EWOULDBLOCK, EAGAIN
 import logging
 import os
 import socket
-import json
 import time
 
 from tornado import web
 from tornado.ioloop import IOLoop
 from tornado.netutil import set_close_exec
 
+_RETENTION_TIME = 120  # seconds
 _UDP_PORT = 8888
 _HTTP_PORT = 8000
 _NODE_LIST = {}
@@ -25,7 +25,7 @@ def _cleanup_node_list():
     result_dict = {'nodes': []}
     current_time = int(time.time())
     for ip, dt in _NODE_LIST.items():
-        if current_time < dt + 60:
+        if current_time < dt + _RETENTION_TIME:
             result_dict['nodes'].append(ip)
 
     return result_dict
@@ -36,7 +36,7 @@ class ApiHandler(web.RequestHandler):
     @web.asynchronous
     def get(self, *args):
         nodes = _cleanup_node_list()
-        self.write(json.dumps(nodes))
+        self.write(nodes)
         self.finish()
 
     @web.asynchronous
