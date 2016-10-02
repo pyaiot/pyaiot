@@ -3,6 +3,7 @@
 from errno import EWOULDBLOCK, EAGAIN
 import logging
 import os
+import sys
 import socket
 import time
 
@@ -31,7 +32,7 @@ def _cleanup_node_list():
     return result_dict
 
 
-class ApiHandler(web.RequestHandler):
+class NodesHandler(web.RequestHandler):
 
     @web.asynchronous
     def get(self, *args):
@@ -44,8 +45,8 @@ class ApiHandler(web.RequestHandler):
         pass
 
 
-class UDPServer(object):
-    """UDP server class."""
+class UDPListener(object):
+    """UDP listener class."""
 
     def __init__(self, name, port, on_receive, address=None,
                  family=socket.AF_INET6, io_loop=None):
@@ -108,13 +109,18 @@ def custom_on_receive(data, address):
 
 def main():
     """Main function of the UDP server."""
-    server = UDPServer('UDPServer', _UDP_PORT, on_receive=custom_on_receive)
-    app = web.Application([
-        (r'/nodes', ApiHandler),
-    ])
-
-    app.listen(_HTTP_PORT)
-    IOLoop.instance().start()
+    try:
+        logging.info('Broker listening on port {0}'.format(_HTTP_PORT))
+        logging.info('UDP server listening on port {0}'.format(_UDP_PORT))
+        server = UDPListener('UDP Listener', _UDP_PORT,
+                             on_receive=custom_on_receive)
+        app = web.Application([(r'/nodes', NodesHandler), ])
+        app.listen(_HTTP_PORT)
+        IOLoop.instance().start()
+    except KeyboardInterrupt:
+        print("Exiting")
+        server.stop()
+        sys.exit()
 
 
 if __name__ == '__main__':
