@@ -10,42 +10,39 @@ import time
 from tornado import web
 from tornado.ioloop import IOLoop
 from tornado.netutil import set_close_exec
-
-_RETENTION_TIME = 120  # seconds
-_UDP_PORT = 8888
-_HTTP_PORT = 8000
-_NODE_LIST = {}
+from tornado.options import define, options
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - '
                            '%(levelname)s - %(message)s')
 
 
-def _cleanup_node_list():
-    global _NODE_LIST
-    result_dict = {'nodes': []}
-    current_time = int(time.time())
-    for ip, dt in _NODE_LIST.items():
-        if current_time < dt + _RETENTION_TIME:
-            result_dict['nodes'].append(ip)
+class NodesProvider(web.RequestHandler):
 
-    return result_dict
-
-
-class NodesHandler(web.RequestHandler):
+    _nodes = {}
 
     @web.asynchronous
     def get(self, *args):
-        nodes = _cleanup_node_list()
+        nodes = self._get_active_nodes()
         self.write(nodes)
         self.finish()
 
     @web.asynchronous
     def post(self):
+        """Post requests are not supported."""
         pass
 
+    def _get_active_nodes(self):
+        result_dict = {'nodes': []}
+        current_time = int(time.time())
+        for ip, dt in self.application._nodes.items():
+            if current_time < dt + options.max_time:
+                result_dict['nodes'].append(ip)
 
-class UDPListener(object):
+        return result_dict
+
+
+class NodesListener(object):
     """UDP listener class."""
 
     def __init__(self, name, port, on_receive, address=None,
@@ -53,7 +50,7 @@ class UDPListener(object):
         """Constructor."""
         self.io_loop = io_loop or IOLoop.instance()
         self._on_receive = on_receive
-        self._log = logging.getLogger(name)
+        self._log = logging.getLogger("{0: <14}".format(name))
         self._sockets = []
 
         flags = socket.AI_PASSIVE
@@ -68,7 +65,8 @@ class UDPListener(object):
             af, sock_type, proto, canon_name, sock_addr = res
             self._open_and_register(af, sock_type, proto, sock_addr)
 
-        self._log.debug('Started')
+        self._log.info('Nodes listener started, listening on port {0}'
+                       .format(sock_addr[1]))
 
     def _open_and_register(self, af, sock_type, proto, sock_addr):
         sock = socket.socket(af, sock_type, proto)
@@ -76,8 +74,6 @@ class UDPListener(object):
         if os.name != 'nt':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.setblocking(0)
-
-        self._log.debug('Binding to %s...', repr(sock_addr))
         sock.bind(sock_addr)
 
         def read_handler(fd, events):
@@ -89,6 +85,8 @@ class UDPListener(object):
                         return
                     raise
                 self._on_receive(data, address)
+                self._log.info('Received "{0}" message from node "{1}"'
+                               .format(data.decode().strip(), address[0]))
 
         self.io_loop.add_handler(sock.fileno(), read_handler, IOLoop.READ)
         self._sockets.append(sock)
@@ -101,25 +99,44 @@ class UDPListener(object):
             sock.close()
 
 
-def custom_on_receive(data, address):
-    """Callback triggered when a message is received."""
-    _NODE_LIST.update({address[0]: int(time.time())})
-    logging.info('CUSTOM: %s - %s', address, data)
+class RiotBrokerApplication(web.Application):
+    """Tornado based web application providing live nodes on a network."""
+
+    def __init__(self):
+        self._nodes = {}
+        self._log = logging.getLogger("{0: <14}".format("riot broker"))
+        handlers = [(r'/nodes', NodesProvider), ]
+        settings = dict()
+        super().__init__(handlers, **settings)
+        self.listener = NodesListener('node listener', options.listener_port,
+                                      on_receive=self.on_receive_packet)
+        self._log.info('Nodes provider started, listening on port {0}'
+                       .format(options.provider_port))
+
+    def on_receive_packet(self, data, address):
+        """Callback triggered when an alive packet is received."""
+        self._nodes.update({address[0]: int(time.time())})
+
+
+def parse_command_line():
+    """Parse command line arguments for Riot broker application."""
+    define("listener_port", default=8888, help="Node listener UDP port.")
+    define("provider_port", default=8000, help="Node provider HTTP port")
+    define("max_time", default=120, help="Retention time for lost nodes.")
+    options.parse_command_line()
 
 
 def main():
-    """Main function of the UDP server."""
+    """Entry point for RIOT broker application."""
+    parse_command_line()
     try:
-        logging.info('Broker listening on port {0}'.format(_HTTP_PORT))
-        logging.info('UDP server listening on port {0}'.format(_UDP_PORT))
-        server = UDPListener('UDP Listener', _UDP_PORT,
-                             on_receive=custom_on_receive)
-        app = web.Application([(r'/nodes', NodesHandler), ])
-        app.listen(_HTTP_PORT)
+        app = RiotBrokerApplication()
+        app.listen(options.provider_port)
         IOLoop.instance().start()
     except KeyboardInterrupt:
         print("Exiting")
-        server.stop()
+        app.listener.stop()
+        IOLoop.instance().stop()
         sys.exit()
 
 
