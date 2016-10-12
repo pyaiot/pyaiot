@@ -31,6 +31,12 @@ def _push_time():
                 socket.write_message(result)
             # print(result.replace('<br/>', '\n'))
 
+        # Ensure the UDP is correctly closed when done
+        try:
+            yield from protocol.shutdown()
+        except Exception as e:
+            print(e)
+
 
 def _write_api(handler, link_header):
     link = link_header.decode('ascii').replace(' ', '')
@@ -79,6 +85,8 @@ class CoapAPIHandler(web.RequestHandler):
 
         self.finish()
 
+        yield from protocol.shutdown()
+
 
 class CoapTimeHandler(web.RequestHandler):
     @tornado.web.asynchronous
@@ -97,6 +105,8 @@ class CoapTimeHandler(web.RequestHandler):
             self.write('Result: {}<br/>{}'.format(response.code,
                                                   response.payload))
         self.finish()
+
+        yield from protocol.shutdown()
 
 
 class CoapBlockHandler(web.RequestHandler):
@@ -117,6 +127,8 @@ class CoapBlockHandler(web.RequestHandler):
                                                   response.payload))
         self.finish()
 
+        yield from protocol.shutdown()
+
     @tornado.web.asynchronous
     @gen.coroutine
     def post(self):
@@ -135,6 +147,8 @@ class CoapBlockHandler(web.RequestHandler):
         self.write('Result: {}<br/>{}'.format(response.code,
                                               response.payload))
 
+        yield from context.shutdown()
+
 
 class CoapSeparateBlockHandler(web.RequestHandler):
     @tornado.web.asynchronous
@@ -152,6 +166,8 @@ class CoapSeparateBlockHandler(web.RequestHandler):
             self.write('Result: {}<br/>{}'.format(response.code,
                                                   response.payload))
         self.finish()
+
+        yield from protocol.shutdown()
 
 
 class MainHandler(web.RequestHandler):
@@ -174,7 +190,7 @@ class ClientWebSocket(websocket.WebSocketHandler):
 if __name__ == '__main__':
     ioloop = asyncio.get_event_loop()
     tornado.platform.asyncio.AsyncIOMainLoop().install()
-    PeriodicCallback(_push_time, 50).start()
+    PeriodicCallback(_push_time, 100).start()
 
     settings = {'debug': True,
                 "cookie_secret": "MY_COOKIE_ID",
