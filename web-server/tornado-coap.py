@@ -11,35 +11,26 @@ GLOBALS = {
     'sockets': []
 }
 
-periodic_cb = None
 
+def _coap_resource(url, method=GET, payload=b''):
+    protocol = yield from Context.create_client_context()
+    request = Message(code=method, payload=payload)
+    request.set_request_uri(url)
+    try:
+        response = yield from protocol.request(request).response
+    except Exception as e:
+        print('Failed to fetch resource: \n{0}'.format(e))
+    else:
+        print('Code: {}: {}'
+              .format(response.code, response.payload.decode('ascii')))
 
-@gen.coroutine
-def _push_time():
-    if len(GLOBALS['sockets']) != 0:
-        protocol = yield from Context.create_client_context()
-        request = Message(code=GET)
-        request.set_request_uri('coap://localhost/time')
-        try:
-            response = yield from protocol.request(request).response
-        except Exception as e:
-            print('Failed to fetch resource: \n{0}'.format(e))
-        else:
-            result = ('Result: {}<br/>{}'
-                      .format(response.code, response.payload.decode('ascii')))
-            for socket in GLOBALS['sockets']:
-                socket.write_message(result)
-            # print(result.replace('<br/>', '\n'))
+        yield from protocol.shutdown()
 
-        # Ensure the UDP is correctly closed when done
-        try:
-            yield from protocol.shutdown()
-        except Exception as e:
-            print(e)
+    return response.code, response.payload.decode('ascii')
 
 
 def _write_api(handler, link_header):
-    link = link_header.decode('ascii').replace(' ', '')
+    link = link_header.replace(' ', '')
     endpoints = link.split(',')
     for endpoint in endpoints:
         elems = endpoint.split(';')
@@ -64,117 +55,75 @@ def _write_api(handler, link_header):
         handler.write("&nbsp;&nbsp;{}<br/>".format(ms))
 
 
+@gen.coroutine
+def _push_time():
+    if len(GLOBALS['sockets']) != 0:
+        code, payload = yield from _coap_resource('coap://localhost/time',
+                                                  method=GET)
+        for socket in GLOBALS['sockets']:
+            socket.write_message('Result: {}<br/>{}'
+                                 .format(code, payload))
+
+
 class CoapAPIHandler(web.RequestHandler):
     @tornado.web.asynchronous
     @gen.coroutine
     def get(self):
-        protocol = yield from Context.create_client_context()
-        request = Message(code=GET)
-        request.set_request_uri('coap://localhost/.well-known/core')
-        try:
-            response = yield from protocol.request(request).response
-        except Exception as e:
-            self.write('Failed to fetch resource:<br/>')
-            self.write(e)
-        else:
-            payload = "{}".format(response.payload)\
-                .replace('<', '&lt;')\
-                .replace('>', '&gt;')
-            self.write('Result: {}<br/>{}<br/>'.format(response.code, payload))
-            _write_api(self, response.payload)
-
+        code, payload = yield from _coap_resource('coap://localhost/'
+                                                  '.well-known/core',
+                                                  method=GET)
+        self.write(payload.replace('<', '&lt;').replace('>', '&gt;') + '<br/>')
+        _write_api(self, payload)
         self.finish()
-
-        yield from protocol.shutdown()
 
 
 class CoapTimeHandler(web.RequestHandler):
     @tornado.web.asynchronous
     @gen.coroutine
     def get(self):
-        protocol = yield from Context.create_client_context()
-        request = Message(code=GET)
-        request.set_request_uri('coap://localhost/time')
-
-        try:
-            response = yield from protocol.request(request).response
-        except Exception as e:
-            self.write('Failed to fetch resource:<br/>')
-            self.write(e)
-        else:
-            self.write('Result: {}<br/>{}'.format(response.code,
-                                                  response.payload))
+        code, payload = yield from _coap_resource('coap://localhost/time',
+                                                  method=GET)
+        self.write('<b>{}</b><br/>{}'.format(str(code), payload))
         self.finish()
-
-        yield from protocol.shutdown()
 
 
 class CoapBlockHandler(web.RequestHandler):
     @tornado.web.asynchronous
     @gen.coroutine
     def get(self):
-        protocol = yield from Context.create_client_context()
-        request = Message(code=GET)
-        request.set_request_uri('coap://localhost/other/block')
-
-        try:
-            response = yield from protocol.request(request).response
-        except Exception as e:
-            self.write('Failed to fetch resource:<br/>')
-            self.write(e)
-        else:
-            self.write('Result: {}<br/>{}'.format(response.code,
-                                                  response.payload))
-        self.finish()
-
-        yield from protocol.shutdown()
+        code, payload = yield from _coap_resource('coap://localhost/'
+                                                  'other/block',
+                                                  method=GET)
+        # self.write('Block:<br/>' + payload)
+        # self.finish()
+        self.render("block.html", title="Block text form", block=payload)
 
     @tornado.web.asynchronous
     @gen.coroutine
     def post(self):
         """Insert a message."""
-        payload = self.get_argument('value').encode('ascii')
-        context = yield from Context.create_client_context()
-
-        # yield from asyncio.sleep(2)
-
-        request = Message(code=PUT, payload=payload)
-        request.opt.uri_host = '127.0.0.1'
-        request.opt.uri_path = ("other", "block")
-
-        response = yield from context.request(request).response
-
-        self.write('Result: {}<br/>{}'.format(response.code,
-                                              response.payload))
-
-        yield from context.shutdown()
+        block = self.get_body_argument("block")
+        code, payload = yield from \
+            _coap_resource('coap://localhost/other/block',
+                           method=PUT, payload=block.encode('ascii'))
+        self.redirect('/block')
 
 
 class CoapSeparateBlockHandler(web.RequestHandler):
     @tornado.web.asynchronous
     @gen.coroutine
     def get(self):
-        protocol = yield from Context.create_client_context()
-        request = Message(code=GET)
-        request.set_request_uri('coap://localhost/other/separate')
-        try:
-            response = yield from protocol.request(request).response
-        except Exception as e:
-            self.write('Failed to fetch resource:<br/>')
-            self.write(e)
-        else:
-            self.write('Result: {}<br/>{}'.format(response.code,
-                                                  response.payload))
+        code, payload = yield from _coap_resource('coap://localhost/'
+                                                  'other/separate',
+                                                  method=GET)
+        self.write('Separate:<br/>' + payload)
         self.finish()
-
-        yield from protocol.shutdown()
 
 
 class MainHandler(web.RequestHandler):
     # @tornado.web.asynchronous
     def get(self, path=None):
         self.render("index.html", title="Getting CoAP with websockets")
-        # self.finish()
 
 
 class ClientWebSocket(websocket.WebSocketHandler):

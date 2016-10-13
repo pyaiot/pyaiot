@@ -37,9 +37,9 @@
         </div>
         <div id="navbar" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
-              <li class="active"><a href="/">Time RT</a></li>
-              <li class="active"><a href="/time">Time</a></li>
-              <li class="active"><a href="/block">Block</a></li>
+            <li class="active"><a href="/">Time RT</a></li>
+            <li class="active"><a href="/time">Time</a></li>
+            <li class="active"><a href="/block">Block</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -48,8 +48,16 @@
     <div class="container">
 
       <div class="starter-template">
-        <h1>CoAP result via WS</h1>
-        <p class="lead" id=time-p></p>
+        <h1>Current block</h1>
+        <p class="lead">{{ block }}</p>
+      </div>
+
+      <div class="starter-template">
+        <h1>Change block form</h1>
+        <form class="form-inline" action="/block" method="POST">
+            <input type="text" class="form-control" name="block" placeholder="Enter some text">
+            <button type="submit" class="btn btn-primary">Update block</button>
+        <form>
       </div>
 
     </div><!-- /.container -->
@@ -62,18 +70,5 @@
     <script src={{ static_url("js/bootstrap.min.js") }}></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src={{ static_url("js/ie10-viewport-bug-workaround.js") }}></script>
-    <script>
-        var ws = new WebSocket('ws://localhost:8888/ws');
-        var $message = $('#message');
-        ws.onopen = function(){
-        };
-        ws.onmessage = function(event){
-        document.getElementById("time-p").innerHTML = event.data;
-        };
-        ws.onclose = function(ev){
-        };
-        ws.onerror = function(ev){
-        };
-    </script>
 </body>
 </html>
