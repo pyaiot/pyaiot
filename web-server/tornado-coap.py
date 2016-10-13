@@ -19,14 +19,17 @@ def _coap_resource(url, method=GET, payload=b''):
     try:
         response = yield from protocol.request(request).response
     except Exception as e:
-        print('Failed to fetch resource: \n{0}'.format(e))
+        code = "Failed to fetch resource"
+        payload = '{}'.format(e)
     else:
-        print('Code: {}: {}'
-              .format(response.code, response.payload.decode('ascii')))
-
+        code = response.code
+        payload = response.payload.decode('ascii')
+    finally:
         yield from protocol.shutdown()
 
-    return response.code, response.payload.decode('ascii')
+    print('Code: {} - Payload: {}'.format(code, payload))
+
+    return code, payload
 
 
 def _write_api(handler, link_header):
@@ -61,7 +64,7 @@ def _push_time():
         code, payload = yield from _coap_resource('coap://localhost/time',
                                                   method=GET)
         for socket in GLOBALS['sockets']:
-            socket.write_message('Result: {}<br/>{}'
+            socket.write_message('Code: <b>{}</b><br/>Payload: {}'
                                  .format(code, payload))
 
 
@@ -83,7 +86,7 @@ class CoapTimeHandler(web.RequestHandler):
     def get(self):
         code, payload = yield from _coap_resource('coap://localhost/time',
                                                   method=GET)
-        self.write('<b>{}</b><br/>{}'.format(str(code), payload))
+        self.write('Code: <b>{}</b><br/>{}'.format(str(code), payload))
         self.finish()
 
 
@@ -94,8 +97,6 @@ class CoapBlockHandler(web.RequestHandler):
         code, payload = yield from _coap_resource('coap://localhost/'
                                                   'other/block',
                                                   method=GET)
-        # self.write('Block:<br/>' + payload)
-        # self.finish()
         self.render("block.html", title="Block text form", block=payload)
 
     @tornado.web.asynchronous
