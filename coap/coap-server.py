@@ -1,5 +1,7 @@
 import datetime
 import logging
+import sys
+import os
 
 import asyncio
 
@@ -7,14 +9,14 @@ import aiocoap.resource as resource
 import aiocoap
 
 
-class BlockResource(resource.Resource):
+class ContentResource(resource.Resource):
     """
     Example resource which supports GET and PUT methods. It sends large
     responses, which trigger blockwise transfer.
     """
 
     def __init__(self):
-        super(BlockResource, self).__init__()
+        super(ContentResource, self).__init__()
         self.content = ("This is the resource's default content. It is padded "
                         "with numbers to be large enough to trigger blockwise "
                         "transfer.\n" + "0123456789\n" * 100).encode("ascii")
@@ -35,7 +37,7 @@ class BlockResource(resource.Resource):
         return aiocoap.Message(code=aiocoap.CHANGED, payload=payload)
 
 
-class SeparateLargeResource(resource.Resource):
+class VersionResource(resource.Resource):
     """
     Example resource which supports GET method. It uses asyncio.sleep to
     simulate a long-running operation, and thus forces the protocol to send
@@ -43,18 +45,33 @@ class SeparateLargeResource(resource.Resource):
     """
 
     def __init__(self):
-        super(SeparateLargeResource, self).__init__()
-        # self.add_param(resource.LinkParam("title", "Large resource."))
+        super(VersionResource, self).__init__()
         self.if_ = "get"
+        self.rt = "str"
 
     @asyncio.coroutine
     def render_get(self, request):
-        yield from asyncio.sleep(3)
+        version = 'Python {}'.format(".".join(str(vers)
+                                     for vers in sys.version_info[:2]))
+        payload = version.encode('ascii')
+        return aiocoap.Message(code=aiocoap.CONTENT, payload=payload)
 
-        payload = ("Three rings for the elven kings under the sky, seven rings"
-                   "for dwarven lords in their halls of stone, nine rings for"
-                   "mortal men doomed to die, one ring for the dark lord on "
-                   "his dark throne.").encode('ascii')
+
+class KernelResource(resource.Resource):
+    """
+    Example resource which supports GET method. It uses asyncio.sleep to
+    simulate a long-running operation, and thus forces the protocol to send
+    empty ACK first.
+    """
+
+    def __init__(self):
+        super(KernelResource, self).__init__()
+        self.if_ = "get"
+        self.rt = "str"
+
+    @asyncio.coroutine
+    def render_get(self, request):
+        payload = os.popen('uname -a').read().encode('ascii')
         return aiocoap.Message(code=aiocoap.CONTENT, payload=payload)
 
 
@@ -66,6 +83,7 @@ class TimeResource(resource.ObservableResource):
     def __init__(self):
         super(TimeResource, self).__init__()
         self.if_ = "get"
+        self.rt = "str"
         self.notify()
 
     def notify(self):
@@ -88,9 +106,10 @@ logging.getLogger("coap-server").setLevel(logging.DEBUG)
 def main():
     # Resource tree creation
     root = resource.Site()
-    root.add_resource(('time',), TimeResource())
-    root.add_resource(('other', 'block'), BlockResource())
-    root.add_resource(('other', 'separate'), SeparateLargeResource())
+    root.add_resource(('time', ), TimeResource())
+    root.add_resource(('content', ), ContentResource())
+    root.add_resource(('version', ), VersionResource())
+    root.add_resource(('kernel', ), KernelResource())
     root.add_resource(('.well-known', 'core'),
                       resource.WKCResource(root.get_resources_as_linkheader))
     asyncio.async(aiocoap.Context.create_server_context(root))

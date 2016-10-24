@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <!-- The above 3 meta tags *must* come first in the head;
+         any other head content must come *after* these tags -->
     <meta name="description" content="">
     <meta name="author" content="">
 
@@ -14,20 +15,22 @@
     <link href={{ static_url("css/bootstrap.min.css") }} rel="stylesheet">
 
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <link href={{ static_url("css/ie10-viewport-bug-workaround.css") }} rel="stylesheet">
+    <link href={{ static_url("css/ie10-viewport-bug-workaround.css") }}
+          rel="stylesheet">
 
     <!-- Custom styles for this template -->
     <link href={{ static_url("css/starter-template.css") }} rel="stylesheet">
 
     <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
     <script src={{ static_url("js/ie-emulation-modes-warning.js") }}></script>
 </head>
 <body>
     <nav class="navbar navbar-inverse navbar-fixed-top">
       <div class="container">
         <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <button type="button" class="navbar-toggle collapsed"
+                  data-toggle="collapse" data-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar">
             <span class="sr-only">Toggle navigation</span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
@@ -39,7 +42,10 @@
           <ul class="nav navbar-nav">
             <li class="active"><a href="/">Time RT</a></li>
             <li class="active"><a href="/time">Time</a></li>
-            <li class="active"><a href="/block">Block</a></li>
+            <li class="active"><a href="/content">Content</a></li>
+            <li class="active"><a href="/version">Version</a></li>
+            <li class="active"><a href="/kernel">Kernel</a></li>
+            <li class="active"><a href="/dashboard">Dashboard</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -48,15 +54,18 @@
     <div class="container">
 
       <div class="starter-template">
-        <h1>Current block</h1>
-        <p class="lead">{{ block }}</p>
+        <h1>Current content</h1>
+        <p class="lead">{{ content }}</p>
       </div>
 
       <div class="starter-template">
-        <h1>Change block form</h1>
-        <form class="form-inline" action="/block" method="POST">
-            <input type="text" class="form-control" name="block" placeholder="Enter some text">
-            <button type="submit" class="btn btn-primary">Update block</button>
+        <h1>Change content</h1>
+        <form class="form-inline" action="/content" method="POST">
+            {% module xsrf_form_html() %}
+            <input type="text" class="form-control" name="content"
+                   placeholder="Enter some text">
+            <button type="submit"
+                    class="btn btn-primary">Update content</button>
         <form>
       </div>
 
@@ -69,6 +78,7 @@
     <script src={{ static_url("js/jquery.min.js") }}></script>
     <script src={{ static_url("js/bootstrap.min.js") }}></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src={{ static_url("js/ie10-viewport-bug-workaround.js") }}></script>
+    <script src={{ static_url("js/ie10-viewport-bug-workaround.js") }}>
+    </script>
 </body>
 </html>

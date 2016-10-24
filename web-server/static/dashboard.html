@@ -55,7 +55,10 @@
 
       <div class="starter-template">
         <h1>CoAP result via WS</h1>
-        <p class="lead" id=time-p></p>
+        <p class="lead" id=api></p>
+        <p class="lead" id=time></p>
+        <p class="lead" id=block></p>
+        <p class="lead" id=separate></p>
       </div>
 
     </div><!-- /.container -->
@@ -70,12 +73,41 @@
     <script src={{ static_url("js/ie10-viewport-bug-workaround.js") }}>
     </script>
     <script>
-        var ws = new WebSocket('ws://localhost:8080/time_ws');
+        var ws = new WebSocket('ws://localhost:8080/coap_ws');
         var $message = $('#message');
-        ws.onopen = function(){
+        ws.onopen = function() {
         };
-        ws.onmessage = function(event){
-        document.getElementById("time-p").innerHTML = event.data;
+
+        ws.onmessage = function(event) {
+            var message = event.data
+            if (message.startsWith("Node")) {
+                document.getElementById("api").innerHTML = message
+            }
+            else {
+                var obj = JSON.parse(message)
+                console.log(message)
+                if (obj.endpoint == "/time") {
+                    console.log("Time:", obj.data)
+                    document.getElementById("time").innerHTML =
+                        "<b>Node:</b>" + obj.node + "<br/><b>" +
+                        obj.endpoint + ":</b>" + obj.data;
+                }
+                else if (obj.endpoint == "/other/block") {
+                    console.log("Block:", message['data'])
+                    document.getElementById("block").innerHTML =
+                        "<b>Node:</b>" + obj.node + "<br/><b>" +
+                        obj.endpoint + ":</b>" + obj.data;
+                }
+                else if (obj.endpoint == "/other/separate") {
+                    console.log("Separate:", obj.data)
+                    document.getElementById("separate").innerHTML =
+                        "<b>Node:</b>" + obj.node + "<br/><b>" +
+                        obj.endpoint + ":</b>" + obj.data;
+                }
+                else {
+                    console.log("Unknown data")
+                }
+            }
         };
         ws.onclose = function(ev){
         };
