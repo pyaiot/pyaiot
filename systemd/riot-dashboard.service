@@ -1,0 +1,12 @@
+[Unit]
+Description=Riot Dashboard Application
+After=riot-broker.service
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/riot-demo/dashboard/
+ExecStart=/usr/bin/node /home/pi/riot-demo/dashboard/dashboard.js
+
+[Install]
+WantedBy=multi-user.target
+Alias=riot-dashboard.service

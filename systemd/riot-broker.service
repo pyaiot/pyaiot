@@ -1,0 +1,11 @@
+[Unit]
+Description=Riot Broker Application
+After=network.target radvd.service
+
+[Service]
+User=pi
+ExecStart=/usr/bin/python /home/pi/riot-demo/riot-broker/riot-broker.py
+
+[Install]
+WantedBy=multi-user.target
+Alias=riot-broker.service
