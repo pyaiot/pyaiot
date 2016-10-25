@@ -4,8 +4,8 @@ After=riot-broker.service
 
 [Service]
 User=pi
-WorkingDirectory=/home/pi/riot-demo/dashboard/
-ExecStart=/usr/bin/node /home/pi/riot-demo/dashboard/dashboard.js
+WorkingDirectory=/home/pi/demos/dashboard/
+ExecStart=/usr/bin/node /home/pi/demos/dashboard/dashboard.js
 
 [Install]
 WantedBy=multi-user.target
