@@ -281,7 +281,7 @@ class NodesUDPListener(object):
             sock.close()
 
 
-class RiotBrokerApplication(web.Application):
+class RiotDashboardApplication(web.Application):
     """Tornado based web application providing live nodes on a network."""
 
     def __init__(self):
@@ -334,7 +334,7 @@ if __name__ == '__main__':
         PeriodicCallback(_push_time, 100).start()
         PeriodicCallback(_request_nodes, 2000).start()
 
-        app = RiotBrokerApplication()
+        app = RiotDashboardApplication()
         app.listen(options.http_port)
         ioloop.run_forever()
     except KeyboardInterrupt:
