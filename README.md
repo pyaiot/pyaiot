@@ -50,11 +50,8 @@ $ sudo systemctl status riot-broker.service
  Main PID: 1469 (python3)
    CGroup: /system.slice/riot-broker.service
            └─1469 /usr/bin/python3 /home/pi/demos/riot-broker.py
-
-Oct 25 08:51:37 raspberrypi python3[1469]: 2016-10-25
-08:51:37,844 - tornado...s
-Oct 25 08:51:37 raspberrypi python3[1469]: 2016-10-25
-08:51:37,875 - tornado...s
+Oct 25 08:51:37 raspberrypi python3[1469]: 2016-10-25 08:51:37,844 - tornado...s
+Oct 25 08:51:37 raspberrypi python3[1469]: 2016-10-25 08:51:37,875 - tornado...s
 Oct 25 08:52:01 raspberrypi python3[1469]: [124B blob data]
 Oct 25 08:52:31 raspberrypi python3[1469]: [124B blob data]
 Oct 25 08:53:01 raspberrypi python3[1469]: [124B blob data]
@@ -102,7 +99,6 @@ $ sudo systemctl status riot-dashboard.service
  Main PID: 7398 (node)
    CGroup: /system.slice/riot-dashboard.service
            └─7398 /usr/bin/node /home/pi/demos/dashboard/dashboard.js
-
 Oct 25 11:19:57 raspberrypi systemd[1]: Started Riot Dashboard Application.
 Oct 25 11:20:02 raspberrypi node[7398]: Web server running at http://[::1]:8080
 Hint: Some lines were ellipsized, use -l to show in full.
