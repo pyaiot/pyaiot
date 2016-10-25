@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="assets/favicon192.png">
+    <title>Riot dashboard demo</title>
+
+  <!-- Material Design fonts -->
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700">
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/icon?family=Material+Icons">
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet" type="text/css" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+  <!-- FontAwesome -->
+  <link rel="stylesheet" type="text/css" href="node_modules/font-awesome/css/font-awesome.min.css">
+
+  <!-- Bootstrap Material Design -->
+  <link rel="stylesheet" type="text/css" href="node_modules/bootstrap-material-design/dist/css/bootstrap-material-design.min.css">
+  <link rel="stylesheet" type="text/css" href="node_modules/bootstrap-material-design/dist/css/ripples.min.css">
+
+  <!-- Dropdown.js -->
+  <link href="//cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.css" rel="stylesheet">
+  
+  <script src="node_modules/jquery/dist/jquery.min.js"></script>
+  <script src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="node_modules/bootstrap-material-design/dist/js/ripples.min.js"></script>
+  <script src="node_modules/bootstrap-material-design/dist/js/material.min.js"></script>
+
+</head>
+<body>
+
+<style type="text/css">
+    body {
+        /*padding-top: 50px;*/
+    }
+    .panel-body + .panel-body {
+        border-top: 1px solid #ddd;
+    }
+    .led-color {
+        color: firebrick;
+    }
+    #menubtn {
+        padding: 3px 6px;
+        border-radius: 100%;
+        margin-top: -11px;
+        margin-right: 0;
+
+    }
+    .li-text {
+        padding: 5px;
+    }
+</style>
+
+<div class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-inverse-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <img class="navbar-brand" src="assets/logo-large.png" style="margin-top: -3px">
+      <a class="navbar-brand" href="javascript:void(0)">RIOT Dashboard</a>
+    </div>
+    <div class="navbar-collapse collapse navbar-inverse-collapse">
+      <ul class="nav navbar-nav">
+        <li class="dropdown">
+          <a href="bootstrap-elements.html" data-target="#" class="dropdown-toggle" data-toggle="dropdown">{{nodes.length}} node monitored
+            <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+          {{#each nodes}}
+            <li><a href="#node{{@index}}">{{ip}}</a></li>
+          {{/each}}
+          </ul>
+        </li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="https://www.riot-os.org/">Riot OS <i class="fa fa-external-link"></i></a></li>
+        <li><a data-toggle="modal" data-target="#settingsModal" href=""><i class="material-icons" style="line-height: inherit">settings</i></a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3"></div>
+    {{#each nodes}}
+        <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3">
+            <div class="panel panel-default" id="node{{@index}}">
+              <div class="panel-heading">
+                {{board}}
+                <div class="pull-right">
+                    <div class="btn-group">
+                      <a href="" id="menubtn" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                        <span class="glyphicon glyphicon-option-vertical text-muted"></span>
+                      </a>
+                      <ul class="dropdown-menu">
+                        <li class="li-text">{{ip}}</li>
+                      </ul>
+                    </div>
+                </div>
+              </div>
+        {{#if temperature}}
+              <div class="panel-body">
+                <div class="h5 text-muted">Temperature</div>
+                <div class="h1">{{temperature}}</div>
+              </div>
+        {{/if}}
+        {{#if pressure}}
+              <div class="panel-body">
+                <div class="h5 text-muted">Pressure</div>
+                <div class="h1">{{pressure}}</div>
+              </div>
+        {{/if}}
+        {{#if led}}
+              <div class="panel-body" id="led{{@index}}">
+                <div class="h5 text-muted">LED</div>
+            {{#if ledvalue}}
+                <div class="h1">ON <i class="fa fa-circle led-color"></i></div>
+            {{else}}
+                <div class="h1">OFF <i class="fa fa-circle-thin led-color"></i></div>
+            {{/if}}
+              </div>
+        {{/if}}
+        {{#if led}}
+              <div class="panel-body">
+                <div class="togglebutton">
+                  <label>
+                    <input class="led-btn" type="checkbox" data-index="{{@index}}" {{#if ledvalue}}checked{{/if}}>Toggle led
+                  </label>
+                </div>
+              </div>
+        {{/if}}
+            </div>
+
+        </div>
+    {{/each}}
+
+    </div>
+</div>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h2 class="modal-title">Settings</h2>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin: 0">
+          <label for="s1" class="control-label">Refresh rate</label>
+
+          <!-- <div class="col-md-10"> -->
+            <select id="s1" class="form-control">
+              <option value="0">Manual refresh</option>
+              <option value="3000">3 seconds</option>
+              <option value="5000">5 seconds</option>
+              <option value="10000">10 seconds</option>
+              <option value="60000">60 seconds</option>
+            </select>
+          <!-- </div> -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Dropdown.js -->
+<script src="https://cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.js"></script>
+<script>
+  $("#settingsModal select").dropdown();
+</script>
+
+<script>
+// initialize bootstrap material design
+$.material.init()
+
+function switchLed(index, state) {
+    $.ajax({
+        url: "led/" + index,
+        data: {state: state}
+    }).done(function() {
+        location.reload();
+    });
+
+    // toggle LED icon to get immediate feedback
+    if (state)
+        $(`#led${index} .h1`).html('ON <i class="fa fa-circle led-color"></i>');
+    else
+        $(`#led${index} .h1`).html('OFF <i class="fa fa-circle-thin led-color"></i>');
+
+}
+
+$('.led-btn').change(function() {
+    if($(this).is(':checked'))
+        switchLed(this.dataset.index, 1)
+    else
+        switchLed(this.dataset.index, 0)
+})
+
+var refreshRate = parseInt(document.cookie.replace(/(?:(?:^|.*;\s*)refreshRate\s*\=\s*([^;]*).*$)|^.*$/, "$1") | '0');
+var timeout
+
+if (refreshRate != 0) {
+    timeout = setTimeout(function() { location.reload() }, refreshRate);
+}
+
+$('#s1').val(String(refreshRate)).change()
+
+$('#settingsModal').on('show.bs.modal', function (e) {
+    if (timeout) {
+        window.clearTimeout(timeout)
+    }
+});
+
+$('#settingsModal').on('hide.bs.modal', function (e) {
+    refreshRate = parseInt($('#s1').val())
+    document.cookie = 'refreshRate=' + refreshRate
+
+    if (refreshRate != 0) {
+        timeout = setTimeout(function() { location.reload() }, refreshRate);
+    }
+});
+
+</script>
+
+
+</body>
+</html>
