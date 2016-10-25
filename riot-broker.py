@@ -13,8 +13,8 @@ from tornado.netutil import set_close_exec
 from tornado.options import define, options
 
 logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - '
-                           '%(levelname)s - %(message)s')
+                    format='%(asctime)s - %(name)14s - '
+                           '%(levelname)5s - %(message)s')
 
 
 class NodesProvider(web.RequestHandler):
@@ -50,7 +50,7 @@ class NodesListener(object):
         """Constructor."""
         self.io_loop = io_loop or IOLoop.instance()
         self._on_receive = on_receive
-        self._log = logging.getLogger("{0: <14}".format(name))
+        self._log = logging.getLogger(name)
         self._sockets = []
 
         flags = socket.AI_PASSIVE
@@ -104,7 +104,7 @@ class RiotBrokerApplication(web.Application):
 
     def __init__(self):
         self._nodes = {}
-        self._log = logging.getLogger("{0: <14}".format("riot broker"))
+        self._log = logging.getLogger("riot broker")
         handlers = [(r'/nodes', NodesProvider), ]
         settings = dict()
         super().__init__(handlers, **settings)
