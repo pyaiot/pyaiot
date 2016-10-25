@@ -23,3 +23,5 @@ parts/
 bin/
 
 *.elf
+
+dashboard/node_modules
