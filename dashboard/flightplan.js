@@ -17,7 +17,7 @@ plan.target('deploy', {
 // run commands on remote hosts
 plan.remote(function(remote) {
 
-    remote.with('cd ~/demo/dashboard/', function() {
+    remote.with('cd ~/riot-demo/dashboard/', function() {
         // remote.ls('-l');
         remote.log('=== Update remote repository');
         remote.exec('git pull')

@@ -27,31 +27,60 @@
   <script src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="node_modules/bootstrap-material-design/dist/js/ripples.min.js"></script>
   <script src="node_modules/bootstrap-material-design/dist/js/material.min.js"></script>
+  <script src="node_modules/masonry-layout/dist/masonry.pkgd.min.js"></script>
 
 </head>
 <body>
 
 <style type="text/css">
-    body {
-        /*padding-top: 50px;*/
-    }
-    .panel-body + .panel-body {
-        border-top: 1px solid #ddd;
-    }
-    .led-color {
-        color: firebrick;
-    }
-    #menubtn {
-        padding: 3px 6px;
-        border-radius: 100%;
-        margin-top: -11px;
-        margin-right: 0;
+body.dark {
+    background-color: #333;
+}
+body.dark .navbar.navbar-inverse {
+    background-color: black;
+}
+body.dark .panel.panel-default>.panel-heading, body.dark .panel>.panel-heading {
+    background-color: #ddd;
+}
+.panel-body + .panel-body {
+    border-top: 1px solid #ddd;
+}
+.led-color {
+    color: firebrick;
+}
+#menu-btn {
+    padding: 3px 6px;
+    border-radius: 100%;
+    margin-top: -11px;
+    margin-right: 0;
 
-    }
-    .li-text {
-        padding: 5px;
-    }
+}
+.li-text {
+    padding: 5px;
+}
+.grid {
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.grid-item {
+    width: 400px;
+    max-width: 100%;
+    margin: 0 15px;
+}
+.grid-hidden {
+    display: none;
+}
 </style>
+
+<script> 
+var theme = localStorage.theme || 'dark';
+
+if (theme == 'dark') {
+    document.body.classList.add('dark')
+}    
+</script>
 
 <div class="navbar navbar-inverse">
   <div class="container-fluid">
@@ -67,7 +96,7 @@
     <div class="navbar-collapse collapse navbar-inverse-collapse">
       <ul class="nav navbar-nav">
         <li class="dropdown">
-          <a href="bootstrap-elements.html" data-target="#" class="dropdown-toggle" data-toggle="dropdown">{{nodes.length}} node monitored
+          <a href="bootstrap-elements.html" data-target="#" class="dropdown-toggle" data-toggle="dropdown">{{nodes.length}} {{plural nodes.length 'node(s)'}} monitored
             <b class="caret"></b></a>
           <ul class="dropdown-menu">
           {{#each nodes}}
@@ -77,24 +106,23 @@
         </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
-        <li><a href="https://www.riot-os.org/">Riot OS <i class="fa fa-external-link"></i></a></li>
+        <li><a href="https://www.riot-os.org/">RIOT OS <i class="fa fa-external-link"></i></a></li>
         <li><a data-toggle="modal" data-target="#settingsModal" href=""><i class="material-icons" style="line-height: inherit">settings</i></a></li>
       </ul>
     </div>
   </div>
 </div>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3"></div>
+<!-- <div class="container-fluid"> -->
+    <div class="grid" data-masonry='{ "itemSelector": ".grid-item:not(.grid-hidden)", "fitWidth": "true" }'>
     {{#each nodes}}
-        <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3">
+        <div class="grid-item">
             <div class="panel panel-default" id="node{{@index}}">
               <div class="panel-heading">
                 {{board}}
                 <div class="pull-right">
                     <div class="btn-group">
-                      <a href="" id="menubtn" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                      <a href="" id="menu-btn" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
                         <span class="glyphicon glyphicon-option-vertical text-muted"></span>
                       </a>
                       <ul class="dropdown-menu">
@@ -140,7 +168,7 @@
     {{/each}}
 
     </div>
-</div>
+<!-- </div> -->
 
 <div class="modal" id="settingsModal">
   <div class="modal-dialog">
@@ -151,17 +179,25 @@
       </div>
       <div class="modal-body">
         <div class="form-group" style="margin: 0">
-          <label for="s1" class="control-label">Refresh rate</label>
+          <label for="selectTheme" class="control-label">Theme</label>
 
-          <!-- <div class="col-md-10"> -->
-            <select id="s1" class="form-control">
-              <option value="0">Manual refresh</option>
-              <option value="3000">3 seconds</option>
-              <option value="5000">5 seconds</option>
-              <option value="10000">10 seconds</option>
-              <option value="60000">60 seconds</option>
-            </select>
-          <!-- </div> -->
+          <select id="selectTheme" class="form-control">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+
+        </div>
+        <div class="form-group" style="margin: 0">
+          <label for="selectRefreshRate" class="control-label">Refresh rate</label>
+
+          <select id="selectRefreshRate" class="form-control">
+            <option value="0">Manual refresh</option>
+            <option value="3000">3 seconds</option>
+            <option value="5000">5 seconds</option>
+            <option value="10000">10 seconds</option>
+            <option value="60000">60 seconds</option>
+          </select>
+
         </div>
       </div>
       <div class="modal-footer">
@@ -206,14 +242,14 @@ $('.led-btn').change(function() {
         switchLed(this.dataset.index, 0)
 })
 
-var refreshRate = parseInt(document.cookie.replace(/(?:(?:^|.*;\s*)refreshRate\s*\=\s*([^;]*).*$)|^.*$/, "$1") | '0');
+var refreshRate = parseInt(localStorage.refreshRate  || '0');
 var timeout
 
 if (refreshRate != 0) {
     timeout = setTimeout(function() { location.reload() }, refreshRate);
 }
 
-$('#s1').val(String(refreshRate)).change()
+$('#selectRefreshRate').val(String(refreshRate)).change()
 
 $('#settingsModal').on('show.bs.modal', function (e) {
     if (timeout) {
@@ -221,9 +257,19 @@ $('#settingsModal').on('show.bs.modal', function (e) {
     }
 });
 
+$('#selectTheme').change(function () {
+    if ($(this).val() == 'dark') {
+        $('body').addClass('dark')
+    } else {
+        $('body').removeClass('dark')
+    }
+})
+
 $('#settingsModal').on('hide.bs.modal', function (e) {
-    refreshRate = parseInt($('#s1').val())
-    document.cookie = 'refreshRate=' + refreshRate
+    localStorage.setItem('theme', $('#selectTheme').val())
+
+    refreshRate = parseInt($('#selectRefreshRate').val())
+    localStorage.setItem('refreshRate', refreshRate)
 
     if (refreshRate != 0) {
         timeout = setTimeout(function() { location.reload() }, refreshRate);
