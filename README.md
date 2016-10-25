@@ -8,6 +8,16 @@ The Demos are designed to run on a prepared raspberry pi:
 * Software requirements:
   * Mjpg_streamer installed and running. See [the GitHub project.](https://github.com/jacksonliam/mjpg-streamer).
 
+2 useful commands to manage custom raspbian images from Linux:
+* Copy Raspberry PI SD to a compressed image on Linux:
+```
+$ dd bs=4M if=/dev/mmcblk0 | gzip > custom_raspbian.img.gz
+```
+* Dump the compressed images to the Raspberry PI
+```
+$ gzip -dc custom_raspbian.img.gz | sudo dd bs=4M of=/dev/mmcblk0
+```
+
 
 ### Broker application for RIOT demo
 
