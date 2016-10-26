@@ -72,6 +72,12 @@ body.dark .panel.panel-default>.panel-heading, body.dark .panel>.panel-heading {
 .grid-hidden {
     display: none;
 }
+img {
+  max-width: 100%;
+}
+#webcam {
+  overflow: hidden;
+}
 </style>
 
 <script> 
@@ -115,17 +121,38 @@ if (theme == 'dark') {
 
 <!-- <div class="container-fluid"> -->
     <div class="grid" data-masonry='{ "itemSelector": ".grid-item:not(.grid-hidden)", "fitWidth": "true" }'>
+        <div class="grid-item">
+            <div class="panel panel-default" id="webcam">
+              <div class="panel-heading">
+                webcam
+                <div class="pull-right">
+                    <div class="btn-group" style="margin-bottom: 0">
+                      <a href="" id="menu-btn" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
+                        <span class="glyphicon glyphicon-option-vertical text-muted"></span>
+                      </a>
+                      <ul class="dropdown-menu dropdown-menu-right">
+                        <li class="li-text"><a href="http://demo-fit.saclay.inria.fr/demo-cam/?action=stream">webcam stream url</a></li>
+                      </ul>
+                    </div>
+                </div>
+              </div>
+              <div>
+                <img src="http://demo-fit.saclay.inria.fr/demo-cam/?action=stream">
+              </div>
+            </div>
+
+        </div>
     {{#each nodes}}
         <div class="grid-item">
             <div class="panel panel-default" id="node{{@index}}">
               <div class="panel-heading">
                 {{board}}
                 <div class="pull-right">
-                    <div class="btn-group">
+                    <div class="btn-group" style="margin-bottom: 0">
                       <a href="" id="menu-btn" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
                         <span class="glyphicon glyphicon-option-vertical text-muted"></span>
                       </a>
-                      <ul class="dropdown-menu">
+                      <ul class="dropdown-menu dropdown-menu-right">
                         <li class="li-text">{{ip}}</li>
                       </ul>
                     </div>
