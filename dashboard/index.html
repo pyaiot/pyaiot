@@ -77,6 +77,25 @@ img {
 }
 #webcam {
   overflow: hidden;
+  position: relative;
+}
+#webcam .panel-heading {
+  position: absolute;
+  left:0;
+  right: 0;
+  background-color: rgba(0,0,0,0.2);
+  /*mix-blend-mode: multiply;*/
+}
+.panel-heading .btn-group {
+  margin: 0;
+}
+
+.panel-heading .dropdown-menu {
+  margin-top: 10px;
+}
+.menu-btn {
+    padding: 0px 5px;
+    border-radius: 100%;
 }
 </style>
 
@@ -126,12 +145,12 @@ if (theme == 'dark') {
               <div class="panel-heading">
                 webcam
                 <div class="pull-right">
-                    <div class="btn-group" style="margin-bottom: 0">
+                    <div class="btn-group">
                       <a href="" id="menu-btn" class="btn btn-link dropdown-toggle" data-toggle="dropdown">
                         <span class="glyphicon glyphicon-option-vertical text-muted"></span>
                       </a>
                       <ul class="dropdown-menu dropdown-menu-right">
-                        <li class="li-text"><a href="http://demo-fit.saclay.inria.fr/demo-cam/?action=stream">webcam stream url</a></li>
+                        <li class="li-text"><a href="http://demo-fit.saclay.inria.fr/demo-cam/?action=stream">webcam stream</a></li>
                       </ul>
                     </div>
                 </div>
