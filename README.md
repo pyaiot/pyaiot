@@ -46,7 +46,7 @@ $ sudo pip3 install tornado
 <pre>
 $ sudo cp systemd/riot-broker.service /lib/systemd/system/.
 </pre>
-3. Enable is and start it:
+3. Enable it and start it:
 <pre>
 $ sudo systemctl enable riot-broker.service
 $ sudo systemctl start riot-broker.service
@@ -95,7 +95,7 @@ $ npm install
 <pre>
 $ sudo cp systemd/riot-dashboard.service /lib/systemd/system/.
 </pre>
-4. Enable is and start it:
+4. Enable it and start it:
 <pre>
 $ sudo systemctl enable riot-dashboard.service
 $ sudo systemctl start riot-dashboard.service
