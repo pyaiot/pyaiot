@@ -37,6 +37,7 @@ $ git clone git@gitlab.inria.fr:fit-saclay/demos.git
 4. Launch the demo on nodes A8 144 (the border router) and A8 145 (the demo
    node).
 <pre>
+$ cd demos/scripts
 $ ./iotlab-launch-demo.sh 144 ./gnrc_border_router.elf 145 ./dashboard_riot_a8_m3.elf
 </pre>
 5. You should now see the demo node on the [fit-demo live
