@@ -15,7 +15,7 @@ experiment-cli wait
 open-a8-cli update-m3 $(BR_FW) -l saclay,a8,144
 
 # Start the border router
-ssh node-a8-144 'cd ~/A8/riot/RIOT/dist/tools/ethos&& screen -S br ./start_network.sh /dev/ttyA8_M3 tap0 2001:0660:3207:490::/64'
+ssh -t node-a8-144 'cd ~/A8/riot/RIOT/dist/tools/ethos&& screen -S br ./start_network.sh /dev/ttyA8_M3 tap0 2001:0660:3207:490::/64'
 
 # 2. Flash the demo node
 open-a8-cli update-m3 $(DEMO_FW) -l saclay,a8,145
