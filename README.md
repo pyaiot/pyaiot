@@ -1,5 +1,17 @@
 ## Demos for the FIT IoT-LAB testbed in Saclay
 
+### Available Demos
+
+* [IoT-LAB open A8
+  demo](https://gitlab.inria.fr/fit-saclay/demos/tree/master/scripts)
+  This demo automatically submit an experiment on IoT-LAB with two open A8
+  nodes. The first node is configured as aborder router and the second node runs
+  a firmware that integrates automatically on the RIOT Dashboard described
+  below.
+
+
+### Prerequisites for setting up a demonstration
+
 The Demos are designed to run on a prepared raspberry pi:
 * Hardware requirements:
   * OpenLABS 802.15.4 module installed an configured. See
@@ -113,5 +125,3 @@ Oct 25 11:19:57 raspberrypi systemd[1]: Started Riot Dashboard Application.
 Oct 25 11:20:02 raspberrypi node[7398]: Web server running at http://[::1]:8080
 Hint: Some lines were ellipsized, use -l to show in full.
 </pre>
-
-
