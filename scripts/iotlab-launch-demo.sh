@@ -9,6 +9,11 @@ DEMO_FW=$4
 ETHOS_DIR="~/A8/riot/RIOT/dist/tools/ethos"
 SSH_MAX_TRIES=30
 
+[ -z "${BR_A8_ID}" -o -z "${BR_FW}" -o -z "${DEMO_A8_ID}" -o -z "${DEMO_FW}" ] && {
+     echo "usage: $0 <br_node_id> <br_node_firmware> <demo_node_id> <demo_node_firmware>"
+     exit 1
+}
+
 start_experiment() {
     # Submit an experiment in Saclay on nodes A8 144 and 145
     # - node-a8-144 will be used as a border router
@@ -66,16 +71,19 @@ start_border_router() {
     PREFIX_LIST=(${PREFIX_LINE/\=/ })
     PREFIX=${PREFIX_LIST[${#PREFIX_LIST[@]} - 1]}::/64
     screen -S br -dm ssh -t node-a8-${BR_A8_ID} "cd ${ETHOS_DIR} && ./start_network.sh /dev/ttyA8_M3 tap0 ${PREFIX}"
+    sleep 10s
     echo "Border router started"
 }
 
 start_demo_node() {
     # 2. Flash the demo node
+    echo "Flashing Demo firmware"
     open-a8-cli update-m3 ${DEMO_FW} -l saclay,a8,${DEMO_A8_ID} >> iotlab-launch-demo.log
 }
 
 stop_demo() {
     echo "Exiting"
+    experiment-cli stop
     trap "" INT QUIT TERM EXIT
     exit 1
 }
