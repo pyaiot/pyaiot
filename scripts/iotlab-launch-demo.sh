@@ -6,11 +6,13 @@ BR_FW=$2
 DEMO_A8_ID=$3
 DEMO_FW=$4
 
+EXP_DURATION=$5
+
 ETHOS_DIR="~/A8/riot/RIOT/dist/tools/ethos"
 SSH_MAX_TRIES=30
 
-[ -z "${BR_A8_ID}" -o -z "${BR_FW}" -o -z "${DEMO_A8_ID}" -o -z "${DEMO_FW}" ] && {
-     echo "usage: $0 <br_node_id> <br_node_firmware> <demo_node_id> <demo_node_firmware>"
+[ -z "${BR_A8_ID}" -o -z "${BR_FW}" -o -z "${DEMO_A8_ID}" -o -z "${DEMO_FW}" -o -z "${EXP_DURATION}" ] && {
+     echo "usage: $0 <br_node_id> <br_node_firmware> <demo_node_id> <demo_node_firmware> <experiment_duration>"
      exit 1
 }
 
@@ -20,7 +22,7 @@ start_experiment() {
     # - node-a8-145 will run the dashboard enable firmware. This node is visible at
     # http://demo-fit.saclay.inria.fr
     echo "Starting new experiment"
-    experiment-cli submit -d 120 -l saclay,a8,${BR_A8_ID}+${DEMO_A8_ID}
+    experiment-cli submit -d ${EXP_DURATION} -l saclay,a8,${BR_A8_ID}+${DEMO_A8_ID}
     experiment-cli wait
     echo "Experiment started"
 }
@@ -46,6 +48,7 @@ check_ssh_available() {
         if [[ $cpt -eq $zero ]]
         then
             echo -e
+            experiment-cli stop
             echo "Could not connect to one of the nodes, exiting"
             exit 1
         fi
@@ -83,7 +86,6 @@ start_demo_node() {
 
 stop_demo() {
     echo "Exiting"
-    experiment-cli stop
     trap "" INT QUIT TERM EXIT
     exit 1
 }
