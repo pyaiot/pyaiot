@@ -35,10 +35,10 @@ $ cd ..
 $ git clone git@gitlab.inria.fr:fit-saclay/demos.git
 </pre>
 4. Launch the demo on nodes A8 144 (the border router) and A8 145 (the demo
-   node).
+   node). We configure an experiment with 120m duration.
 <pre>
 $ cd demos/scripts
-$ ./iotlab-launch-demo.sh 144 ./gnrc_border_router.elf 145 ./dashboard_riot_a8_m3.elf
+$ ./iotlab-launch-demo.sh 144 ./gnrc_border_router.elf 145 ./dashboard_riot_a8_m3.elf 120
 </pre>
 5. You should now see the demo node on the [fit-demo live
    camera](demo-fit.saclay.inria.fr) and play its LED from the [RIOT
