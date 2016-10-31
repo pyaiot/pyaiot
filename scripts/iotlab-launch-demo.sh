@@ -59,21 +59,22 @@ start_border_router() {
     # Flash the firmwares on the nodes using ssh-cli-tools
     # 1. Flash the border router
     echo "Flashing border router firmware"
-    open-a8-cli update-m3 ${BR_FW} -l saclay,a8,${BR_A8_ID} > iotlab-launch-demo.log
+    open-a8-cli update-m3 ${BR_FW} -l saclay,a8,${BR_A8_ID} > iotlab-launch-demo.log 2>&1
 
     echo "Configuring the border router"
     # Configure RIOT on the border router
-    ssh node-a8-${BR_A8_ID} "cd ${ETHOS_DIR}/../uhcpd && make clean all" > /dev/null
-    ssh node-a8-${BR_A8_ID} "cd ${ETHOS_DIR} && make clean all" > /dev/null
+    ssh node-a8-${BR_A8_ID} "cd ${ETHOS_DIR}/../uhcpd && make clean all" > /dev/null 2>&1
+    ssh node-a8-${BR_A8_ID} "cd ${ETHOS_DIR} && make clean all" > /dev/null 2>&1
 
     # Stop any running screen
-    screen -X -S br quit
+    ssh node-a8-${BR_A8_ID} "screen -X -S br quit" > /dev/null 2>&1
 
     # Start the border router
-    PREFIX_LINE=`ssh node-a8-144 "source /etc/profile.d/ipv6 && printenv | grep INET6_PREFIX="`
+    PREFIX_LINE=`ssh node-a8-144 "source /etc/profile.d/ipv6 && printenv | grep INET6_PREFIX= 2>/dev/null"`
     PREFIX_LIST=(${PREFIX_LINE/\=/ })
     PREFIX=${PREFIX_LIST[${#PREFIX_LIST[@]} - 1]}::/64
-    screen -S br -dm ssh -t node-a8-${BR_A8_ID} "cd ${ETHOS_DIR} && ./start_network.sh /dev/ttyA8_M3 tap0 ${PREFIX}"
+    ssh node-a8-${BR_A8_ID} "screen -S br -dm bash -c \"cd ${ETHOS_DIR} && \
+        ./start_network.sh /dev/ttyA8_M3 tap0 ${PREFIX}\"" >> iotlab-launch-demo.log 2>&1
     sleep 10s
     echo "Border router started"
 }
@@ -81,7 +82,7 @@ start_border_router() {
 start_demo_node() {
     # 2. Flash the demo node
     echo "Flashing Demo firmware"
-    open-a8-cli update-m3 ${DEMO_FW} -l saclay,a8,${DEMO_A8_ID} >> iotlab-launch-demo.log
+    open-a8-cli update-m3 ${DEMO_FW} -l saclay,a8,${DEMO_A8_ID} >> iotlab-launch-demo.log 2>&1
 }
 
 stop_demo() {
