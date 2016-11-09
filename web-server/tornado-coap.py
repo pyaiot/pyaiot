@@ -76,7 +76,7 @@ def _request_nodes():
             if 'well-known/core' in path:
                 continue
 
-            code, payload = yield _coap_resource('{}{}'
+            code, payload = yield _coap_resource('{0}{1}'
                                                  .format(coap_node_url, path),
                                                  method=GET)
             _broadcast_message(json.dumps({'endpoint': path,
@@ -87,49 +87,23 @@ def _request_nodes():
 
 @gen.coroutine
 def _coap_resource(url, method=GET, payload=b''):
-    protocol = yield Context.create_client_context()
+    protocol = yield from Context.create_client_context()
     request = Message(code=method, payload=payload)
     request.set_request_uri(url)
     try:
-        response = yield protocol.request(request).response
+        response = yield from protocol.request(request).response
     except Exception as e:
         code = "Failed to fetch resource"
-        payload = '{}'.format(e)
+        payload = '{0}'.format(e)
     else:
         code = response.code
         payload = response.payload.decode('ascii')
     finally:
-        yield protocol.shutdown()
+        yield from protocol.shutdown()
 
-    print('Code: {} - Payload: {}'.format(code, payload))
+    print('Code: {0} - Payload: {1}'.format(code, payload))
 
     return code, payload
-
-
-def _write_api(handler, link_header):
-    link = link_header.replace(' ', '')
-    endpoints = link.split(',')
-    for endpoint in endpoints:
-        elems = endpoint.split(';')
-        path = elems.pop(0).replace('<', '').replace('>', '')
-        handler.write("<b>Path:</b> {}<br/>".format(path))
-        sm = "<i>Supported methods:</i> "
-        vt = "<i>Value type:</i> "
-        em = "<i>Extra options:</i> "
-        ms = "<i>Maximum size:</i> "
-        for e in elems:
-            if e.startswith('if='):
-                sm += ", ".join(e.split('=')[1].split('/'))
-            elif e.startswith('ct='):
-                ms += str(e)
-            elif e.startswith('rt='):
-                vt += e.split('=')[1]
-            else:
-                em += e + " "
-        handler.write("&nbsp;&nbsp;{}<br/>".format(sm))
-        handler.write("&nbsp;&nbsp;{}<br/>".format(vt))
-        handler.write("&nbsp;&nbsp;{}<br/>".format(em))
-        handler.write("&nbsp;&nbsp;{}<br/>".format(ms))
 
 
 class ActiveNodesHandler(web.RequestHandler):
@@ -154,7 +128,7 @@ class CoapPostHandler(web.RequestHandler):
         node = data['node']
         path = data['path']
         payload = data['payload']
-        code, payload = yield _coap_resource('coap://[{}]/{}'
+        code, payload = yield _coap_resource('coap://[{0}]/{1}'
                                              .format(node, path),
                                              method=PUT,
                                              payload=payload.encode('ascii'))
