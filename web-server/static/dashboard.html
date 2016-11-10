@@ -50,10 +50,13 @@
 
       <div class="starter-template">
         <h1>CoAP result via WS</h1>
-        <p class="lead" id=time></p>
-        <p class="lead" id=content></p>
-        <p class="lead" id=version></p>
-        <p class="lead" id=kernel></p>
+        <p class="lead" id=board></p>
+        <p class="lead" id=mcu></p>
+        <p class="lead" id=led></p>
+        <p class="lead" id=imu></p>
+        <p class="lead" id=temperature></p>
+        <p class="lead" id=pressure></p>
+        <p class="lead" id=text></p>
       </div>
 
     </div><!-- /.container -->
@@ -68,6 +71,7 @@
     <script src={{ static_url("js/ie10-viewport-bug-workaround.js") }}>
     </script>
     <script>
+        var nodes = []
         var ws = new WebSocket('ws://{{ server }}:{{ port }}/coap_ws');
         var $message = $('#message');
         ws.onopen = function() {
@@ -76,34 +80,58 @@
         ws.onmessage = function(event) {
             var obj = JSON.parse(event.data)
             if (obj.command == 'new') {
-                console.log("New node : ", obj.node)
+                nodes.push(obj.node)
             }
             else if (obj.command == 'out') {
-                console.log("Dead node : ", obj.node)
-                document.getElementById("time").innerHTML = ""
-                document.getElementById("content").innerHTML = ""
-                document.getElementById("version").innerHTML = ""
-                document.getElementById("kernel").innerHTML = ""
+                var index = nodes.indexOf(obj.node);
+                if (index > -1) {
+                    nodes.splice(index, 1);
+                }
+                document.getElementById("board").innerHTML = ""
+                document.getElementById("mcu").innerHTML = ""
+                document.getElementById("led").innerHTML = ""
+                document.getElementById("imu").innerHTML = ""
+                document.getElementById("temperature").innerHTML = ""
+                document.getElementById("pressure").innerHTML = ""
+                document.getElementById("text").innerHTML = ""
             }
             else if (obj.command == 'update') {
-                console.log("Update node : ", obj.node)
-                if (obj.endpoint == "/time") {
-                    document.getElementById("time").innerHTML =
+                var index = nodes.indexOf(obj.node);
+                if (index == -1) {
+                    return;
+                }
+                if (obj.endpoint == "/board") {
+                    document.getElementById("board").innerHTML =
                         "<b>Node:</b>" + obj.node + "<br/><b>" +
                         obj.endpoint + ":</b>" + obj.data;
                 }
-                else if (obj.endpoint == "/content") {
-                    document.getElementById("content").innerHTML =
+                else if (obj.endpoint == "/mcu") {
+                    document.getElementById("mcu").innerHTML =
                         "<b>Node:</b>" + obj.node + "<br/><b>" +
                         obj.endpoint + ":</b>" + obj.data;
                 }
-                else if (obj.endpoint == "/version") {
-                    document.getElementById("version").innerHTML =
+                else if (obj.endpoint == "/led") {
+                    document.getElementById("led").innerHTML =
                         "<b>Node:</b>" + obj.node + "<br/><b>" +
                         obj.endpoint + ":</b>" + obj.data;
                 }
-                else if (obj.endpoint == "/kernel") {
-                    document.getElementById("kernel").innerHTML =
+                else if (obj.endpoint == "/imu") {
+                    document.getElementById("imu").innerHTML =
+                        "<b>Node:</b>" + obj.node + "<br/><b>" +
+                        obj.endpoint + ":</b>" + obj.data;
+                }
+                else if (obj.endpoint == "/text") {
+                    document.getElementById("text").innerHTML =
+                        "<b>Node:</b>" + obj.node + "<br/><b>" +
+                        obj.endpoint + ":</b>" + obj.data;
+                }
+                else if (obj.endpoint == "/temperature") {
+                    document.getElementById("temperature").innerHTML =
+                        "<b>Node:</b>" + obj.node + "<br/><b>" +
+                        obj.endpoint + ":</b>" + obj.data;
+                }
+                else if (obj.endpoint == "/pressure") {
+                    document.getElementById("pressure").innerHTML =
                         "<b>Node:</b>" + obj.node + "<br/><b>" +
                         obj.endpoint + ":</b>" + obj.data;
                 }
