@@ -20,9 +20,10 @@ from aiocoap import Context, Message, GET, PUT
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '
                            '%(levelname)5s - %(message)s')
+internal_logger = logging.getLogger("tornado.internal")
 
 GLOBALS = {
-    'coap_nodes': {},
+    'coap_nodes': [],
     'coap_sockets': [],
 }
 
@@ -48,12 +49,15 @@ def _broadcast_message(message):
 @gen.coroutine
 def _check_dead_nodes():
     """Find dead nodes in the list of known nodes and remove them."""
-    nodes = {}
-    for ip, dt in GLOBALS['coap_nodes'].items():
-        if int(time.time()) < dt + options.max_time:
-            nodes.update({ip: dt})
+    if len(GLOBALS['coap_nodes']) == 0:
+        return
+
+    nodes = []
+    for node in GLOBALS['coap_nodes']:
+        if node.active():
+            nodes += [node]
         else:
-            _broadcast_message(json.dumps({'node': ip,
+            _broadcast_message(json.dumps({'node': node.address,
                                            'command': 'out'}))
     GLOBALS['coap_nodes'] = nodes
 
@@ -64,13 +68,15 @@ def _request_nodes():
     if len(GLOBALS['coap_sockets']) == 0:
         return
 
-    for node in GLOBALS['coap_nodes'].keys():
-        coap_node_url = 'coap://[{}]'.format(node)
-        code, payload = yield _coap_resource('{0}/.well-known/core'
-                                             .format(coap_node_url),
-                                             method=GET)
+    for node in GLOBALS['coap_nodes']:
+        coap_node_url = 'coap://[{}]'.format(node.address)
+        if len(node.endpoints) == 0:
+            code, payload = yield _coap_resource('{0}/.well-known/core'
+                                                 .format(coap_node_url),
+                                                 method=GET)
+            node.endpoints = _endpoints(payload)
 
-        for endpoint in _endpoints(payload):
+        for endpoint in node.endpoints:
             elems = endpoint.split(';')
             path = elems.pop(0).replace('<', '').replace('>', '')
             if 'well-known/core' in path:
@@ -81,7 +87,7 @@ def _request_nodes():
                                                  method=GET)
             _broadcast_message(json.dumps({'endpoint': path,
                                            'data': payload,
-                                           'node': node,
+                                           'node': node.address,
                                            'command': 'update'}))
 
 
@@ -101,16 +107,40 @@ def _coap_resource(url, method=GET, payload=b''):
     finally:
         yield from protocol.shutdown()
 
-    print('Code: {0} - Payload: {1}'.format(code, payload))
+    internal_logger.info('Code: {0} - Payload: {1}'.format(code, payload))
 
     return code, payload
+
+
+class CoAPNode(object):
+    """Object defining a CoAP node."""
+
+    def __init__(self, address, check_time=time.time(), endpoints=[]):
+        self.address = address
+        self.check_time = check_time
+        self.endpoints = endpoints
+
+    def __eq__(self, other):
+        return self.address == other.address
+
+    def __neq__(self, other):
+        return self.address != other.address
+
+    def __repr__(self):
+        return("Node '{}', Last check: {}, Endpoints: {}"
+               .format(self.address, self.check_time, self.endpoints))
+
+    def active(self):
+        """check if the node is still active and responding."""
+        return int(time.time()) < self.check_time + options.max_time
 
 
 class ActiveNodesHandler(web.RequestHandler):
     @tornado.web.asynchronous
     @gen.coroutine
     def get(self):
-        self.write({'nodes': list(GLOBALS['coap_nodes'].keys())})
+        self.write({'nodes': list([node.address
+                                   for node in GLOBALS['coap_nodes']])})
         self.finish()
 
 
@@ -138,7 +168,7 @@ class DashboardHandler(web.RequestHandler):
     # @tornado.web.asynchronous
     def get(self, path=None):
         self.render("dashboard.html",
-                    server=socket.gethostname(),
+                    server="localhost",
                     port=options.http_port,
                     title="CoAP nodes dashboard")
 
@@ -146,9 +176,9 @@ class DashboardHandler(web.RequestHandler):
 class CoapWebSocket(websocket.WebSocketHandler):
     def open(self):
         GLOBALS['coap_sockets'].append(self)
-        for node in GLOBALS['coap_nodes'].keys():
+        for node in GLOBALS['coap_nodes']:
             _broadcast_message(json.dumps({'command': 'new',
-                                           'node': node}))
+                                           'node': node.address}))
 
     def on_close(self):
         GLOBALS['coap_sockets'].remove(self)
@@ -240,11 +270,14 @@ class RiotDashboardApplication(web.Application):
 
     def on_receive_packet(self, data, address):
         """Callback triggered when an alive packet is received."""
-        node = address[0]
-        if node not in GLOBALS['coap_nodes'].keys():
+        node = CoAPNode(address[0])
+        if node not in GLOBALS['coap_nodes']:
             _broadcast_message(json.dumps({'command': 'new',
-                                           'node': node}))
-        GLOBALS['coap_nodes'].update({address[0]: int(time.time())})
+                                           'node': node.address}))
+            GLOBALS['coap_nodes'].append(node)
+        else:
+            index = GLOBALS['coap_nodes'].index(node)
+            GLOBALS['coap_nodes'][index].check_time = time.time()
 
 
 def parse_command_line():
