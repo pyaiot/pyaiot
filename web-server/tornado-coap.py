@@ -138,7 +138,7 @@ class DashboardHandler(web.RequestHandler):
     # @tornado.web.asynchronous
     def get(self, path=None):
         self.render("dashboard.html",
-                    server="localhost",
+                    server=socket.gethostname(),
                     port=options.http_port,
                     title="CoAP nodes dashboard")
 
