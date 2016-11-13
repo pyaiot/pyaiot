@@ -145,13 +145,17 @@ class CoAPServerResource(resource.Resource):
     @asyncio.coroutine
     def render_post(self, request):
         payload = request.payload.decode('utf8')
+        try:
+            remote = request.remote[0]
+        except TypeError:
+            remote = request.remote.sockaddr[0]
         internal_logger.info("CoAP PORT received from {} with payload: {}"
-                             .format(request.remote.sockaddr[0], payload))
+                             .format(remote, payload))
 
         path, data = payload.split(":")
         _broadcast_message(json.dumps({'endpoint': path,
                                        'data': data,
-                                       'node': request.remote.sockaddr[0],
+                                       'node': remote,
                                        'command': 'update'}))
         return Message(code=CHANGED,
                        payload="Received '{}'".format(payload).encode('utf-8'))
