@@ -14,7 +14,8 @@ from tornado.ioloop import PeriodicCallback, IOLoop
 from tornado.netutil import set_close_exec
 from tornado.options import define, options
 import tornado.platform.asyncio
-from aiocoap import Context, Message, GET, PUT
+import aiocoap.resource as resource
+from aiocoap import Context, Message, GET, PUT, CHANGED
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -135,6 +136,27 @@ class CoAPNode(object):
         return int(time.time()) < self.check_time + options.max_time
 
 
+class CoAPServerResource(resource.Resource):
+    """CoAP server running withni the tornado application"""
+
+    def __init__(self):
+        super(CoAPServerResource, self).__init__()
+
+    @asyncio.coroutine
+    def render_post(self, request):
+        payload = request.payload.decode('utf8')
+        internal_logger.info("CoAP PORT received from {} with payload: {}"
+                             .format(request.remote.sockaddr[0], payload))
+
+        path, data = payload.split(":")
+        _broadcast_message(json.dumps({'endpoint': path,
+                                       'data': data,
+                                       'node': request.remote.sockaddr[0],
+                                       'command': 'update'}))
+        return Message(code=CHANGED,
+                       payload="Received '{}'".format(payload).encode('utf-8'))
+
+
 class ActiveNodesHandler(web.RequestHandler):
     @tornado.web.asynchronous
     @gen.coroutine
@@ -158,7 +180,7 @@ class CoapPostHandler(web.RequestHandler):
         node = data['node']
         path = data['path']
         payload = data['payload']
-        code, payload = yield _coap_resource('coap://[{0}]/{1}'
+        code, payload = yield _coap_resource('coap://[{0}]{1}'
                                              .format(node, path),
                                              method=PUT,
                                              payload=payload.encode('ascii'))
@@ -297,6 +319,9 @@ if __name__ == '__main__':
         tornado.platform.asyncio.AsyncIOMainLoop().install()
         PeriodicCallback(_request_nodes, options.delay_refresh).start()
         PeriodicCallback(_check_dead_nodes, 100).start()
+        root_coap = resource.Site()
+        root_coap.add_resource(('server', ), CoAPServerResource())
+        asyncio.async(Context.create_server_context(root_coap))
 
         app = RiotDashboardApplication()
         app.listen(options.http_port)
