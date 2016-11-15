@@ -66,7 +66,7 @@
     </script>
     <script>
         var nodes = []
-        var ws = new WebSocket('ws://{{ server }}:{{ port }}/coap_ws');
+        var ws = new WebSocket('ws://{{ server }}:{{ port }}/ws');
         var $message = $('#message');
         function clean_node(node) {
             return node.replace(/:/g,'_').replace(/\./g,'_')
@@ -80,6 +80,7 @@
             var node = clean_node(obj.node)
             if (obj.command == 'new') {
                 nodes.push(node)
+                console.log("Adding node", node)
                 var nodesContainer = document.getElementById("container");
                 var nodeTitle = document.createElement("div")
                 nodeTitle.setAttribute('id', node + "title")
@@ -95,6 +96,7 @@
                 var index = nodes.indexOf(node);
                 if (index > -1) {
                     nodes.splice(index, 1);
+                    console.log("Removing node", node)
                 }
                 document.getElementById(node).innerHTML = ""
                 document.getElementById(node + "title").innerHTML = ""
@@ -104,6 +106,7 @@
                 if (index == -1) {
                     return;
                 }
+                console.log("Updating node", node)
                 var endpoint = document.getElementById(obj.endpoint + node)
                 if (endpoint == null) {
                     var nodeElem = document.getElementById(node)

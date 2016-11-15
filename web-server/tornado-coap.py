@@ -1,22 +1,18 @@
 
 import os
 import sys
-import socket
 import time
 import os.path
 import tornado
 import asyncio
 import json
 import logging
-from errno import EWOULDBLOCK, EAGAIN
 from tornado import gen, web, websocket
-from tornado.ioloop import PeriodicCallback, IOLoop
-from tornado.netutil import set_close_exec
+from tornado.ioloop import PeriodicCallback
 from tornado.options import define, options
 import tornado.platform.asyncio
 import aiocoap.resource as resource
 from aiocoap import Context, Message, GET, PUT, CHANGED
-
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '
@@ -43,8 +39,24 @@ def _endpoints(link_header):
 
 def _broadcast_message(message):
     """Broadcast message on all opened websockets."""
+    internal_logger.debug("Broadcasting message '{}' to web clients."
+                          .format(message))
     for ws in GLOBALS['coap_sockets']:
         ws.write_message(message)
+
+
+def _refresh_node(remote):
+    """Refresh node last check or add it to the list of active nodes."""
+    node = CoapNode(remote)
+    node.check_time = time.time()
+    if node not in GLOBALS['coap_nodes']:
+        _broadcast_message(json.dumps({'command': 'new',
+                                       'node': node.address}))
+        GLOBALS['coap_nodes'].append(node)
+        _discover_node(node)
+    else:
+        index = GLOBALS['coap_nodes'].index(node)
+        GLOBALS['coap_nodes'][index].check_time = time.time()
 
 
 @gen.coroutine
@@ -58,38 +70,41 @@ def _check_dead_nodes():
         if node.active():
             nodes += [node]
         else:
+            internal_logger.debug("Removing inactive node {}"
+                                  .format(node.address))
             _broadcast_message(json.dumps({'node': node.address,
                                            'command': 'out'}))
     GLOBALS['coap_nodes'] = nodes
 
 
 @gen.coroutine
-def _request_nodes():
+def _discover_node(node, ws=None):
     """Callback functions called after fetching new nodes."""
-    if len(GLOBALS['coap_sockets']) == 0:
-        return
+    coap_node_url = 'coap://[{}]'.format(node.address)
+    if len(node.endpoints) == 0:
+        internal_logger.debug("Discovering node {}".format(node.address))
+        code, payload = yield _coap_resource('{0}/.well-known/core'
+                                             .format(coap_node_url),
+                                             method=GET)
+        node.endpoints = _endpoints(payload)
+    for endpoint in node.endpoints:
+        elems = endpoint.split(';')
+        path = elems.pop(0).replace('<', '').replace('>', '')
+        if 'well-known/core' in path:
+            continue
 
-    for node in GLOBALS['coap_nodes']:
-        coap_node_url = 'coap://[{}]'.format(node.address)
-        if len(node.endpoints) == 0:
-            code, payload = yield _coap_resource('{0}/.well-known/core'
-                                                 .format(coap_node_url),
-                                                 method=GET)
-            node.endpoints = _endpoints(payload)
-
-        for endpoint in node.endpoints:
-            elems = endpoint.split(';')
-            path = elems.pop(0).replace('<', '').replace('>', '')
-            if 'well-known/core' in path:
-                continue
-
-            code, payload = yield _coap_resource('{0}{1}'
-                                                 .format(coap_node_url, path),
-                                                 method=GET)
-            _broadcast_message(json.dumps({'endpoint': path,
-                                           'data': payload,
-                                           'node': node.address,
-                                           'command': 'update'}))
+        code, payload = yield _coap_resource('{0}{1}'
+                                             .format(coap_node_url,
+                                                     path),
+                                             method=GET)
+        message = json.dumps({'endpoint': path,
+                              'data': payload,
+                              'node': node.address,
+                              'command': 'update'})
+        if ws is None:
+            _broadcast_message(message)
+        else:
+            ws.write_message(message)
 
 
 @gen.coroutine
@@ -108,12 +123,12 @@ def _coap_resource(url, method=GET, payload=b''):
     finally:
         yield from protocol.shutdown()
 
-    internal_logger.info('Code: {0} - Payload: {1}'.format(code, payload))
+    internal_logger.debug('Code: {0} - Payload: {1}'.format(code, payload))
 
     return code, payload
 
 
-class CoAPNode(object):
+class CoapNode(object):
     """Object defining a CoAP node."""
 
     def __init__(self, address, check_time=time.time(), endpoints=[]):
@@ -136,11 +151,11 @@ class CoAPNode(object):
         return int(time.time()) < self.check_time + options.max_time
 
 
-class CoAPServerResource(resource.Resource):
-    """CoAP server running withni the tornado application"""
+class CoapAliveResource(resource.Resource):
+    """CoAP server running within the tornado application."""
 
     def __init__(self):
-        super(CoAPServerResource, self).__init__()
+        super(CoapAliveResource, self).__init__()
 
     @asyncio.coroutine
     def render_post(self, request):
@@ -149,14 +164,37 @@ class CoAPServerResource(resource.Resource):
             remote = request.remote[0]
         except TypeError:
             remote = request.remote.sockaddr[0]
-        internal_logger.info("CoAP PORT received from {} with payload: {}"
-                             .format(remote, payload))
+        internal_logger.debug("CoAP Alive POST received from {}"
+                              .format(remote))
 
-        path, data = payload.split(":")
-        _broadcast_message(json.dumps({'endpoint': path,
-                                       'data': data,
-                                       'node': remote,
-                                       'command': 'update'}))
+        _refresh_node(remote)
+
+        return Message(code=CHANGED,
+                       payload="Received '{}'".format(payload).encode('utf-8'))
+
+
+class CoapServerResource(resource.Resource):
+    """CoAP server running within the tornado application."""
+
+    def __init__(self):
+        super(CoapServerResource, self).__init__()
+
+    @asyncio.coroutine
+    def render_post(self, request):
+        payload = request.payload.decode('utf8')
+        try:
+            remote = request.remote[0]
+        except TypeError:
+            remote = request.remote.sockaddr[0]
+        internal_logger.debug("CoAP POST received from {} with payload: {}"
+                              .format(remote, payload))
+
+        if CoapNode(remote) in GLOBALS['coap_nodes']:
+            path, data = payload.split(":", 1)
+            _broadcast_message(json.dumps({'endpoint': '/' + path,
+                                           'data': data,
+                                           'node': remote,
+                                           'command': 'update'}))
         return Message(code=CHANGED,
                        payload="Received '{}'".format(payload).encode('utf-8'))
 
@@ -170,101 +208,46 @@ class ActiveNodesHandler(web.RequestHandler):
         self.finish()
 
 
-class CoapPostHandler(web.RequestHandler):
+class DashboardHandler(web.RequestHandler):
     @tornado.web.asynchronous
-    @gen.coroutine
-    def get(self):
-        pass
+    def get(self, path=None):
+        self.render("dashboard.html",
+                    server=options.hostname,
+                    port=options.http_port,
+                    title="CoAP nodes dashboard")
 
     @tornado.web.asynchronous
     @gen.coroutine
     def post(self):
-        """Forward a CoAP put."""
-        data = json.loads(self.request.body)
+        """Forward POST request to a CoAP PUT request."""
+        data = json.loads(self.request.body.decode('utf-8'))
         node = data['node']
         path = data['path']
         payload = data['payload']
+        internal_logger.debug("Translate POST request ('{}') received to CoAP"
+                              "PUT request".format(data))
+
+        if CoapNode(node) not in GLOBALS['coap_nodes']:
+            return
         code, payload = yield _coap_resource('coap://[{0}]{1}'
                                              .format(node, path),
                                              method=PUT,
                                              payload=payload.encode('ascii'))
 
 
-class DashboardHandler(web.RequestHandler):
-    # @tornado.web.asynchronous
-    def get(self, path=None):
-        self.render("dashboard.html",
-                    server="localhost",
-                    port=options.http_port,
-                    title="CoAP nodes dashboard")
-
-
-class CoapWebSocket(websocket.WebSocketHandler):
+class DashboardWebSocket(websocket.WebSocketHandler):
     def open(self):
+        internal_logger.debug("New websocket opened")
         GLOBALS['coap_sockets'].append(self)
         for node in GLOBALS['coap_nodes']:
-            _broadcast_message(json.dumps({'command': 'new',
+            self.write_message(json.dumps({'command': 'new',
                                            'node': node.address}))
+            _discover_node(node, self)
 
     def on_close(self):
-        GLOBALS['coap_sockets'].remove(self)
-
-
-class NodesUDPListener(object):
-    """UDP listener class."""
-
-    def __init__(self, name, port, on_receive, address=None,
-                 family=socket.AF_INET6, io_loop=None):
-        """Constructor."""
-        self.io_loop = io_loop or IOLoop.instance()
-        self._on_receive = on_receive
-        self._log = logging.getLogger(name)
-        self._sockets = []
-
-        flags = socket.AI_PASSIVE
-
-        if hasattr(socket, "AI_ADDRCONFIG"):
-            flags |= socket.AI_ADDRCONFIG
-
-        # find all addresses to bind, bind and register the "READ" callback
-        for res in set(socket.getaddrinfo(address, port,
-                                          family,
-                                          socket.SOCK_DGRAM, 0, flags)):
-            af, sock_type, proto, canon_name, sock_addr = res
-            self._open_and_register(af, sock_type, proto, sock_addr)
-
-        self._log.info('Nodes listener started, listening on port {0}'
-                       .format(sock_addr[1]))
-
-    def _open_and_register(self, af, sock_type, proto, sock_addr):
-        sock = socket.socket(af, sock_type, proto)
-        set_close_exec(sock.fileno())
-        if os.name != 'nt':
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.setblocking(0)
-        sock.bind(sock_addr)
-
-        def read_handler(fd, events):
-            while True:
-                try:
-                    data, address = sock.recvfrom(65536)
-                except socket.error as e:
-                    if e.args[0] in (EWOULDBLOCK, EAGAIN):
-                        return
-                    raise
-                self._on_receive(data, address)
-                self._log.info('Received "{0}" message from node "{1}"'
-                               .format(data.decode().strip(), address[0]))
-
-        self.io_loop.add_handler(sock.fileno(), read_handler, IOLoop.READ)
-        self._sockets.append(sock)
-
-    def stop(self):
-        """Stop the UDP server."""
-        self._log.debug('Closing %d socket(s)...', len(self._sockets))
-        for sock in self._sockets:
-            self.io_loop.remove_handler(sock.fileno())
-            sock.close()
+        internal_logger.debug("Websocket closed")
+        if self in GLOBALS['coap_sockets']:
+            GLOBALS['coap_sockets'].remove(self)
 
 
 class RiotDashboardApplication(web.Application):
@@ -273,11 +256,13 @@ class RiotDashboardApplication(web.Application):
     def __init__(self):
         self._nodes = {}
         self._log = logging.getLogger("riot broker")
+        if options.debug:
+            self._log.setLevel(logging.DEBUG)
+
         handlers = [
             (r'/', DashboardHandler),
-            (r'/post', CoapPostHandler),
+            (r"/ws", DashboardWebSocket),
             (r'/nodes', ActiveNodesHandler),
-            (r"/coap_ws", CoapWebSocket),
         ]
         settings = {'debug': True,
                     "cookie_secret": "MY_COOKIE_ID",
@@ -288,50 +273,41 @@ class RiotDashboardApplication(web.Application):
                                                   "static")
                     }
         super().__init__(handlers, **settings)
-        self.listener = NodesUDPListener('node listener',
-                                         options.listener_port,
-                                         on_receive=self.on_receive_packet)
         self._log.info('Application started, listening on port {0}'
                        .format(options.http_port))
-
-    def on_receive_packet(self, data, address):
-        """Callback triggered when an alive packet is received."""
-        node = CoAPNode(address[0])
-        if node not in GLOBALS['coap_nodes']:
-            _broadcast_message(json.dumps({'command': 'new',
-                                           'node': node.address}))
-            GLOBALS['coap_nodes'].append(node)
-        else:
-            index = GLOBALS['coap_nodes'].index(node)
-            GLOBALS['coap_nodes'][index].check_time = time.time()
 
 
 def parse_command_line():
     """Parse command line arguments for Riot broker application."""
-    define("listener_port", default=8888, help="Node listener UDP port.")
     define("http_port", default=8080, help="Web application HTTP port")
+    define("hostname", default="localhost", help="Web application hostname")
     define("max_time", default=120, help="Retention time for lost nodes (s).")
-    define("delay_refresh", default=200,
-           help="Delay between nodes refresh (ms).")
+    define("debug", default=False, help="Enable debug mode.")
     options.parse_command_line()
+
+    if options.debug:
+        internal_logger.setLevel(logging.DEBUG)
 
 
 if __name__ == '__main__':
     parse_command_line()
     try:
+        # Tornado ioloop initialization
         ioloop = asyncio.get_event_loop()
         tornado.platform.asyncio.AsyncIOMainLoop().install()
-        PeriodicCallback(_request_nodes, options.delay_refresh).start()
-        PeriodicCallback(_check_dead_nodes, 100).start()
+        PeriodicCallback(_check_dead_nodes, 1000).start()
+
+        # Aiocoap server initialization
         root_coap = resource.Site()
-        root_coap.add_resource(('server', ), CoAPServerResource())
+        root_coap.add_resource(('server', ), CoapServerResource())
+        root_coap.add_resource(('alive', ), CoapAliveResource())
         asyncio.async(Context.create_server_context(root_coap))
 
+        # Start tornado application
         app = RiotDashboardApplication()
         app.listen(options.http_port)
         ioloop.run_forever()
     except KeyboardInterrupt:
         print("Exiting")
-        app.listener.stop()
         ioloop.stop()
         sys.exit()
