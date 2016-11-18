@@ -104,7 +104,10 @@ def _discover_node(node, ws=None):
         if ws is None:
             _broadcast_message(message)
         else:
-            ws.write_message(message)
+            try:
+                ws.write_message(message)
+            except websocket.WebSocketClosedError:
+                internal_logger.debug("Cannot write on a closed websocket.")
 
 
 @gen.coroutine
@@ -237,6 +240,7 @@ class DashboardHandler(web.RequestHandler):
 
 class DashboardWebSocket(websocket.WebSocketHandler):
     def open(self):
+        self.set_nodelay(True)
         internal_logger.debug("New websocket opened")
         GLOBALS['coap_sockets'].append(self)
         for node in GLOBALS['coap_nodes']:
