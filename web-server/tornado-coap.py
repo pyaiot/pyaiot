@@ -122,7 +122,7 @@ def _coap_resource(url, method=GET, payload=b''):
         payload = '{0}'.format(e)
     else:
         code = response.code
-        payload = response.payload.decode('ascii')
+        payload = response.payload.decode('utf-8')
     finally:
         yield from protocol.shutdown()
 
