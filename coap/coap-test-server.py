@@ -44,7 +44,7 @@ def _coap_resource(url, method=GET, payload=b''):
         payload = '{0}'.format(e)
     else:
         code = response.code
-        payload = response.payload.decode('ascii')
+        payload = response.payload.decode('utf-8')
     finally:
         yield from protocol.shutdown()
 
@@ -57,7 +57,7 @@ def _coap_resource(url, method=GET, payload=b''):
 def _send_alive():
     _, _ = yield _coap_resource('coap://{}/{}'.format(args.server, "alive"),
                                 method=POST,
-                                payload='Alive'.encode('ascii'))
+                                payload='Alive'.encode('utf-8'))
 
 
 @gen.coroutine
@@ -74,7 +74,7 @@ def _send_temperature():
 def _send_pressure():
     payload = ("pressure:{}hPa"
                .format(random.randrange(990, 1015, 1))
-               .encode('ascii'))
+               .encode('utf-8'))
     _, _ = yield _coap_resource('coap://{}/{}'.format(args.server, "server"),
                                 method=POST,
                                 payload=payload)
@@ -84,7 +84,7 @@ def _send_pressure():
 def _send_led():
     payload = ("led:{}"
                .format(random.randint(0, 1))
-               .encode('ascii'))
+               .encode('utf-8'))
     _, _ = yield _coap_resource('coap://{}/{}'.format(args.server, "server"),
                                 method=POST,
                                 payload=payload)
@@ -107,7 +107,7 @@ def _send_imu():
                      )
     _, _ = yield _coap_resource('coap://{}/{}'.format(args.server, "server"),
                                 method=POST,
-                                payload="imu:{}".format(imu).encode('ascii'))
+                                payload="imu:{}".format(imu).encode('utf-8'))
 
 
 class LedResource(resource.Resource):
@@ -118,7 +118,7 @@ class LedResource(resource.Resource):
 
     def __init__(self):
         super(LedResource, self).__init__()
-        self.value = "0".encode("ascii")
+        self.value = "0".encode("utf-8")
 
     @asyncio.coroutine
     def render_get(self, request):
@@ -128,7 +128,7 @@ class LedResource(resource.Resource):
     @asyncio.coroutine
     def render_put(self, request):
         self.value = request.payload
-        payload = ("Updated").encode('ascii')
+        payload = ("Updated").encode('utf-8')
         return aiocoap.Message(code=aiocoap.CHANGED, payload=payload)
 
 
@@ -140,7 +140,7 @@ class BoardResource(resource.Resource):
 
     def __init__(self):
         super(BoardResource, self).__init__()
-        self.value = "test_node".encode('ascii')
+        self.value = "test_node".encode('utf-8')
 
     @asyncio.coroutine
     def render_get(self, request):
@@ -156,7 +156,7 @@ class PressureResource(resource.Resource):
 
     def __init__(self):
         super(PressureResource, self).__init__()
-        self.value = "1015.03hPa".encode("ascii")
+        self.value = "1015.03hPa".encode("utf-8")
 
     @asyncio.coroutine
     def render_get(self, request):
@@ -193,7 +193,7 @@ class ImuResource(resource.Resource):
                                  {"type": "mag",
                                   "values": [460, 122, -104]},
                                  {"type": "gyro",
-                                  "values": [1, 0, 0]}]).encode("ascii")
+                                  "values": [1, 0, 0]}]).encode("utf-8")
 
     @asyncio.coroutine
     def render_get(self, request):
@@ -206,7 +206,7 @@ class RobotResource(resource.Resource):
 
     def __init__(self):
         super(RobotResource, self).__init__()
-        self.action = "s".encode("ascii")
+        self.action = "s".encode("utf-8")
 
     @asyncio.coroutine
     def render_get(self, request):
@@ -217,7 +217,7 @@ class RobotResource(resource.Resource):
     @asyncio.coroutine
     def render_put(self, request):
         self.action = request.payload
-        payload = ("Updated").encode('ascii')
+        payload = ("Updated").encode('utf-8')
         response = aiocoap.Message(code=aiocoap.CONTENT, payload=payload)
         return response
 

@@ -184,7 +184,7 @@ class CoapServerResource(resource.Resource):
 
     @asyncio.coroutine
     def render_post(self, request):
-        payload = request.payload.decode('utf8')
+        payload = request.payload.decode('utf-8')
         try:
             remote = request.remote[0]
         except TypeError:
