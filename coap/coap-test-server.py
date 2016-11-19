@@ -64,7 +64,7 @@ def _send_alive():
 def _send_temperature():
     payload = ("temperature:{}°C"
                .format(random.randrange(20, 30, 1))
-               .encode('ascii'))
+               .encode('utf-8'))
     _, _ = yield _coap_resource('coap://{}/{}'.format(args.server, "server"),
                                 method=POST,
                                 payload=payload)
