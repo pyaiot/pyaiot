@@ -206,7 +206,13 @@ class ActiveNodesHandler(web.RequestHandler):
     @tornado.web.asynchronous
     @gen.coroutine
     def get(self):
-        self.write({'nodes': json.dumps(GLOBALS['coap_nodes'])})
+        nodes = []
+        for node in GLOBALS['coap_nodes']:
+            try:
+                nodes.append(json.dumps(node))
+            except:
+                pass
+        self.write({'nodes': json.dumps(nodes)})
         self.finish()
 
 
