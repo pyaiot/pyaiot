@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang=en>
+<html>
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -108,6 +108,14 @@ img {
 }
 </style>
 
+<script>
+var theme = localStorage.theme || 'dark';
+
+if (theme == 'dark') {
+    document.body.classList.add('dark')
+}
+</script>
+
 <div class="navbar navbar-inverse">
   <div class="container-fluid">
     <div class="navbar-header">
@@ -212,6 +220,14 @@ function update_node_element(node, obj) {
             }
             else if (obj.endpoint == '/led') {
                 endpointText = "LED"
+                var ledbtnElem = document.createElement("div")
+                ledbtnElem.setAttribute('class', 'panel-body')
+                nodeElem.appendChild(ledbtnElem);
+                ledbtnElem.innerHTML = '<div class="togglebutton">' +
+                  '<label>' +
+                    '<input class="led-btn" type="checkbox" data-index="' + obj.node + '" id="led-btn-' + node + '" checked> Toggle LED' +
+                  '</label>' +
+                '</div>'
             }
             else if (obj.endpoint == '/robot') {
                 endpointText = "BuggyBot"
@@ -225,7 +241,6 @@ function update_node_element(node, obj) {
             else {
                 endpointText = "Unknown"
             }
-
             var endpointElemContent = '' +
             '<div class="panel-body" id=' + obj.endpoint + node + '>' +
               '<div class="h5 text-muted">' + endpointText + '</div>' +
@@ -233,8 +248,21 @@ function update_node_element(node, obj) {
             '</div>'
             endpointElem.innerHTML = endpointElemContent
         }
+
         endpointvalue = document.getElementById(obj.endpoint + node + 'value')
-        endpointvalue.innerHTML = obj.data;
+        if (obj.endpoint == '/led') {
+            if (obj.data == '0') {
+                $('led-btn-' + node).prop('checked', false);
+                endpointvalue.innerHTML = '<div class="h1">OFF <i class="fa fa-circle-thin led-color"></i></div>'
+            }
+            else {
+                $('led-btn-' + node).prop('checked', true);
+                endpointvalue.innerHTML = '<div class="h1">ON <i class="fa fa-circle led-color"></i></div>'
+            }
+        }
+        else {
+            endpointvalue.innerHTML = obj.data;
+        }
     }
 }
 
@@ -242,6 +270,22 @@ function remove_node_element(node) {
     console.log("Removing node", node)
     document.getElementById(node).innerHTML = ""
 }
+
+function switchLed(index, state) {
+    console.log("switch LED", index, state)
+    $.ajax({
+        url: "/",
+        data: {path: "/led", payload: state, node: index}
+    });
+}
+
+$('.led-btn').change(function() {
+    console.log("LED changed!")
+    if($(this).is(':checked'))
+        switchLed(this.dataset.index, 1)
+    else
+        switchLed(this.dataset.index, 0)
+})
 
 var ws = new WebSocket('ws://{{ wsserver }}/ws');
 var $message = $('#message');
