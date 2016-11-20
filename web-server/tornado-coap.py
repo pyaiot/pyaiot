@@ -220,8 +220,8 @@ class DashboardHandler(web.RequestHandler):
     @tornado.web.asynchronous
     def get(self, path=None):
         self.render("dashboard.html",
-                    server=options.hostname,
-                    port=options.http_port,
+                    wsserver="{}:{}".format(options.websocket_host,
+                                            options.websocket_port),
                     title="CoAP nodes dashboard")
 
     @tornado.web.asynchronous
@@ -288,10 +288,16 @@ class RiotDashboardApplication(web.Application):
 
 def parse_command_line():
     """Parse command line arguments for Riot broker application."""
-    define("http_port", default=8080, help="Web application HTTP port")
-    define("hostname", default="localhost", help="Web application hostname")
-    define("max_time", default=120, help="Retention time for lost nodes (s).")
-    define("debug", default=False, help="Enable debug mode.")
+    define("http_port", default=8080,
+           help="Web application HTTP port")
+    define("websocket_port", default=8080,
+           help="Web application websocket port")
+    define("websocket_host", default="localhost",
+           help="Public websocket server hostname")
+    define("max_time", default=120,
+           help="Retention time for lost nodes (s).")
+    define("debug", default=False,
+           help="Enable debug mode.")
     options.parse_command_line()
 
     if options.debug:
