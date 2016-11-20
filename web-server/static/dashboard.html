@@ -137,7 +137,7 @@ img {
     <div class="grid-item">
         <div class="panel panel-default" id="webcam">
           <div class="panel-heading">
-            webcam
+            Webcam
             <div class="pull-right">
                 <div class="btn-group">
                   <a href="" class="menu-btn btn btn-link dropdown-toggle" data-toggle="dropdown">
@@ -155,50 +155,122 @@ img {
 </div>
 
 <script>
-    var nodes = []
-    var ws = new WebSocket('ws://{{ wsserver }}/ws');
-    var $message = $('#message');
-    function clean_node(node) {
-        return node.replace(/:/g,'_').replace(/\./g,'_')
+function add_node_element(node) {
+    console.log("Adding node", node)
+    var nodesContainer = document.getElementById("container");
+    var nodeElem = document.createElement("div")
+    nodeElem.setAttribute('class', 'grid-item')
+    nodesContainer.appendChild(nodeElem)
+
+    var nodeElemContent = '' +
+      '<div class="panel-heading">' +
+        '<span id=heading' + node + '>Node</span>' +
+        '<div class="pull-right">' +
+            '<div class="btn-group" style="margin-bottom: 0">' +
+              '<a href="" class="menu-btn btn btn-link dropdown-toggle" data-toggle="dropdown">' +
+                '<span class="glyphicon glyphicon-option-vertical text-muted"></span>' +
+              '</a>' +
+              '<ul class="dropdown-menu dropdown-menu-right">' +
+                '<li class="li-text" id="ip' + node + '"></li>' +
+              '</ul>' +
+            '</div>' +
+        '</div>' +
+      '</div>'
+
+    var nodeElemPanel = document.createElement("div")
+    nodeElemPanel.setAttribute('id', node)
+    nodeElemPanel.setAttribute('class', 'panel panel-default')
+    nodeElem.appendChild(nodeElemPanel)
+    document.getElementById(node).innerHTML = nodeElemContent
+}
+
+function update_node_element(node, obj) {
+    console.log("Updating node", node)
+
+    if (obj.endpoint == "/board") {
+        var heading = document.getElementById('heading' + node)
+        heading.innerHTML = obj.data
     }
+    else {
+        var endpoint = document.getElementById(obj.endpoint + node)
+        if (endpoint == null) {
+            var nodeElem = document.getElementById(node)
+            var endpointElem = document.createElement("div")
+            endpointElem.setAttribute('id', obj.endpoint + node)
+            endpointElem.setAttribute('class', 'panel-body')
+            nodeElem.appendChild(endpointElem);
 
-    ws.onopen = function() {
-    };
-
-    ws.onmessage = function(event) {
-        var obj = JSON.parse(event.data)
-        var node = clean_node(obj.node)
-        if (obj.command == 'new') {
-            nodes.push(node)
-            console.log("Adding node", node)
-            var nodesContainer = document.getElementById("container");
-            var nodeElem = document.createElement("div")
-            nodeElem.setAttribute('id', node)
-            nodeElem.setAttribute('class', 'grid-item')
-            nodesContainer.appendChild(nodeElem)
-        }
-        else if (obj.command == 'out') {
-            document.getElementById(node).innerHTML = ""
-        }
-        else if (obj.command == 'update') {
-            console.log("Updating node", node)
-            var endpoint = document.getElementById(obj.endpoint + node)
-            if (endpoint == null) {
-                var nodeElem = document.getElementById(node)
-                var dataElem = document.createElement("div")
-                dataElem.setAttribute('id', obj.endpoint + node)
-                dataElem.setAttribute('class', 'lead')
-                nodeElem.appendChild(dataElem);
-                endpoint = document.getElementById(obj.endpoint + node)
+            var endpointText = ""
+            if (obj.endpoint == '/mcu') {
+                endpointText = "Microcontroller"
             }
-            endpoint.innerHTML =
-                "<b>" + obj.endpoint + ":</b>" + obj.data;
+            else if (obj.endpoint == '/temperature') {
+                endpointText = "Temperature"
+            }
+            else if (obj.endpoint == '/pressure') {
+                endpointText = "Pressure"
+            }
+            else if (obj.endpoint == '/led') {
+                endpointText = "LED"
+            }
+            else if (obj.endpoint == '/robot') {
+                endpointText = "BuggyBot"
+            }
+            else if (obj.endpoint == '/imu') {
+                endpointText = "IMU"
+            }
+            else if (obj.endpoint == '/twitter') {
+                endpointText = "Twitter"
+            }
+            else {
+                endpointText = "Unknown"
+            }
+
+            var endpointElemContent = '' +
+            '<div class="panel-body" id=' + obj.endpoint + node + '>' +
+              '<div class="h5 text-muted">' + endpointText + '</div>' +
+              '<div class="h1" id=' + obj.endpoint + node + 'value></div>' +
+            '</div>'
+            endpointElem.innerHTML = endpointElemContent
         }
-    };
-    ws.onclose = function(ev){
-    };
-    ws.onerror = function(ev){
-    };
+        endpointvalue = document.getElementById(obj.endpoint + node + 'value')
+        endpointvalue.innerHTML = obj.data;
+    }
+}
+
+function remove_node_element(node) {
+    console.log("Removing node", node)
+    document.getElementById(node).innerHTML = ""
+}
+
+var ws = new WebSocket('ws://{{ wsserver }}/ws');
+var $message = $('#message');
+function clean_node(node) {
+    return node.replace(/:/g,'_').replace(/\./g,'_')
+}
+
+ws.onopen = function() {
+};
+
+ws.onmessage = function(event) {
+    var obj = JSON.parse(event.data)
+    var node = clean_node(obj.node)
+    if (obj.command == 'new') {
+        add_node_element(node)
+        var ip = document.getElementById('ip' + node)
+        ip.innerHTML = obj.node
+    }
+    else if (obj.command == 'out') {
+        remove_node_element(node)
+    }
+    else if (obj.command == 'update') {
+        update_node_element(node, obj)
+    }
+};
+ws.onclose = function(ev){
+};
+ws.onerror = function(ev){
+};
 </script>
 
 <div class="modal" id="settingsModal">

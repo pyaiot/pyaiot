@@ -94,8 +94,7 @@ def _discover_node(node, ws=None):
             continue
 
         code, payload = yield _coap_resource('{0}{1}'
-                                             .format(coap_node_url,
-                                                     path),
+                                             .format(coap_node_url, path),
                                              method=GET)
         message = json.dumps({'endpoint': path,
                               'data': payload,
