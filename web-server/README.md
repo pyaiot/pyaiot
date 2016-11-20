@@ -1,6 +1,22 @@
+## Install the tornado eb server
+
+### Prequisities
+
+Install javascript and css required packages with [bower](https://bower.io/).
+
+1. Install Bower
+```shell
+$ sudo npm install bower -g
+```
+2. Install the web packages:
+```
+$ cd web-server/static
+$ bower install
+```
+
 ### Start tornado web server
 
-python tornado-coap.py --http-port=8080 --hostname=fit-demo-dev
+python3 web-server/tornado-coap.py --http-port=8080 --websocket-host=fit-demo-dev --websocket-port=8080
 
 ### Open a navigator
 
