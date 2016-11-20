@@ -222,7 +222,7 @@ class DashboardHandler(web.RequestHandler):
         self.render("dashboard.html",
                     wsserver="{}:{}".format(options.websocket_host,
                                             options.websocket_port),
-                    title="CoAP nodes dashboard")
+                    title="RIOT Dashboard")
 
     @tornado.web.asynchronous
     @gen.coroutine
