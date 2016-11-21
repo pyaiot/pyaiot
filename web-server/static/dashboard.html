@@ -190,6 +190,12 @@ function add_node_element(node) {
     nodeElemPanel.setAttribute('class', 'panel panel-default')
     nodeElem.appendChild(nodeElemPanel)
     document.getElementById(node).innerHTML = nodeElemContent
+
+    var grid = document.querySelector('.grid');
+    var msnry = new Masonry( grid, {
+        itemSelector: '.grid-item:not(.grid-hidden)',
+        fitWidth: true
+    });
 }
 
 function update_node_element(node, obj) {
