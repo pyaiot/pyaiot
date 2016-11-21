@@ -226,7 +226,7 @@ function update_node_element(node, obj) {
                 ledbtnElem.setAttribute('class', 'panel-body')
                 nodeElem.appendChild(ledbtnElem);
                 ledbtnElem.innerHTML = '' +
-                '<div class="togglebutton">' +
+                '<div class="togglebutton" id="led-togglebtn-' + node + '">' +
                   '<label>' +
                     '<input class="led-btn" type="checkbox" data-index="' + obj.node + '" id="led-btn-' + node + '"> Toggle LED' +
                   '</label>' +
@@ -259,16 +259,17 @@ function update_node_element(node, obj) {
         if (obj.endpoint == '/led') {
             var led_btn_elem = document.getElementById('led-btn-' + node)
             if (obj.data == '0') {
-                console.log("Turn off LED")
                 endpointvalue.innerHTML = '<div class="h1">OFF <i class="fa fa-circle-thin led-color"></i></div>'
-                led_btn_elem.removeAttribute('checked')
+                if ($('#led-btn-' + node).is(':checked')) {
+                    $('#led-btn-' + node).prop('checked', false);
+                }
             }
             else {
-                console.log("Turn on LED")
                 endpointvalue.innerHTML = '<div class="h1">ON <i class="fa fa-circle led-color"></i></div>'
-                led_btn_elem.setAttribute('checked', true)
+                if (!$('#led-btn-' + node).is(':checked')) {
+                    $('#led-btn-' + node).prop('checked', true);
+                }
             }
-            $.material.init()
         }
         else {
             endpointvalue.innerHTML = obj.data;
@@ -281,22 +282,23 @@ function remove_node_element(node) {
     document.getElementById(node).innerHTML = ""
 }
 
-function switchLed(index, state) {
-    console.log("switch LED", index, state)
+function postSwitchLed(node, state) {
     $.post(
         '/',
-        JSON.stringify({ "node": index, "path" : "/led", "payload": state.toString() }),
+        JSON.stringify({ "node": node, "path" : "/led", "payload": state }),
         function(data) {
             console.log("LED switched")
         });
 }
 
 $(document).on('change', '.led-btn', function() {
-    console.log("LED changed!")
-    if($(this).is(':checked'))
-        switchLed(this.dataset.index, 1)
-    else
-        switchLed(this.dataset.index, 0)
+    var node = this.dataset.index
+    if($(this).is(':checked')) {
+        postSwitchLed(node, "1")
+    }
+    else {
+        postSwitchLed(node, "0")
+    }
 })
 
 var ws = new WebSocket('ws://{{ wsserver }}/ws');
