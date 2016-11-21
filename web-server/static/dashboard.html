@@ -228,6 +228,7 @@ function update_node_element(node, obj) {
                     '<input class="led-btn" type="checkbox" data-index="' + obj.node + '" id="led-btn-' + node + '" checked> Toggle LED' +
                   '</label>' +
                 '</div>'
+                $.material.init()
             }
             else if (obj.endpoint == '/robot') {
                 endpointText = "BuggyBot"
