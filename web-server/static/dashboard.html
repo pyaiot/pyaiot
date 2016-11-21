@@ -232,13 +232,6 @@ function update_node_element(node, obj) {
                   '</label>' +
                 '</div>'
                 $.material.init()
-                $('.led-btn').change(function() {
-                    console.log("LED changed!")
-                    if($(this).is(':checked'))
-                        switchLed(this.dataset.index, 1)
-                    else
-                        switchLed(this.dataset.index, 0)
-                })
             }
             else if (obj.endpoint == '/robot') {
                 endpointText = "BuggyBot"
@@ -275,6 +268,7 @@ function update_node_element(node, obj) {
                 endpointvalue.innerHTML = '<div class="h1">ON <i class="fa fa-circle led-color"></i></div>'
                 led_btn_elem.setAttribute('checked', true)
             }
+            $.material.init()
         }
         else {
             endpointvalue.innerHTML = obj.data;
@@ -296,6 +290,14 @@ function switchLed(index, state) {
             console.log("LED switched")
         });
 }
+
+$(document).on('change', '.led-btn', function() {
+    console.log("LED changed!")
+    if($(this).is(':checked'))
+        switchLed(this.dataset.index, 1)
+    else
+        switchLed(this.dataset.index, 0)
+})
 
 var ws = new WebSocket('ws://{{ wsserver }}/ws');
 var $message = $('#message');
