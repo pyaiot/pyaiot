@@ -167,6 +167,7 @@ function add_node_element(node) {
     console.log("Adding node", node)
     var nodesContainer = document.getElementById("container");
     var nodeElem = document.createElement("div")
+    nodeElem.setAttribute('id', 'grid-' + node)
     nodeElem.setAttribute('class', 'grid-item')
     nodesContainer.appendChild(nodeElem)
 
@@ -285,7 +286,7 @@ function update_node_element(node, obj) {
 
 function remove_node_element(node) {
     console.log("Removing node", node)
-    document.getElementById(node).innerHTML = ""
+    $("#grid-" + node).remove();
 
     var grid = document.querySelector('.grid');
     var msnry = new Masonry( grid, {
