@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" href={{ static_url("assets/favicon192.png") }}>
+    <link rel="icon" href="{{ static_url('assets/favicon192.png') }}">
     <meta name="description" content="">
     <meta name="author" content="">
 
@@ -19,25 +19,25 @@
 
     <!-- Bootstrap -->
     <link rel="stylesheet" type="text/css"
-          href={{ static_url("node_modules/bootstrap/dist/css/bootstrap.min.css") }}>
+          href="{{ static_url('node_modules/bootstrap/dist/css/bootstrap.min.css') }}">
     <!-- FontAwesome -->
     <link rel="stylesheet" type="text/css"
-          href={{ static_url("node_modules/font-awesome/css/font-awesome.min.css") }}>
+          href="{{ static_url('node_modules/font-awesome/css/font-awesome.min.css') }}">
 
     <!-- Bootstrap Material Design -->
     <link rel="stylesheet" type="text/css"
-          href={{ static_url("node_modules/bootstrap-material-design/dist/css/bootstrap-material-design.min.css") }}>
+          href="{{ static_url('node_modules/bootstrap-material-design/dist/css/bootstrap-material-design.min.css') }}">
     <link rel="stylesheet" type="text/css"
-          href={{ static_url("node_modules/bootstrap-material-design/dist/css/ripples.min.css") }}>
+          href="{{ static_url('node_modules/bootstrap-material-design/dist/css/ripples.min.css') }}">
 
     <!-- Dropdown.js -->
     <link href="//cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.css" rel="stylesheet">
 
-    <script src={{ static_url("node_modules/jquery/dist/jquery.min.js") }}></script>
-    <script src={{ static_url("node_modules/bootstrap/dist/js/bootstrap.min.js") }}></script>
-    <script src={{ static_url("node_modules/bootstrap-material-design/dist/js/material.min.js") }}></script>
-    <script src={{ static_url("node_modules/bootstrap-material-design/dist/js/ripples.min.js") }}></script>
-    <script src={{ static_url("node_modules/masonry-layout/dist/masonry.pkgd.min.js") }}></script>
+    <script src="{{ static_url('node_modules/jquery/dist/jquery.min.js') }}"></script>
+    <script src="{{ static_url('node_modules/bootstrap/dist/js/bootstrap.min.js') }}"></script>
+    <script src="{{ static_url('node_modules/bootstrap-material-design/dist/js/material.min.js') }}"></script>
+    <script src="{{ static_url('node_modules/bootstrap-material-design/dist/js/ripples.min.js') }}"></script>
+    <script src="{{ static_url('node_modules/masonry-layout/dist/masonry.pkgd.min.js') }}"></script>
 </head>
 
 <body>
@@ -286,6 +286,12 @@ function update_node_element(node, obj) {
 function remove_node_element(node) {
     console.log("Removing node", node)
     document.getElementById(node).innerHTML = ""
+
+    var grid = document.querySelector('.grid');
+    var msnry = new Masonry( grid, {
+        itemSelector: '.grid-item:not(.grid-hidden)',
+        fitWidth: true
+    });
 }
 
 function postSwitchLed(node, state) {
