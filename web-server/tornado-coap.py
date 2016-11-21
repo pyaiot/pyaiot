@@ -274,7 +274,7 @@ class RiotDashboardApplication(web.Application):
         ]
         settings = {'debug': True,
                     "cookie_secret": "MY_COOKIE_ID",
-                    "xsrf_cookies": True,
+                    "xsrf_cookies": False,
                     'static_path': os.path.join(os.path.dirname(__file__),
                                                 "static"),
                     'template_path': os.path.join(os.path.dirname(__file__),

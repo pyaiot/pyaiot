@@ -193,7 +193,9 @@ function add_node_element(node) {
 }
 
 function update_node_element(node, obj) {
-    console.log("Updating node", node)
+    if (obj.endpoint != "/imu") {
+        console.log("Updating node", node)
+    }
 
     if (obj.endpoint == "/board") {
         var heading = document.getElementById('heading' + node)
@@ -223,12 +225,20 @@ function update_node_element(node, obj) {
                 var ledbtnElem = document.createElement("div")
                 ledbtnElem.setAttribute('class', 'panel-body')
                 nodeElem.appendChild(ledbtnElem);
-                ledbtnElem.innerHTML = '<div class="togglebutton">' +
+                ledbtnElem.innerHTML = '' +
+                '<div class="togglebutton">' +
                   '<label>' +
-                    '<input class="led-btn" type="checkbox" data-index="' + obj.node + '" id="led-btn-' + node + '" checked> Toggle LED' +
+                    '<input class="led-btn" type="checkbox" data-index="' + obj.node + '" id="led-btn-' + node + '"> Toggle LED' +
                   '</label>' +
                 '</div>'
                 $.material.init()
+                $('.led-btn').change(function() {
+                    console.log("LED changed!")
+                    if($(this).is(':checked'))
+                        switchLed(this.dataset.index, 1)
+                    else
+                        switchLed(this.dataset.index, 0)
+                })
             }
             else if (obj.endpoint == '/robot') {
                 endpointText = "BuggyBot"
@@ -248,17 +258,22 @@ function update_node_element(node, obj) {
               '<div class="h1" id=' + obj.endpoint + node + 'value></div>' +
             '</div>'
             endpointElem.innerHTML = endpointElemContent
+
+            endpoint = document.getElementById(obj.endpoint + node)
         }
 
         endpointvalue = document.getElementById(obj.endpoint + node + 'value')
         if (obj.endpoint == '/led') {
+            var led_btn_elem = document.getElementById('led-btn-' + node)
             if (obj.data == '0') {
-                $('led-btn-' + node).prop('checked', false);
+                console.log("Turn off LED")
                 endpointvalue.innerHTML = '<div class="h1">OFF <i class="fa fa-circle-thin led-color"></i></div>'
+                led_btn_elem.removeAttribute('checked')
             }
             else {
-                $('led-btn-' + node).prop('checked', true);
+                console.log("Turn on LED")
                 endpointvalue.innerHTML = '<div class="h1">ON <i class="fa fa-circle led-color"></i></div>'
+                led_btn_elem.setAttribute('checked', true)
             }
         }
         else {
@@ -274,19 +289,13 @@ function remove_node_element(node) {
 
 function switchLed(index, state) {
     console.log("switch LED", index, state)
-    $.ajax({
-        url: "/",
-        data: {path: "/led", payload: state, node: index}
-    });
+    $.post(
+        '/',
+        JSON.stringify({ "node": index, "path" : "/led", "payload": state.toString() }),
+        function(data) {
+            console.log("LED switched")
+        });
 }
-
-$('.led-btn').change(function() {
-    console.log("LED changed!")
-    if($(this).is(':checked'))
-        switchLed(this.dataset.index, 1)
-    else
-        switchLed(this.dataset.index, 0)
-})
 
 var ws = new WebSocket('ws://{{ wsserver }}/ws');
 var $message = $('#message');
