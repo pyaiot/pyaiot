@@ -173,7 +173,8 @@ function add_node_element(node) {
 
     var nodeElemContent = '' +
       '<div class="panel-heading">' +
-        '<span id=heading' + node + '>Node</span>' +
+        '<span id=board' + node + '>New node</span>&nbsp;' +
+        '<span id=mcu' + node + '></span>' +
         '<div class="pull-right">' +
             '<div class="btn-group" style="margin-bottom: 0">' +
               '<a href="" class="menu-btn btn btn-link dropdown-toggle" data-toggle="dropdown">' +
@@ -205,8 +206,12 @@ function update_node_element(node, obj) {
     }
 
     if (obj.endpoint == "/board") {
-        var heading = document.getElementById('heading' + node)
-        heading.innerHTML = obj.data
+        var board = document.getElementById('board' + node)
+        board.innerHTML = obj.data
+    }
+    else if (obj.endpoint == "/mcu") {
+        var mcu = document.getElementById('mcu' + node)
+        mcu.innerHTML = '(<i>' + obj.data + '</i>)'
     }
     else {
         var endpoint = document.getElementById(obj.endpoint + node)
@@ -218,10 +223,7 @@ function update_node_element(node, obj) {
             nodeElem.appendChild(endpointElem);
 
             var endpointText = ""
-            if (obj.endpoint == '/mcu') {
-                endpointText = "Microcontroller"
-            }
-            else if (obj.endpoint == '/temperature') {
+            if (obj.endpoint == '/temperature') {
                 endpointText = "Temperature"
             }
             else if (obj.endpoint == '/pressure') {
