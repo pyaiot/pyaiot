@@ -23,6 +23,5 @@ parts/
 bin/
 
 node_modules/
-packages/
 
 *.log
