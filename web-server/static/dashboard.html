@@ -193,11 +193,7 @@ function add_node_element(node) {
     nodeElem.appendChild(nodeElemPanel)
     document.getElementById(node).innerHTML = nodeElemContent
 
-    var grid = document.querySelector('.grid');
-    var msnry = new Masonry( grid, {
-        itemSelector: '.grid-item:not(.grid-hidden)',
-        fitWidth: true
-    });
+    rebuild_layout()
 }
 
 function update_node_element(node, obj) {
@@ -260,15 +256,9 @@ function update_node_element(node, obj) {
               '<div class="h1" id=' + obj.endpoint + node + 'value></div>' +
             '</div>'
             endpointElem.innerHTML = endpointElemContent
-
             endpoint = document.getElementById(obj.endpoint + node)
 
-            /* update masonry layout */
-            var grid = document.querySelector('.grid');
-            var msnry = new Masonry( grid, {
-                itemSelector: '.grid-item:not(.grid-hidden)',
-                fitWidth: true
-            });
+            rebuild_layout()
         }
 
         endpointvalue = document.getElementById(obj.endpoint + node + 'value')
@@ -286,6 +276,7 @@ function update_node_element(node, obj) {
                     $('#led-btn-' + node).prop('checked', true);
                 }
             }
+            rebuild_layout()
         }
         else {
             endpointvalue.innerHTML = obj.data;
@@ -293,15 +284,21 @@ function update_node_element(node, obj) {
     }
 }
 
-function remove_node_element(node) {
-    console.log("Removing node", node)
-    $("#grid-" + node).remove();
-
+function rebuild_layout() {
+    /* update masonry layout */
     var grid = document.querySelector('.grid');
     var msnry = new Masonry( grid, {
         itemSelector: '.grid-item:not(.grid-hidden)',
         fitWidth: true
     });
+    msnry.layout()
+}
+
+function remove_node_element(node) {
+    console.log("Removing node", node)
+    $("#grid-" + node).remove();
+
+    rebuild_layout()
 }
 
 function postSwitchLed(node, state) {
