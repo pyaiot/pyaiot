@@ -260,6 +260,13 @@ function update_node_element(node, obj) {
             endpointElem.innerHTML = endpointElemContent
 
             endpoint = document.getElementById(obj.endpoint + node)
+
+            /* update masonry layout */
+            var grid = document.querySelector('.grid');
+            var msnry = new Masonry( grid, {
+                itemSelector: '.grid-item:not(.grid-hidden)',
+                fitWidth: true
+            });
         }
 
         endpointvalue = document.getElementById(obj.endpoint + node + 'value')
