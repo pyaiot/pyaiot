@@ -94,8 +94,7 @@ def _discover_node(node, ws=None):
             continue
 
         code, payload = yield _coap_resource('{0}{1}'
-                                             .format(coap_node_url,
-                                                     path),
+                                             .format(coap_node_url, path),
                                              method=GET)
         message = json.dumps({'endpoint': path,
                               'data': payload,
@@ -222,7 +221,7 @@ class DashboardHandler(web.RequestHandler):
         self.render("dashboard.html",
                     wsserver="{}:{}".format(options.websocket_host,
                                             options.websocket_port),
-                    title="CoAP nodes dashboard")
+                    title="RIOT Dashboard")
 
     @tornado.web.asynchronous
     @gen.coroutine
@@ -275,7 +274,7 @@ class RiotDashboardApplication(web.Application):
         ]
         settings = {'debug': True,
                     "cookie_secret": "MY_COOKIE_ID",
-                    "xsrf_cookies": True,
+                    "xsrf_cookies": False,
                     'static_path': os.path.join(os.path.dirname(__file__),
                                                 "static"),
                     'template_path': os.path.join(os.path.dirname(__file__),

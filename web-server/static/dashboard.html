@@ -1,129 +1,401 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
+<html>
+<head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- The above 3 meta tags *must* come first in the head;
-         any other head content must come *after* these tags -->
+    <link rel="icon" href="{{ static_url('assets/favicon192.png') }}">
     <meta name="description" content="">
     <meta name="author" content="">
 
     <title>{{ title }}</title>
 
-    <!-- Bootstrap core CSS -->
-    <link href={{ static_url("css/bootstrap.min.css") }} rel="stylesheet">
 
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <link href={{ static_url("css/ie10-viewport-bug-workaround.css") }}
-          rel="stylesheet">
+    <!-- Material Design fonts -->
+    <link rel="stylesheet" type="text/css"
+          href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700">
+    <link rel="stylesheet" type="text/css"
+          href="//fonts.googleapis.com/icon?family=Material+Icons">
 
-    <!-- Custom styles for this template -->
-    <link href={{ static_url("css/starter-template.css") }} rel="stylesheet">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" type="text/css"
+          href="{{ static_url('node_modules/bootstrap/dist/css/bootstrap.min.css') }}">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" type="text/css"
+          href="{{ static_url('node_modules/font-awesome/css/font-awesome.min.css') }}">
 
-    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <script src={{ static_url("js/ie-emulation-modes-warning.js") }}></script>
+    <!-- Bootstrap Material Design -->
+    <link rel="stylesheet" type="text/css"
+          href="{{ static_url('node_modules/bootstrap-material-design/dist/css/bootstrap-material-design.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ static_url('node_modules/bootstrap-material-design/dist/css/ripples.min.css') }}">
+
+    <!-- Dropdown.js -->
+    <link href="//cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.css" rel="stylesheet">
+
+    <script src="{{ static_url('node_modules/jquery/dist/jquery.min.js') }}"></script>
+    <script src="{{ static_url('node_modules/bootstrap/dist/js/bootstrap.min.js') }}"></script>
+    <script src="{{ static_url('node_modules/bootstrap-material-design/dist/js/material.min.js') }}"></script>
+    <script src="{{ static_url('node_modules/bootstrap-material-design/dist/js/ripples.min.js') }}"></script>
+    <script src="{{ static_url('node_modules/masonry-layout/dist/masonry.pkgd.min.js') }}"></script>
 </head>
+
 <body>
-    <nav class="navbar navbar-inverse navbar-fixed-top">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed"
-                  data-toggle="collapse" data-target="#navbar"
-                  aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="#">Tornado CoAP</a>
+<style type="text/css">
+body.dark {
+    background-color: #333;
+}
+body.dark .navbar.navbar-inverse {
+    background-color: black;
+}
+body.dark .panel.panel-default>.panel-heading, body.dark .panel>.panel-heading {
+    background-color: #ddd;
+}
+.panel-body + .panel-body {
+    border-top: 1px solid #ddd;
+}
+.led-color {
+    color: firebrick;
+}
+.li-text {
+    padding: 5px;
+}
+.grid {
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.grid-item {
+    width: 400px;
+    max-width: 100%;
+    margin: 0 15px;
+}
+.grid-hidden {
+    display: none;
+}
+img {
+  max-width: 100%;
+}
+#webcam {
+  overflow: hidden;
+  position: relative;
+  height: 300px;
+  background-color: #999;
+  /*background-image: url(/demo-cam/?action=stream), url(assets/ic_videocam_off.svg);*/
+  background-image: url(/demo-cam/?action=stream);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100%;
+}
+#webcam .panel-heading {
+  position: absolute;
+  left:0;
+  right: 0;
+  background-color: rgba(0,0,0,0.2);
+  /*mix-blend-mode: multiply;*/
+}
+.panel-heading .btn-group {
+  margin: 0;
+}
+
+.panel-heading .dropdown-menu {
+  margin-top: 10px;
+}
+.menu-btn {
+    padding: 0px 3px;
+    border-radius: 100%;
+}
+</style>
+
+<script>
+var theme = localStorage.theme || 'dark';
+
+if (theme == 'dark') {
+    document.body.classList.add('dark')
+}
+</script>
+
+<div class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-inverse-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <img class="navbar-brand" src="{{ static_url('assets/logo-large.png') }}" style="margin-top: -3px">
+      <a class="navbar-brand" href="javascript:void(0)">RIOT Dashboard</a>
+    </div>
+    <div class="navbar-collapse collapse navbar-inverse-collapse">
+      <ul class="nav navbar-nav">
+        <li class="dropdown">
+        </li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="https://www.riot-os.org/">RIOT <i class="fa fa-external-link"></i></a></li>
+        <li><a data-toggle="modal" data-target="#settingsModal" href=""><i class="material-icons" style="line-height: inherit">settings</i></a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<div class="grid" id="container" data-masonry='{ "itemSelector": ".grid-item:not(.grid-hidden)", "fitWidth": "true" }'>
+    <div class="grid-item">
+        <div class="panel panel-default" id="webcam">
+          <div class="panel-heading">
+            Webcam
+            <div class="pull-right">
+                <div class="btn-group">
+                  <a href="" class="menu-btn btn btn-link dropdown-toggle" data-toggle="dropdown">
+                    <span class="glyphicon glyphicon-option-vertical text-muted"></span>
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-right">
+                    <li class="li-text"><a
+                            href="/demo-cam/?action=stream">Live Camera</a></li>
+                  </ul>
+                </div>
+            </div>
+          </div>
         </div>
-        <div id="navbar" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav">
-              <li class="active"><a href="/">Dashboard</a></li>
-          </ul>
-        </div><!--/.nav-collapse -->
-      </div>
-    </nav>
+    </div>
+</div>
 
-    <div class="container">
+<script>
+function add_node_element(node) {
+    console.log("Adding node", node)
+    var nodesContainer = document.getElementById("container");
+    var nodeElem = document.createElement("div")
+    nodeElem.setAttribute('id', 'grid-' + node)
+    nodeElem.setAttribute('class', 'grid-item')
+    nodesContainer.appendChild(nodeElem)
 
-      <div class="starter-template">
-        <h1>CoAP result via WS</h1>
-        <div class="container" id="container">
-      </div>
+    var nodeElemContent = '' +
+      '<div class="panel-heading">' +
+        '<span id=board' + node + '>New node</span>&nbsp;' +
+        '<span id=mcu' + node + '></span>' +
+        '<div class="pull-right">' +
+            '<div class="btn-group" style="margin-bottom: 0">' +
+              '<a href="" class="menu-btn btn btn-link dropdown-toggle" data-toggle="dropdown">' +
+                '<span class="glyphicon glyphicon-option-vertical text-muted"></span>' +
+              '</a>' +
+              '<ul class="dropdown-menu dropdown-menu-right">' +
+                '<li class="li-text" id="ip' + node + '"></li>' +
+              '</ul>' +
+            '</div>' +
+        '</div>' +
+      '</div>'
 
-    </div><!-- /.container -->
+    var nodeElemPanel = document.createElement("div")
+    nodeElemPanel.setAttribute('id', node)
+    nodeElemPanel.setAttribute('class', 'panel panel-default')
+    nodeElem.appendChild(nodeElemPanel)
+    document.getElementById(node).innerHTML = nodeElemContent
 
+    rebuild_layout()
+}
 
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src={{ static_url("js/jquery.min.js") }}></script>
-    <script src={{ static_url("js/bootstrap.min.js") }}></script>
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src={{ static_url("js/ie10-viewport-bug-workaround.js") }}>
-    </script>
-    <script>
-        var nodes = []
-        var ws = new WebSocket('ws://{{ wsserver }}/ws');
-        var $message = $('#message');
-        function clean_node(node) {
-            return node.replace(/:/g,'_').replace(/\./g,'_')
+function update_node_element(node, obj) {
+    if (obj.endpoint != "/imu") {
+        console.log("Updating node", node)
+    }
+
+    if (obj.endpoint == "/board") {
+        var board = document.getElementById('board' + node)
+        board.innerHTML = obj.data
+    }
+    else if (obj.endpoint == "/mcu") {
+        var mcu = document.getElementById('mcu' + node)
+        mcu.innerHTML = '(<i>' + obj.data + '</i>)'
+    }
+    else {
+        var endpoint = document.getElementById(obj.endpoint + node)
+        if (endpoint == null) {
+            var nodeElem = document.getElementById(node)
+            var endpointElem = document.createElement("div")
+            endpointElem.setAttribute('id', obj.endpoint + node)
+            endpointElem.setAttribute('class', 'panel-body')
+            nodeElem.appendChild(endpointElem);
+
+            var endpointText = ""
+            if (obj.endpoint == '/temperature') {
+                endpointText = "Temperature"
+            }
+            else if (obj.endpoint == '/pressure') {
+                endpointText = "Pressure"
+            }
+            else if (obj.endpoint == '/led') {
+                endpointText = "LED"
+                var ledbtnElem = document.createElement("div")
+                ledbtnElem.setAttribute('class', 'panel-body')
+                nodeElem.appendChild(ledbtnElem);
+                ledbtnElem.innerHTML = '' +
+                '<div class="togglebutton" id="led-togglebtn-' + node + '">' +
+                  '<label>' +
+                    '<input class="led-btn" type="checkbox" data-index="' + obj.node + '" id="led-btn-' + node + '"> Toggle LED' +
+                  '</label>' +
+                '</div>'
+                $.material.init()
+            }
+            else if (obj.endpoint == '/robot') {
+                endpointText = "BuggyBot"
+            }
+            else if (obj.endpoint == '/imu') {
+                endpointText = "IMU"
+            }
+            else if (obj.endpoint == '/twitter') {
+                endpointText = "Twitter"
+            }
+            else {
+                endpointText = "Unknown"
+            }
+            var endpointElemContent = '' +
+            '<div class="panel-body" id=' + obj.endpoint + node + '>' +
+              '<div class="h5 text-muted">' + endpointText + '</div>' +
+              '<div class="h1" id=' + obj.endpoint + node + 'value></div>' +
+            '</div>'
+            endpointElem.innerHTML = endpointElemContent
+            endpoint = document.getElementById(obj.endpoint + node)
+
+            rebuild_layout()
         }
 
-        ws.onopen = function() {
-        };
+        endpointvalue = document.getElementById(obj.endpoint + node + 'value')
+        if (obj.endpoint == '/led') {
+            var led_btn_elem = document.getElementById('led-btn-' + node)
+            if (obj.data == '0') {
+                endpointvalue.innerHTML = '<div class="h1">OFF <i class="fa fa-circle-thin led-color"></i></div>'
+                if ($('#led-btn-' + node).is(':checked')) {
+                    $('#led-btn-' + node).prop('checked', false);
+                }
+            }
+            else {
+                endpointvalue.innerHTML = '<div class="h1">ON <i class="fa fa-circle led-color"></i></div>'
+                if (!$('#led-btn-' + node).is(':checked')) {
+                    $('#led-btn-' + node).prop('checked', true);
+                }
+            }
+            rebuild_layout()
+        }
+        else {
+            endpointvalue.innerHTML = obj.data;
+        }
+    }
+}
 
-        ws.onmessage = function(event) {
-            var obj = JSON.parse(event.data)
-            var node = clean_node(obj.node)
-            if (obj.command == 'new') {
-                nodes.push(node)
-                console.log("Adding node", node)
-                var nodesContainer = document.getElementById("container");
-                var nodeTitle = document.createElement("div")
-                nodeTitle.setAttribute('id', node + "title")
-                nodeTitle.setAttribute('class', 'lead')
-                nodesContainer.appendChild(nodeTitle)
-                document.getElementById(node + "title").innerHtml = "<b>Node:</b>" + obj.node
-                var nodeElem = document.createElement("div")
-                nodeElem.setAttribute('id', node)
-                nodeElem.setAttribute('class', 'lead')
-                nodesContainer.appendChild(nodeElem)
-            }
-            else if (obj.command == 'out') {
-                var index = nodes.indexOf(node);
-                if (index > -1) {
-                    nodes.splice(index, 1);
-                    console.log("Removing node", node)
-                }
-                document.getElementById(node).innerHTML = ""
-                document.getElementById(node + "title").innerHTML = ""
-            }
-            else if (obj.command == 'update') {
-                var index = nodes.indexOf(node);
-                if (index == -1) {
-                    return;
-                }
-                console.log("Updating node", node)
-                var endpoint = document.getElementById(obj.endpoint + node)
-                if (endpoint == null) {
-                    var nodeElem = document.getElementById(node)
-                    var dataElem = document.createElement("div")
-                    dataElem.setAttribute('id', obj.endpoint + node)
-                    dataElem.setAttribute('class', 'lead')
-                    nodeElem.appendChild(dataElem);
-                    endpoint = document.getElementById(obj.endpoint + node)
-                }
-                endpoint.innerHTML =
-                    "<b>" + obj.endpoint + ":</b>" + obj.data;
-            }
-        };
-        ws.onclose = function(ev){
-        };
-        ws.onerror = function(ev){
-        };
-    </script>
+function rebuild_layout() {
+    /* update masonry layout */
+    var grid = document.querySelector('.grid');
+    var msnry = new Masonry( grid, {
+        itemSelector: '.grid-item:not(.grid-hidden)',
+        fitWidth: true
+    });
+    msnry.layout()
+}
+
+function remove_node_element(node) {
+    console.log("Removing node", node)
+    $("#grid-" + node).remove();
+
+    rebuild_layout()
+}
+
+function postSwitchLed(node, state) {
+    $.post(
+        '/',
+        JSON.stringify({ "node": node, "path" : "/led", "payload": state }),
+        function(data) {
+            console.log("LED switched")
+        });
+}
+
+$(document).on('change', '.led-btn', function() {
+    var node = this.dataset.index
+    if($(this).is(':checked')) {
+        postSwitchLed(node, "1")
+    }
+    else {
+        postSwitchLed(node, "0")
+    }
+})
+
+var ws = new WebSocket('ws://{{ wsserver }}/ws');
+var $message = $('#message');
+function clean_node(node) {
+    return node.replace(/:/g,'_').replace(/\./g,'_')
+}
+
+ws.onopen = function() {
+};
+
+ws.onmessage = function(event) {
+    var obj = JSON.parse(event.data)
+    var node = clean_node(obj.node)
+    if (obj.command == 'new') {
+        add_node_element(node)
+        var ip = document.getElementById('ip' + node)
+        ip.innerHTML = obj.node
+    }
+    else if (obj.command == 'out') {
+        remove_node_element(node)
+    }
+    else if (obj.command == 'update') {
+        update_node_element(node, obj)
+    }
+};
+ws.onclose = function(ev){
+};
+ws.onerror = function(ev){
+};
+</script>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        <h2 class="modal-title">Settings</h2>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin: 0">
+          <label for="selectTheme" class="control-label">Theme</label>
+
+          <select id="selectTheme" class="form-control">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Dropdown.js -->
+<script src="https://cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.js"></script>
+<script>
+$("#settingsModal select").dropdown();
+</script>
+<script>
+// initialize bootstrap material design
+$.material.init()
+
+$('#selectTheme').change(function () {
+    if ($(this).val() == 'dark') {
+        $('body').addClass('dark')
+    } else {
+        $('body').removeClass('dark')
+    }
+})
+
+$('#settingsModal').on('hide.bs.modal', function (e) {
+    localStorage.setItem('theme', $('#selectTheme').val())
+});
+
+</script>
 </body>
 </html>
