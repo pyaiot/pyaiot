@@ -2,16 +2,10 @@
 
 ### Prequisities
 
-Install javascript and css required packages with [bower](https://bower.io/).
-
-1. Install Bower
-```shell
-$ sudo npm install bower -g
-```
-2. Install the web packages:
+Install javascript and css required packages using [npm](https://npmjs.org/):
 ```
 $ cd web-server/static
-$ bower install
+$ npm install
 ```
 
 ### Start tornado web server
