@@ -43,4 +43,4 @@ if __name__ == "__main__":
     asyncio.get_event_loop().run_until_complete(coap_message())
     stream = RiotTwitterStreamer(APP_KEY, APP_SECRET,
                                  OAUTH_TOKEN, OAUTH_TOKEN_SECRET)
-    stream.statuses.filter(track='Paris')
+    stream.statuses.filter(track='riot-demo')
