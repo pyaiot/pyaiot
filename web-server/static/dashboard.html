@@ -113,6 +113,10 @@ img {
     padding: 0px 3px;
     border-radius: 100%;
 }
+canvas {
+    height: 100px;
+    width: 370px;
+}
 </style>
 
 <script>
@@ -261,8 +265,8 @@ function update_node_element(node, obj) {
                 var ledbtnElem = document.createElement("div")
                 ledbtnElem.setAttribute('class', 'panel-body')
                 nodeElem.appendChild(ledbtnElem);
-                ledbtnElem.innerHTML = '<p><center>Accelerometer</center></p><canvas id="imu_acc' + node + '" width="360" height="100"></canvas>' +
-                                       '<p><center>Gyroscope</center></p><canvas id="imu_gyr' + node + '" width="360" height="100"></canvas>'
+                ledbtnElem.innerHTML = '<p><center>Accelerometer</center></p><canvas id="imu_acc' + node + '></canvas>' +
+                                       '<p><center>Gyroscope</center></p><canvas id="imu_gyr' + node + '></canvas>'
 
                 acc_charts[obj.node] = [new SmoothieChart({grid:{fillStyle:'#272727', borderVisible:false},
                                                            labels: {disabled: true},
