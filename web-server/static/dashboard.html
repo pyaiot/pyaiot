@@ -10,7 +10,6 @@
 
     <title>{{ title }}</title>
 
-
     <!-- Material Design fonts -->
     <link rel="stylesheet" type="text/css"
           href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700">
@@ -33,11 +32,19 @@
     <!-- Dropdown.js -->
     <link href="//cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.css" rel="stylesheet">
 
-    <script src="{{ static_url('node_modules/jquery/dist/jquery.min.js') }}"></script>
-    <script src="{{ static_url('node_modules/bootstrap/dist/js/bootstrap.min.js') }}"></script>
-    <script src="{{ static_url('node_modules/bootstrap-material-design/dist/js/material.min.js') }}"></script>
-    <script src="{{ static_url('node_modules/bootstrap-material-design/dist/js/ripples.min.js') }}"></script>
-    <script src="{{ static_url('node_modules/masonry-layout/dist/masonry.pkgd.min.js') }}"></script>
+    <!-- Javascript modules -->
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/jquery/dist/jquery.min.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/bootstrap/dist/js/bootstrap.min.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/bootstrap-material-design/dist/js/material.min.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/bootstrap-material-design/dist/js/ripples.min.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/masonry-layout/dist/masonry.pkgd.min.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/smoothie/smoothie.js') }}"></script>
 </head>
 
 <body>
@@ -163,6 +170,9 @@ if (theme == 'dark') {
 </div>
 
 <script>
+var acc_charts = {}
+var gyr_charts = {}
+
 function add_node_element(node) {
     console.log("Adding node", node)
     var nodesContainer = document.getElementById("container");
@@ -215,7 +225,12 @@ function update_node_element(node, obj) {
             var nodeElem = document.getElementById(node)
             var endpointElem = document.createElement("div")
             endpointElem.setAttribute('id', obj.endpoint + node)
-            endpointElem.setAttribute('class', 'panel-body')
+            if (obj.endpoint == '/imu') {
+                endpointElem.setAttribute('style', 'height:0px')
+            }
+            else {
+                endpointElem.setAttribute('class', 'panel-body')
+            }
             nodeElem.appendChild(endpointElem);
 
             var endpointText = ""
@@ -242,7 +257,35 @@ function update_node_element(node, obj) {
                 endpointText = "BuggyBot"
             }
             else if (obj.endpoint == '/imu') {
-                endpointText = "IMU"
+                endpointText = ""
+                var ledbtnElem = document.createElement("div")
+                ledbtnElem.setAttribute('class', 'panel-body')
+                nodeElem.appendChild(ledbtnElem);
+                ledbtnElem.innerHTML = '<p><center>Accelerometer</center></p><canvas id="imu_acc' + node + '" width="360" height="100"></canvas>' +
+                                       '<p><center>Gyroscope</center></p><canvas id="imu_gyr' + node + '" width="360" height="100"></canvas>'
+
+                acc_charts[obj.node] = [new SmoothieChart({grid:{fillStyle:'#272727', borderVisible:false},
+                                                           labels: {disabled: true},
+                                                           minValue: 0,
+                                                           maxValue: 5000}),
+                                        new TimeSeries()]
+                acc_charts[obj.node][0].addTimeSeries(acc_charts[obj.node][1],
+                                                      { strokeStyle: 'rgba(0, 255, 0, 1)', fillStyle: 'rgba(0, 255, 0, 0.2)', lineWidth: 1.5 });
+                acc_charts[obj.node][0].streamTo(document.getElementById('imu_acc' + node), 500);
+
+                gyr_charts[obj.node] = [new SmoothieChart({grid:{fillStyle:'#272727', borderVisible:false},
+                                                           labels: {disabled: true},
+                                                           minValue: -800,
+                                                           maxValue: 800}),
+                                        {'x': new TimeSeries(), 'y': new TimeSeries(), 'z': new TimeSeries()}
+                                        ]
+                gyr_charts[obj.node][0].addTimeSeries(gyr_charts[obj.node][1]['x'],
+                                                      { strokeStyle: 'rgba(255, 0, 0, 1)', fillStyle: 'rgba(255, 0, 0, 0.2)', lineWidth: 1.5 });
+                gyr_charts[obj.node][0].addTimeSeries(gyr_charts[obj.node][1]['y'],
+                                                      { strokeStyle: 'rgba(0, 255, 0, 1)', fillStyle: 'rgba(0, 255, 0, 0.2)', lineWidth: 1.5 });
+                gyr_charts[obj.node][0].addTimeSeries(gyr_charts[obj.node][1]['z'],
+                                                      { strokeStyle: 'rgba(0, 0, 255, 1)', fillStyle: 'rgba(0, 0, 255, 0.2)', lineWidth: 1.5 });
+                gyr_charts[obj.node][0].streamTo(document.getElementById('imu_gyr' + node), 500);
             }
             else if (obj.endpoint == '/twitter') {
                 endpointText = "Twitter"
@@ -277,6 +320,17 @@ function update_node_element(node, obj) {
                 }
             }
             rebuild_layout()
+        }
+        else if (obj.endpoint == '/imu') {
+            var data = JSON.parse(obj.data)
+            var acc = Math.sqrt(Math.pow(data[0].values[0], 2) +
+                                Math.pow(data[0].values[1], 2) +
+                                Math.pow(data[0].values[2], 2))
+            acc_charts[obj.node][1].append(new Date().getTime(), acc);
+            var gyr = data[2].values
+            gyr_charts[obj.node][1]['x'].append(new Date().getTime(), data[2].values[0]);
+            gyr_charts[obj.node][1]['y'].append(new Date().getTime(), data[2].values[1]);
+            gyr_charts[obj.node][1]['z'].append(new Date().getTime(), data[2].values[2]);
         }
         else {
             endpointvalue.innerHTML = obj.data;
@@ -338,6 +392,12 @@ ws.onmessage = function(event) {
         ip.innerHTML = obj.node
     }
     else if (obj.command == 'out') {
+        if (obj.node in acc_charts) {
+            delete acc_charts[obj.node]
+        }
+        if (obj.node in gyr_charts) {
+            delete gyr_charts[obj.node]
+        }
         remove_node_element(node)
     }
     else if (obj.command == 'update') {
