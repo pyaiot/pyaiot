@@ -87,21 +87,27 @@ def _discover_node(node, ws=None):
                                              .format(coap_node_url),
                                              method=GET)
         node.endpoints = _endpoints(payload)
-    for endpoint in node.endpoints:
+
+    messages = {}
+    endpoints = [endpoint
+                 for endpoint in node.endpoints
+                 if 'well-known/core' not in endpoint]
+    for endpoint in endpoints:
         elems = endpoint.split(';')
         path = elems.pop(0).replace('<', '').replace('>', '')
-        if 'well-known/core' in path:
-            continue
 
         code, payload = yield _coap_resource('{0}{1}'
                                              .format(coap_node_url, path),
                                              method=GET)
-        message = json.dumps({'endpoint': path,
-                              'data': payload,
-                              'node': node.address,
-                              'command': 'update'})
+        messages[endpoint] = json.dumps({'endpoint': path,
+                                         'data': payload,
+                                         'node': node.address,
+                                         'command': 'update'})
+
+    for endpoint in endpoints:
+        message = messages[endpoint]
         if ws is None:
-            _broadcast_message(message)
+            _broadcast_message(messages)
         else:
             try:
                 ws.write_message(message)
