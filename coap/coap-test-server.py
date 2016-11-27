@@ -22,13 +22,15 @@ parser = argparse.ArgumentParser(description="Test CoAP client")
 parser.add_argument('--server', type=str, default="localhost",
                     help="Server host.")
 parser.add_argument('--imu', action="store_true",
-                    help="Activate IMU sending.")
+                    help="Activate IMU endpoint.")
 parser.add_argument('--led', action="store_true",
-                    help="Activate LED sending.")
+                    help="Activate LED endpoint.")
 parser.add_argument('--temperature', action="store_true",
-                    help="Activate Temperature sending.")
+                    help="Activate Temperature endpoint.")
 parser.add_argument('--pressure', action="store_true",
-                    help="Activate Pressure sending.")
+                    help="Activate Pressure endpoint.")
+parser.add_argument('--robot', action="store_true",
+                    help="Activate Robot endpoint.")
 args = parser.parse_args()
 
 
@@ -240,11 +242,16 @@ if __name__ == '__main__':
         # Aiocoap server initialization
         root = resource.Site()
         root.add_resource(('board', ), BoardResource())
-        root.add_resource(('led', ), LedResource())
-        root.add_resource(('temperature', ), TemperatureResource())
-        root.add_resource(('pressure', ), PressureResource())
-        root.add_resource(('imu', ), ImuResource())
-        root.add_resource(('robot', ), RobotResource())
+        if args.led:
+            root.add_resource(('led', ), LedResource())
+        if args.temperature:
+            root.add_resource(('temperature', ), TemperatureResource())
+        if args.pressure:
+            root.add_resource(('pressure', ), PressureResource())
+        if args.imu:
+            root.add_resource(('imu', ), ImuResource())
+        if args.robot:
+            root.add_resource(('robot', ), RobotResource())
         root.add_resource(('.well-known', 'core'),
                           resource.WKCResource(
                               root.get_resources_as_linkheader))
