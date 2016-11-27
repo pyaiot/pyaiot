@@ -107,7 +107,7 @@ def _discover_node(node, ws=None):
     for endpoint in endpoints:
         message = messages[endpoint]
         if ws is None:
-            _broadcast_message(messages)
+            _broadcast_message(message)
         else:
             try:
                 ws.write_message(message)
