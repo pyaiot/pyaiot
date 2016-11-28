@@ -188,7 +188,7 @@ if (theme == 'dark') {
                             </a>
                             <ul class="dropdown-menu dropdown-menu-right">
                                 <li class="li-text">
-                                    <a href="http://fit-demo-dev:8081/?action=stream">Live Camera</a>
+                                    <a href="/demo-cam/?action=stream">Live Camera</a>
                                 </li>
                             </ul>
                         </div>
@@ -226,6 +226,9 @@ if (theme == 'dark') {
                 </div>
                 <div class="panel-body" v-if="node.data.twitter">
                     <div class="h1">{{!node.data.twitter}}</div>
+                </div>
+                <div class="panel-body" v-if="node.data.webcam">
+                    <img width="370" height="278" :src="node.data.webcam"></img>
                 </div>
                 <div class="panel-body" v-if="node.data.imu">
                     <div class="h5 text-muted">Inertial Measurement Unit</div>
