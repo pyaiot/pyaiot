@@ -132,6 +132,9 @@ img {
     padding: 0px 3px;
     border-radius: 100%;
 }
+canvas {
+    background-color: #333;
+}
 </style>
 
 <script>
@@ -215,10 +218,12 @@ if (theme == 'dark') {
                 <div class="panel-body" v-if="node.data.temperature">
                     <div class="h5 text-muted">Temperature</div>
                     <div class="h1">{{!node.data.temperature}}</div>
+                    <canvas :id="'temp_chart'+node.ip" width="370" height="100"></canvas>
                 </div>
                 <div class="panel-body" v-if="node.data.pressure">
                     <div class="h5 text-muted">Pressure</div>
                     <div class="h1">{{!node.data.pressure}}</div>
+                    <canvas :id="'pres_chart'+node.ip" width="370" height="100"></canvas>
                 </div>
                 <div class="panel-body" v-if="node.data.robot">
                     <div class="h5 text-muted">Buggybot</div>
@@ -284,6 +289,8 @@ $("#settingsModal select").dropdown();
 // Smoothie charts containers
 var acc_charts = {}
 var gyr_charts = {}
+var temp_charts = {}
+var pres_charts = {}
 
 var data = {nodes: []}
 var vm = new Vue({
@@ -300,6 +307,9 @@ var vm = new Vue({
 </script>
 
 <script>
+// initialize bootstrap material design
+$.material.init()
+
 var ws = new WebSocket('ws://{{ wsserver }}/ws')
 
 ws.onopen = function() {
@@ -313,16 +323,13 @@ ws.onmessage = function(event) {
         case 'new':
             console.log("New node", node)
             vm.nodes.push({ip: node, data: {board:'New node'}})
-
-            refresh_layout()
             break
         case 'out':
             if (index != -1) {
                 console.log("Removing node", node)
                 vm.nodes.splice(index, 1)
-                remove_imu_charts(node)
-                refresh_layout()
             }
+            remove_charts(node)
             break
         case 'update':
             if (index != -1) {
@@ -333,23 +340,14 @@ ws.onmessage = function(event) {
                 // force material UI refresh
                 $.material.init()
 
-                // imu charts management
-                if (endpoint === "imu") {
-                    if (!(node in acc_charts)) {
-                        setup_imu_charts(node)
-                    }
-                    else {
-                        update_imu_charts(msg)
-                    }
-                }
-
-                refresh_layout()
+                update_charts(msg)
             }
             break
         default:
             console.log('Unknown command')
             break
     }
+    refresh_layout()
 }
 ws.onclose = function(ev){
     console.log("WebSocket closed")
@@ -357,18 +355,88 @@ ws.onclose = function(ev){
 ws.onerror = function(ev){
     console.log("WebSocket error")
 }
-</script>
 
-<script>
-// initialize bootstrap material design
-$.material.init()
+function update_charts(msg) {
+    // imu charts management
+    if (msg.endpoint === "/imu") {
+        if (!(msg.node in acc_charts)) {
+            setup_imu_charts(msg.node)
+        }
+
+        update_imu_charts(msg)
+    }
+
+    // temperature charts management
+    if (msg.endpoint === "/temperature") {
+        if (!(msg.node in temp_charts)) {
+            setup_temp_charts(msg.node)
+        }
+
+        update_temp_charts(msg)
+    }
+
+    // pressure charts management
+    if (msg.endpoint === "/pressure") {
+        if (!(msg.node in pres_charts)) {
+            setup_pres_charts(msg.node)
+        }
+
+        update_pres_charts(msg)
+    }
+}
+
+function setup_temp_charts(node) {
+    var temp_canva = document.getElementById('temp_chart' + node)
+    if (temp_canva) {
+        temp_charts[node] = [new SmoothieChart({ millisPerPixel:1000,
+                                                 grid:{ strokeStyle: 'transparent',
+                                                        fillStyle:'transparent',
+                                                        borderVisible:false,
+                                                        sharpLines:true },
+                                                 minValue: -15,
+                                                 maxValue: 40}),
+                            new TimeSeries()]
+        temp_charts[node][0].addTimeSeries(temp_charts[node][1],
+                                           { strokeStyle: 'rgba(0, 255, 0, 1)',
+                                             fillStyle: 'rgba(0, 255, 0, 0.2)',
+                                             lineWidth: 1.5 });
+        temp_charts[node][0].streamTo(temp_canva, 500);
+    }
+}
+
+function update_temp_charts(msg) {
+    temp_charts[msg.node][1].append(new Date().getTime(), msg.data.slice(0, -2));
+}
+
+function setup_pres_charts(node) {
+    var pres_canva = document.getElementById('pres_chart' + node)
+    if (pres_canva) {
+        pres_charts[node] = [new SmoothieChart({ millisPerPixel:5000,
+                                                 grid:{ strokeStyle: 'transparent',
+                                                        fillStyle:'transparent',
+                                                        borderVisible:false,
+                                                        sharpLines:true },
+                                                 minValue: 950,
+                                                 maxValue: 1030}),
+                            new TimeSeries()]
+        pres_charts[node][0].addTimeSeries(pres_charts[node][1],
+                                           { strokeStyle: 'rgba(0, 255, 0, 1)',
+                                             fillStyle: 'rgba(0, 255, 0, 0.2)',
+                                             lineWidth: 1.5 });
+        pres_charts[node][0].streamTo(pres_canva, 500);
+    }
+}
+
+function update_pres_charts(msg) {
+    pres_charts[msg.node][1].append(new Date().getTime(), msg.data.slice(0, -3));
+}
 
 function setup_imu_charts(node) {
     var acc_canva = document.getElementById('imu_acc' + node)
     if (acc_canva) {
-        console.log("Setup imu acc chart", node)
-        acc_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'#272727',
-                                                       borderVisible:false },
+        acc_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'transparent',
+                                                       borderVisible:false,
+                                                       sharpLines:true },
                                                 labels: { disabled: true },
                                                 minValue: 0,
                                                 maxValue: 5000}),
@@ -377,13 +445,14 @@ function setup_imu_charts(node) {
                                           { strokeStyle: 'rgba(0, 255, 0, 1)',
                                             fillStyle: 'rgba(0, 255, 0, 0.2)',
                                             lineWidth: 1.5 });
-        acc_charts[node][0].streamTo(document.getElementById('imu_acc' + node), 500);
+        acc_charts[node][0].streamTo(acc_canva, 500);
     }
 
     var gyr_canva = document.getElementById('imu_gyr' + node)
     if (acc_canva) {
-        gyr_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'#272727',
-                                                       borderVisible:false },
+        gyr_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'transparent',
+                                                       borderVisible:false,
+                                                       sharpLines:true },
                                                 labels: {disabled: true},
                                                 minValue: -800,
                                                 maxValue: 800 }),
@@ -402,15 +471,12 @@ function setup_imu_charts(node) {
                                           { strokeStyle: 'rgba(0, 0, 255, 1)',
                                             fillStyle: 'rgba(0, 0, 255, 0.2)',
                                             lineWidth: 1.5 });
-        gyr_charts[node][0].streamTo(document.getElementById('imu_gyr' + node), 500);
+        gyr_charts[node][0].streamTo(gyr_canva, 500);
     }
-
-    console.log("Charts ", acc_charts, gyr_charts)
 }
 
 function update_imu_charts(msg) {
     var data = JSON.parse(msg.data)
-    console.log("Update imu charts ", msg.node, msg.data)
     var acc = Math.sqrt(Math.pow(data[0].values[0], 2) +
                         Math.pow(data[0].values[1], 2) +
                         Math.pow(data[0].values[2], 2))
@@ -421,12 +487,18 @@ function update_imu_charts(msg) {
     gyr_charts[msg.node][1]['z'].append(new Date().getTime(), data[2].values[2]);
 }
 
-function remove_imu_charts(node) {
+function remove_charts(node) {
     if (node in acc_charsts) {
         delete acc_charts[node]
     }
     if (node in gyr_charts) {
         delete gyr_charts[node]
+    }
+    if (node in temp_charts) {
+        delete temp_charts[node]
+    }
+    if (node in pres_charts) {
+        delete pres_charts[node]
     }
 }
 
