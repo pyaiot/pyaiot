@@ -135,6 +135,19 @@ img {
 canvas {
     background-color: #333;
 }
+.btn-grid {
+  display: table;
+  border-spacing: 5px
+}
+.btn-row {
+  display: table-row
+}
+.btn-cell {
+  width: 50px;
+  height: 50px;
+  /*background: grey;*/
+  display: table-cell;
+}
 </style>
 
 <script>
@@ -228,6 +241,36 @@ if (theme == 'dark') {
                 <div class="panel-body" v-if="node.data.robot">
                     <div class="h5 text-muted">Buggybot</div>
                     <div class="h1">{{!node.data.robot}}</div>
+                    <p><center>Direction Pad</center></p>
+                    <div class="card card-block">
+                        <center>
+                            <div class="btn-grid">
+                                <div class="btn-row">
+                                    <div class="btn-cell"></div>
+                                    <div class="btn-cell">
+                                        <center><button type="button" class="robot-btn btn btn-success" :data-index="'f,'+node.ip">Forward</button></center>
+                                    </div>
+                                    <div class="btn-cell"></div>
+                                </div>
+                                <div class="btn-row">
+                                    <div class="btn-cell">
+                                        <center><button type="button" class="robot-btn btn btn-success" :data-index="'l,'+node.ip">Left</button></center>
+                                    </div>
+                                    <div class="btn-cell"></div>
+                                    <div class="btn-cell">
+                                        <center><button type="button" class="robot-btn btn btn-success" :data-index="'r,'+node.ip">Right</button></center>
+                                    </div>
+                                </div>
+                                <div class="btn-row">
+                                    <div class="btn-cell"></div>
+                                    <div class="btn-cell">
+                                        <center><button type="button" class="robot-btn btn btn-danger" :data-index="'s,'+node.ip">Stop</button></center>
+                                    </div>
+                                    <div class="btn-cell"></div>
+                                </div>
+                            </div>
+                        </center>
+                    </div>
                 </div>
                 <div class="panel-body" v-if="node.data.twitter">
                     <div class="h1">{{!node.data.twitter}}</div>
@@ -531,6 +574,24 @@ $(document).on('change', '.led-btn', function() {
     else {
         postSwitchLed(node, "0")
     }
+})
+
+function postRobotDirection(robot, direction) {
+    $.post('/',
+        JSON.stringify({ "node": robot,
+                         "path": "/robot",
+                         "payload": direction }),
+        function(data) {
+            console.log("Direction change to", direction, "on robot", node)
+        });
+}
+
+$(document).on('click', '.robot-btn', function() {
+    var data = this.dataset.index.split(',')
+    var direction = data[0]
+    var node = data[1]
+
+    postRobotDirection(node, direction)
 })
 
 $('#selectTheme').change(function () {
