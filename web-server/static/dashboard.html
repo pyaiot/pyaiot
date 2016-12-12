@@ -47,6 +47,9 @@
             src="{{ static_url('node_modules/smoothie/smoothie.js') }}"></script>
     <script type="text/javascript"
             src="{{ static_url('node_modules/vue/dist/vue.min.js') }}"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r82/three.min.js"></script>
+    <script src='js/TeapotBufferGeometry.js'></script>
 </head>
 
 <body>
@@ -134,6 +137,10 @@ img {
 }
 canvas {
     background-color: #333;
+}
+#teapot {
+    height: 277px;
+    width: 100%;
 }
 .btn-grid {
   display: table;
@@ -284,6 +291,7 @@ if (theme == 'dark') {
                     <canvas :id="'imu_acc'+node.ip" width="370" height="100"></canvas>
                     <p><center>Gyroscope</center></p>
                     <canvas :id="'imu_gyr'+node.ip" width="370" height="100"></canvas>
+                    <div id="teapot"></div>
                 </div>
                 <div class="panel-body" :id="'led'+index" v-if="['0','1'].includes(node.data.led)">
                     <div class="h5 text-muted">LED</div>
@@ -606,5 +614,6 @@ $('#settingsModal').on('hide.bs.modal', function (e) {
     localStorage.setItem('theme', $('#selectTheme').val())
 });
 </script>
+<script src='js/teapot.js'></script>
 </body>
 </html>
