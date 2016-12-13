@@ -135,8 +135,10 @@ img {
     padding: 0px 3px;
     border-radius: 100%;
 }
-canvas {
+.chart {
     background-color: #333;
+    width: 100%;
+    height: 100px;
 }
 #teapot {
     height: 277px;
@@ -199,7 +201,6 @@ if (theme == 'dark') {
     </div>
     <!-- <div class="container-fluid"> -->
     <div class="grid" data-masonry='{ "itemSelector": ".grid-item:not(.grid-hidden)", "fitWidth": "true" }'>
-        <!-- <div class="grid" data-masonry='{ "itemSelector": ".grid-item:not(.grid-hidden)", "fitWidth": "true" }'> -->
         <div class="grid-item">
             <!-- webcam -->
             <div class="panel panel-default" id="webcam">
@@ -238,12 +239,12 @@ if (theme == 'dark') {
                 <div class="panel-body" v-if="node.data.temperature">
                     <div class="h5 text-muted">Temperature</div>
                     <div class="h1">{{!node.data.temperature}}</div>
-                    <canvas :id="'temp_chart'+node.ip" width="370" height="100"></canvas>
+                    <canvas :i class="chart"d="'temp_chart'+node.ip"></canvas>
                 </div>
                 <div class="panel-body" v-if="node.data.pressure">
                     <div class="h5 text-muted">Pressure</div>
                     <div class="h1">{{!node.data.pressure}}</div>
-                    <canvas :id="'pres_chart'+node.ip" width="370" height="100"></canvas>
+                    <canvas :i class="chart"d="'pres_chart'+node.ip"></canvas>
                 </div>
                 <div class="panel-body" v-if="node.data.robot">
                     <div class="h5 text-muted">Buggybot</div>
@@ -288,9 +289,9 @@ if (theme == 'dark') {
                 <div class="panel-body" v-if="node.data.imu">
                     <div class="h5 text-muted">Inertial Measurement Unit</div>
                     <p><center>Accelerometer</center></p>
-                    <canvas :id="'imu_acc'+node.ip" width="370" height="100"></canvas>
+                    <canvas class="chart" :id="'imu_acc'+node.ip"></canvas>
                     <p><center>Gyroscope</center></p>
-                    <canvas :id="'imu_gyr'+node.ip" width="370" height="100"></canvas>
+                    <canvas class="chart" :id="'imu_gyr'+node.ip"></canvas>
                     <div id="teapot"></div>
                 </div>
                 <div class="panel-body" :id="'led'+index" v-if="['0','1'].includes(node.data.led)">
