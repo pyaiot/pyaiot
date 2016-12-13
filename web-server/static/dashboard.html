@@ -346,7 +346,7 @@ var acc_charts = {}
 var gyr_charts = {}
 var temp_charts = {}
 var pres_charts = {}
-var teapot_charts = []
+var teapot_charts = {}
 
 var data = {nodes: []}
 var vm = new Vue({
@@ -495,11 +495,11 @@ function update_pres_charts(msg) {
 }
 
 function setup_teapot_charts(node) {
-    teapot_charts.push(node)
     Vue.nextTick(function () {
         teapot.init()
         teapot.render()
     })
+    teapot_charts[node] = node
 }
 
 function setup_imu_charts(node) {
