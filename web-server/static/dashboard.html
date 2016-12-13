@@ -345,6 +345,7 @@ var acc_charts = {}
 var gyr_charts = {}
 var temp_charts = {}
 var pres_charts = {}
+var teapot_charts = []
 
 var data = {nodes: []}
 var vm = new Vue({
@@ -371,6 +372,16 @@ ws.onopen = function() {
 }
 ws.onmessage = function(event) {
     let msg = JSON.parse(event.data)
+    receive_message(msg)
+}
+ws.onclose = function(ev){
+    console.log("WebSocket closed")
+}
+ws.onerror = function(ev){
+    console.log("WebSocket error")
+}
+
+function receive_message(msg) {
     let node = msg.node
     let index = vm.nodes.map(e => e.ip).indexOf(node)
     switch (msg.command) {
@@ -401,13 +412,7 @@ ws.onmessage = function(event) {
             console.log('Unknown command')
             break
     }
-    refresh_layout()
-}
-ws.onclose = function(ev){
-    console.log("WebSocket closed")
-}
-ws.onerror = function(ev){
-    console.log("WebSocket error")
+    Vue.nextTick(refresh_layout)
 }
 
 function update_charts(msg) {
@@ -415,6 +420,9 @@ function update_charts(msg) {
     if (msg.endpoint === "/imu") {
         if (!(msg.node in acc_charts)) {
             setup_imu_charts(msg.node)
+        }
+        if (!(msg.node in teapot_charts)) {
+            setup_teapot_charts(msg.node)
         }
 
         update_imu_charts(msg)
@@ -483,6 +491,14 @@ function setup_pres_charts(node) {
 
 function update_pres_charts(msg) {
     pres_charts[msg.node][1].append(new Date().getTime(), msg.data.slice(0, -3));
+}
+
+function setup_teapot_charts(node) {
+    teapot_charts.push(node)
+    Vue.nextTick(function () {
+        teapot.init()
+        teapot.render()
+    })
 }
 
 function setup_imu_charts(node) {
