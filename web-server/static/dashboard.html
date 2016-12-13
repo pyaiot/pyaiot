@@ -135,10 +135,21 @@ img {
     padding: 0px 3px;
     border-radius: 100%;
 }
+.panel-body {
+    position: relative;
+    z-index: 1;
+}
+.panel-body.has-chart {
+    min-height: 110px;
+}
 .chart {
-    background-color: #333;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 100px;
+    height: 100%;
+    z-index: -1;
+    /*background-color: #333;*/
 }
 #teapot {
     height: 277px;
@@ -236,12 +247,12 @@ if (theme == 'dark') {
                         </div>
                     </div>
                 </div>
-                <div class="panel-body" v-if="node.data.temperature">
+                <div class="panel-body has-chart" v-if="node.data.temperature">
                     <div class="h5 text-muted">Temperature</div>
                     <div class="h1">{{!node.data.temperature}}</div>
                     <canvas class="chart" :id="'temp_chart'+node.ip"></canvas>
                 </div>
-                <div class="panel-body" v-if="node.data.pressure">
+                <div class="panel-body has-chart" v-if="node.data.pressure">
                     <div class="h5 text-muted">Pressure</div>
                     <div class="h1">{{!node.data.pressure}}</div>
                     <canvas class="chart" :id="'pres_chart'+node.ip"></canvas>
@@ -286,12 +297,15 @@ if (theme == 'dark') {
                 <div class="panel-body" v-if="node.data.webcam">
                     <img width="370" height="278" :src="node.data.webcam"></img>
                 </div>
-                <div class="panel-body" v-if="node.data.imu">
-                    <div class="h5 text-muted">Inertial Measurement Unit</div>
-                    <p><center>Accelerometer</center></p>
+                <div class="panel-body has-chart" v-if="node.data.imu">
+                    <div class="h5 text-muted">Accelerometer</div>
                     <canvas class="chart" :id="'imu_acc'+node.ip"></canvas>
-                    <p><center>Gyroscope</center></p>
+                </div>
+                <div class="panel-body has-chart" v-if="node.data.imu">
+                    <div class="h5 text-muted">Gyroscope</div>
                     <canvas class="chart" :id="'imu_gyr'+node.ip"></canvas>
+                </div>
+                <div class="panel-body" v-if="node.data.imu">
                     <div id="teapot"></div>
                 </div>
                 <div class="panel-body" :id="'led'+index" v-if="['0','1'].includes(node.data.led)">
@@ -406,7 +420,7 @@ function receive_message(msg) {
                 // force material UI refresh
                 $.material.init()
 
-                update_charts(msg)
+                Vue.nextTick(_ => update_charts(msg))
             }
             break
         default:
@@ -450,6 +464,8 @@ function update_charts(msg) {
 
 function setup_temp_charts(node) {
     var temp_canva = document.getElementById('temp_chart' + node)
+    temp_canva.setAttribute('width', temp_canva.clientWidth)
+    temp_canva.setAttribute('height', temp_canva.clientHeight)
     if (temp_canva) {
         temp_charts[node] = [new SmoothieChart({ millisPerPixel:1000,
                                                  grid:{ strokeStyle: 'transparent',
@@ -473,6 +489,8 @@ function update_temp_charts(msg) {
 
 function setup_pres_charts(node) {
     var pres_canva = document.getElementById('pres_chart' + node)
+    pres_canva.setAttribute('width', pres_canva.clientWidth)
+    pres_canva.setAttribute('height', pres_canva.clientHeight)
     if (pres_canva) {
         pres_charts[node] = [new SmoothieChart({ millisPerPixel:5000,
                                                  grid:{ strokeStyle: 'transparent',
@@ -495,17 +513,18 @@ function update_pres_charts(msg) {
 }
 
 function setup_teapot_charts(node) {
-    Vue.nextTick(function () {
-        teapot.init()
-        teapot.render()
-    })
     teapot_charts[node] = node
+    teapot.init()
+    teapot.render()
 }
 
 function setup_imu_charts(node) {
     var acc_canva = document.getElementById('imu_acc' + node)
+    acc_canva.setAttribute('width', acc_canva.clientWidth)
+    acc_canva.setAttribute('height', acc_canva.clientHeight)
     if (acc_canva) {
         acc_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'transparent',
+                                                       strokeStyle:'#eee',
                                                        borderVisible:false,
                                                        sharpLines:true },
                                                 labels: { disabled: true },
@@ -520,8 +539,11 @@ function setup_imu_charts(node) {
     }
 
     var gyr_canva = document.getElementById('imu_gyr' + node)
+    gyr_canva.setAttribute('width', gyr_canva.clientWidth)
+    gyr_canva.setAttribute('height', gyr_canva.clientHeight)
     if (acc_canva) {
         gyr_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'transparent',
+                                                       strokeStyle:'#eee',
                                                        borderVisible:false,
                                                        sharpLines:true },
                                                 labels: {disabled: true},
@@ -532,15 +554,15 @@ function setup_imu_charts(node) {
                              'z': new TimeSeries()}]
         gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['x'],
                                           { strokeStyle: 'rgba(189, 32, 44, 1)',
-                                            fillStyle: 'rgba(189, 32, 44, 0.2)',
+                                            fillStyle: 'rgba(189, 32, 44, 0.1)',
                                             lineWidth: 1.5 });
         gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['y'],
                                           { strokeStyle: 'rgba(63, 167, 36, 1)',
-                                            fillStyle: 'rgba(63, 167, 36, 0.2)',
+                                            fillStyle: 'rgba(63, 167, 36, 0.1)',
                                             lineWidth: 1.5 });
         gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['z'],
-                                          { strokeStyle: 'rgba(51, 0, 204, 1)',
-                                            fillStyle: 'rgba(51, 0, 204, 0.2)',
+                                          { strokeStyle: 'rgba(3, 169, 244, 1)',
+                                            fillStyle: 'rgba(3, 169, 244, 0.1)',
                                             lineWidth: 1.5 });
         gyr_charts[node][0].streamTo(gyr_canva, 500);
     }
