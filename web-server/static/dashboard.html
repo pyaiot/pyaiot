@@ -239,12 +239,12 @@ if (theme == 'dark') {
                 <div class="panel-body" v-if="node.data.temperature">
                     <div class="h5 text-muted">Temperature</div>
                     <div class="h1">{{!node.data.temperature}}</div>
-                    <canvas :i class="chart"d="'temp_chart'+node.ip"></canvas>
+                    <canvas class="chart" :id="'temp_chart'+node.ip"></canvas>
                 </div>
                 <div class="panel-body" v-if="node.data.pressure">
                     <div class="h5 text-muted">Pressure</div>
                     <div class="h1">{{!node.data.pressure}}</div>
-                    <canvas :i class="chart"d="'pres_chart'+node.ip"></canvas>
+                    <canvas class="chart" :id="'pres_chart'+node.ip"></canvas>
                 </div>
                 <div class="panel-body" v-if="node.data.robot">
                     <div class="h5 text-muted">Buggybot</div>
