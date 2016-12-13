@@ -49,7 +49,7 @@
             src="{{ static_url('node_modules/vue/dist/vue.min.js') }}"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r82/three.min.js"></script>
-    <script src='js/TeapotBufferGeometry.js'></script>
+    <script src="{{ static_url('js/TeapotBufferGeometry.js') }}"></script>
 </head>
 
 <body>
@@ -614,6 +614,6 @@ $('#settingsModal').on('hide.bs.modal', function (e) {
     localStorage.setItem('theme', $('#selectTheme').val())
 });
 </script>
-<script src='js/teapot.js'></script>
+<script src="{{ static_url('js/teapot.js') }}"></script>
 </body>
 </html>
