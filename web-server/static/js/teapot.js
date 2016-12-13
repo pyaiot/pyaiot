@@ -57,7 +57,7 @@ var teapot = (function() {
 
         // RENDERER
         renderer = new THREE.WebGLRenderer( { antialias: true } );
-        renderer.setClearColor( 0xAAAAAA );
+        renderer.setClearColor( 0xFFFFFF );
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( canvasWidth, canvasHeight );
         renderer.gammaInput = true;
@@ -73,7 +73,7 @@ var teapot = (function() {
         // cameraControls.addEventListener( 'change', render );
 
         // TEXTURE MAP
-        var textureMap = new THREE.TextureLoader().load( 'texture.png' );
+        var textureMap = new THREE.TextureLoader().load( 'static/js/texture.png' );
         textureMap.wrapS = textureMap.wrapT = THREE.RepeatWrapping;
         textureMap.anisotropy = 16;
 
@@ -129,9 +129,9 @@ var teapot = (function() {
 
             // bizarrely, if you initialize these with negative numbers, the sliders
             // will not show any decimal places.
-            lx: 0.32,
-            ly: 0.39,
-            lz: 0.7,
+            lx: -0.5,
+            ly: 0.5,
+            lz: 0.6,
             newTess: 15,
             bottom: true,
             lid: true,
@@ -325,6 +325,7 @@ var teapot = (function() {
         // holder.rotation.x += 0.01;
         // holder.rotation.z += 0.01;
         // holder.rotation.z = 3.14;
+        holder.rotation.x = 0.35;
         renderer.render( scene, camera );
 
     }
