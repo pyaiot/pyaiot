@@ -460,8 +460,8 @@ function setup_temp_charts(node) {
                                                  maxValue: 40}),
                             new TimeSeries()]
         temp_charts[node][0].addTimeSeries(temp_charts[node][1],
-                                           { strokeStyle: 'rgba(0, 255, 0, 1)',
-                                             fillStyle: 'rgba(0, 255, 0, 0.2)',
+                                           { strokeStyle: 'rgba(63, 167, 36, 1)',
+                                             fillStyle: 'rgba(63, 167, 36, 0.2)',
                                              lineWidth: 1.5 });
         temp_charts[node][0].streamTo(temp_canva, 500);
     }
@@ -483,8 +483,8 @@ function setup_pres_charts(node) {
                                                  maxValue: 1030}),
                             new TimeSeries()]
         pres_charts[node][0].addTimeSeries(pres_charts[node][1],
-                                           { strokeStyle: 'rgba(0, 255, 0, 1)',
-                                             fillStyle: 'rgba(0, 255, 0, 0.2)',
+                                           { strokeStyle: 'rgba(63, 167, 36, 1)',
+                                             fillStyle: 'rgba(63, 167, 36, 0.2)',
                                              lineWidth: 1.5 });
         pres_charts[node][0].streamTo(pres_canva, 500);
     }
@@ -513,8 +513,8 @@ function setup_imu_charts(node) {
                                                 maxValue: 5000}),
                             new TimeSeries()]
         acc_charts[node][0].addTimeSeries(acc_charts[node][1],
-                                          { strokeStyle: 'rgba(0, 255, 0, 1)',
-                                            fillStyle: 'rgba(0, 255, 0, 0.2)',
+                                          { strokeStyle: 'rgba(63, 167, 36, 1)',
+                                            fillStyle: 'rgba(63, 167, 36, 0.2)',
                                             lineWidth: 1.5 });
         acc_charts[node][0].streamTo(acc_canva, 500);
     }
@@ -531,16 +531,16 @@ function setup_imu_charts(node) {
                              'y': new TimeSeries(),
                              'z': new TimeSeries()}]
         gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['x'],
-                                          { strokeStyle: 'rgba(255, 0, 0, 1)',
-                                            fillStyle: 'rgba(255, 0, 0, 0.2)',
+                                          { strokeStyle: 'rgba(189, 32, 44, 1)',
+                                            fillStyle: 'rgba(189, 32, 44, 0.2)',
                                             lineWidth: 1.5 });
         gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['y'],
-                                          { strokeStyle: 'rgba(0, 255, 0, 1)',
-                                            fillStyle: 'rgba(0, 255, 0, 0.2)',
+                                          { strokeStyle: 'rgba(63, 167, 36, 1)',
+                                            fillStyle: 'rgba(63, 167, 36, 0.2)',
                                             lineWidth: 1.5 });
         gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['z'],
-                                          { strokeStyle: 'rgba(0, 0, 255, 1)',
-                                            fillStyle: 'rgba(0, 0, 255, 0.2)',
+                                          { strokeStyle: 'rgba(51, 0, 204, 1)',
+                                            fillStyle: 'rgba(51, 0, 204, 0.2)',
                                             lineWidth: 1.5 });
         gyr_charts[node][0].streamTo(gyr_canva, 500);
     }
