@@ -305,9 +305,9 @@ if (theme == 'dark') {
                     <div class="h5 text-muted">Gyroscope</div>
                     <canvas class="chart" :id="'imu_gyr'+node.ip"></canvas>
                 </div>
-                <div class="panel-body" v-if="node.data.imu">
+              <!--   <div class="panel-body" v-if="node.data.imu">
                     <div id="teapot"></div>
-                </div>
+                </div> -->
                 <div class="panel-body" :id="'led'+index" v-if="['0','1'].includes(node.data.led)">
                     <div class="h5 text-muted">LED</div>
                     <div v-if="node.data.led === '1'" class="h1">ON <i class="fa fa-circle led-color"></i></div>
