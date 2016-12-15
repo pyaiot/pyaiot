@@ -47,6 +47,9 @@
             src="{{ static_url('node_modules/smoothie/smoothie.js') }}"></script>
     <script type="text/javascript"
             src="{{ static_url('node_modules/vue/dist/vue.min.js') }}"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r82/three.min.js"></script>
+    <script src="{{ static_url('js/TeapotBufferGeometry.js') }}"></script>
 </head>
 
 <body>
@@ -132,8 +135,25 @@ img {
     padding: 0px 3px;
     border-radius: 100%;
 }
-canvas {
-    background-color: #333;
+.panel-body {
+    position: relative;
+    z-index: 1;
+}
+.panel-body.has-chart {
+    min-height: 110px;
+}
+.chart {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    /*background-color: #333;*/
+}
+#teapot {
+    height: 277px;
+    width: 100%;
 }
 .btn-grid {
   display: table;
@@ -192,7 +212,6 @@ if (theme == 'dark') {
     </div>
     <!-- <div class="container-fluid"> -->
     <div class="grid" data-masonry='{ "itemSelector": ".grid-item:not(.grid-hidden)", "fitWidth": "true" }'>
-        <!-- <div class="grid" data-masonry='{ "itemSelector": ".grid-item:not(.grid-hidden)", "fitWidth": "true" }'> -->
         <div class="grid-item">
             <!-- webcam -->
             <div class="panel panel-default" id="webcam">
@@ -228,15 +247,15 @@ if (theme == 'dark') {
                         </div>
                     </div>
                 </div>
-                <div class="panel-body" v-if="node.data.temperature">
+                <div class="panel-body has-chart" v-if="node.data.temperature">
                     <div class="h5 text-muted">Temperature</div>
                     <div class="h1">{{!node.data.temperature}}</div>
-                    <canvas :id="'temp_chart'+node.ip" width="370" height="100"></canvas>
+                    <canvas class="chart" :id="'temp_chart'+node.ip"></canvas>
                 </div>
-                <div class="panel-body" v-if="node.data.pressure">
+                <div class="panel-body has-chart" v-if="node.data.pressure">
                     <div class="h5 text-muted">Pressure</div>
                     <div class="h1">{{!node.data.pressure}}</div>
-                    <canvas :id="'pres_chart'+node.ip" width="370" height="100"></canvas>
+                    <canvas class="chart" :id="'pres_chart'+node.ip"></canvas>
                 </div>
                 <div class="panel-body" v-if="node.data.robot">
                     <div class="h5 text-muted">Buggybot</div>
@@ -278,13 +297,17 @@ if (theme == 'dark') {
                 <div class="panel-body" v-if="node.data.webcam">
                     <img width="370" height="278" :src="node.data.webcam"></img>
                 </div>
-                <div class="panel-body" v-if="node.data.imu">
-                    <div class="h5 text-muted">Inertial Measurement Unit</div>
-                    <p><center>Accelerometer</center></p>
-                    <canvas :id="'imu_acc'+node.ip" width="370" height="100"></canvas>
-                    <p><center>Gyroscope</center></p>
-                    <canvas :id="'imu_gyr'+node.ip" width="370" height="100"></canvas>
+                <div class="panel-body has-chart" v-if="node.data.imu">
+                    <div class="h5 text-muted">Accelerometer</div>
+                    <canvas class="chart" :id="'imu_acc'+node.ip"></canvas>
                 </div>
+                <div class="panel-body has-chart" v-if="node.data.imu">
+                    <div class="h5 text-muted">Gyroscope</div>
+                    <canvas class="chart" :id="'imu_gyr'+node.ip"></canvas>
+                </div>
+              <!--   <div class="panel-body" v-if="node.data.imu">
+                    <div id="teapot"></div>
+                </div> -->
                 <div class="panel-body" :id="'led'+index" v-if="['0','1'].includes(node.data.led)">
                     <div class="h5 text-muted">LED</div>
                     <div v-if="node.data.led === '1'" class="h1">ON <i class="fa fa-circle led-color"></i></div>
@@ -337,6 +360,7 @@ var acc_charts = {}
 var gyr_charts = {}
 var temp_charts = {}
 var pres_charts = {}
+var teapot_charts = {}
 
 var data = {nodes: []}
 var vm = new Vue({
@@ -363,6 +387,16 @@ ws.onopen = function() {
 }
 ws.onmessage = function(event) {
     let msg = JSON.parse(event.data)
+    receive_message(msg)
+}
+ws.onclose = function(ev){
+    console.log("WebSocket closed")
+}
+ws.onerror = function(ev){
+    console.log("WebSocket error")
+}
+
+function receive_message(msg) {
     let node = msg.node
     let index = vm.nodes.map(e => e.ip).indexOf(node)
     switch (msg.command) {
@@ -386,20 +420,14 @@ ws.onmessage = function(event) {
                 // force material UI refresh
                 $.material.init()
 
-                update_charts(msg)
+                Vue.nextTick(_ => update_charts(msg))
             }
             break
         default:
             console.log('Unknown command')
             break
     }
-    refresh_layout()
-}
-ws.onclose = function(ev){
-    console.log("WebSocket closed")
-}
-ws.onerror = function(ev){
-    console.log("WebSocket error")
+    Vue.nextTick(refresh_layout)
 }
 
 function update_charts(msg) {
@@ -407,6 +435,9 @@ function update_charts(msg) {
     if (msg.endpoint === "/imu") {
         if (!(msg.node in acc_charts)) {
             setup_imu_charts(msg.node)
+        }
+        if (!(msg.node in teapot_charts)) {
+            setup_teapot_charts(msg.node)
         }
 
         update_imu_charts(msg)
@@ -433,6 +464,8 @@ function update_charts(msg) {
 
 function setup_temp_charts(node) {
     var temp_canva = document.getElementById('temp_chart' + node)
+    temp_canva.setAttribute('width', temp_canva.clientWidth)
+    temp_canva.setAttribute('height', temp_canva.clientHeight)
     if (temp_canva) {
         temp_charts[node] = [new SmoothieChart({ millisPerPixel:1000,
                                                  grid:{ strokeStyle: 'transparent',
@@ -443,8 +476,8 @@ function setup_temp_charts(node) {
                                                  maxValue: 40}),
                             new TimeSeries()]
         temp_charts[node][0].addTimeSeries(temp_charts[node][1],
-                                           { strokeStyle: 'rgba(0, 255, 0, 1)',
-                                             fillStyle: 'rgba(0, 255, 0, 0.2)',
+                                           { strokeStyle: 'rgba(63, 167, 36, 1)',
+                                             fillStyle: 'rgba(63, 167, 36, 0.2)',
                                              lineWidth: 1.5 });
         temp_charts[node][0].streamTo(temp_canva, 500);
     }
@@ -456,6 +489,8 @@ function update_temp_charts(msg) {
 
 function setup_pres_charts(node) {
     var pres_canva = document.getElementById('pres_chart' + node)
+    pres_canva.setAttribute('width', pres_canva.clientWidth)
+    pres_canva.setAttribute('height', pres_canva.clientHeight)
     if (pres_canva) {
         pres_charts[node] = [new SmoothieChart({ millisPerPixel:5000,
                                                  grid:{ strokeStyle: 'transparent',
@@ -466,8 +501,8 @@ function setup_pres_charts(node) {
                                                  maxValue: 1030}),
                             new TimeSeries()]
         pres_charts[node][0].addTimeSeries(pres_charts[node][1],
-                                           { strokeStyle: 'rgba(0, 255, 0, 1)',
-                                             fillStyle: 'rgba(0, 255, 0, 0.2)',
+                                           { strokeStyle: 'rgba(63, 167, 36, 1)',
+                                             fillStyle: 'rgba(63, 167, 36, 0.2)',
                                              lineWidth: 1.5 });
         pres_charts[node][0].streamTo(pres_canva, 500);
     }
@@ -477,10 +512,19 @@ function update_pres_charts(msg) {
     pres_charts[msg.node][1].append(new Date().getTime(), msg.data.slice(0, -3));
 }
 
+function setup_teapot_charts(node) {
+    teapot_charts[node] = node
+    teapot.init()
+    teapot.render()
+}
+
 function setup_imu_charts(node) {
     var acc_canva = document.getElementById('imu_acc' + node)
+    acc_canva.setAttribute('width', acc_canva.clientWidth)
+    acc_canva.setAttribute('height', acc_canva.clientHeight)
     if (acc_canva) {
         acc_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'transparent',
+                                                       strokeStyle:'#eee',
                                                        borderVisible:false,
                                                        sharpLines:true },
                                                 labels: { disabled: true },
@@ -488,15 +532,18 @@ function setup_imu_charts(node) {
                                                 maxValue: 5000}),
                             new TimeSeries()]
         acc_charts[node][0].addTimeSeries(acc_charts[node][1],
-                                          { strokeStyle: 'rgba(0, 255, 0, 1)',
-                                            fillStyle: 'rgba(0, 255, 0, 0.2)',
+                                          { strokeStyle: 'rgba(63, 167, 36, 1)',
+                                            fillStyle: 'rgba(63, 167, 36, 0.2)',
                                             lineWidth: 1.5 });
         acc_charts[node][0].streamTo(acc_canva, 500);
     }
 
     var gyr_canva = document.getElementById('imu_gyr' + node)
+    gyr_canva.setAttribute('width', gyr_canva.clientWidth)
+    gyr_canva.setAttribute('height', gyr_canva.clientHeight)
     if (acc_canva) {
         gyr_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'transparent',
+                                                       strokeStyle:'#eee',
                                                        borderVisible:false,
                                                        sharpLines:true },
                                                 labels: {disabled: true},
@@ -506,16 +553,16 @@ function setup_imu_charts(node) {
                              'y': new TimeSeries(),
                              'z': new TimeSeries()}]
         gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['x'],
-                                          { strokeStyle: 'rgba(255, 0, 0, 1)',
-                                            fillStyle: 'rgba(255, 0, 0, 0.2)',
+                                          { strokeStyle: 'rgba(189, 32, 44, 1)',
+                                            fillStyle: 'rgba(189, 32, 44, 0.1)',
                                             lineWidth: 1.5 });
         gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['y'],
-                                          { strokeStyle: 'rgba(0, 255, 0, 1)',
-                                            fillStyle: 'rgba(0, 255, 0, 0.2)',
+                                          { strokeStyle: 'rgba(63, 167, 36, 1)',
+                                            fillStyle: 'rgba(63, 167, 36, 0.1)',
                                             lineWidth: 1.5 });
         gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['z'],
-                                          { strokeStyle: 'rgba(0, 0, 255, 1)',
-                                            fillStyle: 'rgba(0, 0, 255, 0.2)',
+                                          { strokeStyle: 'rgba(3, 169, 244, 1)',
+                                            fillStyle: 'rgba(3, 169, 244, 0.1)',
                                             lineWidth: 1.5 });
         gyr_charts[node][0].streamTo(gyr_canva, 500);
     }
@@ -606,5 +653,6 @@ $('#settingsModal').on('hide.bs.modal', function (e) {
     localStorage.setItem('theme', $('#selectTheme').val())
 });
 </script>
+<script src="{{ static_url('js/teapot.js') }}"></script>
 </body>
 </html>
