@@ -112,6 +112,40 @@ def _discover_node(node, ws=None):
                 internal_logger.debug("Cannot write on a closed websocket.")
 
 
+def _forward_message_to_node(message):
+    """Forward a received message to the destination node.
+
+    The message should be JSON and contain 'node', 'path' and 'payload'
+    keys.
+
+    - 'node' corresponds to the node address (generally IPv6)
+    - 'path' corresponds to the CoAP resource on the node
+    - 'payload' corresponds to the new payload for the CoAP resource.
+    """
+    try:
+        data = json.loads(message)
+    except json.JSONDecodeError:
+        reason = ("Invalid message received : "
+                  "'{}'. Only JSON format is supported.".format(message))
+        internal_logger.warning(reason)
+        return reason
+    else:
+        node = data['node']
+        path = data['path']
+        payload = data['payload']
+        internal_logger.debug("Translating message ('{}') "
+                              "received to CoAP PUT request".format(data))
+
+        if CoapNode(node) not in GLOBALS['coap_nodes']:
+            return
+        code, payload = yield _coap_resource(
+            'coap://[{0}]{1}'.format(node, path),
+            method=PUT,
+            payload=payload.encode('ascii'))
+
+    return
+
+
 @gen.coroutine
 def _coap_resource(url, method=GET, payload=b''):
     protocol = yield from Context.create_client_context()
@@ -204,6 +238,18 @@ class CoapServerResource(resource.Resource):
                        payload="Received '{}'".format(payload).encode('utf-8'))
 
 
+class BrokerPostHandler(web.RequestHandler):
+    @tornado.web.asynchronous
+    def get(self, path=None):
+        pass
+
+    @tornado.web.asynchronous
+    @gen.coroutine
+    def post(self):
+        """Forward POST request to a CoAP PUT request."""
+        _forward_message_to_node(self.request.body.decode('utf-8'))
+
+
 class BrokerWebsocketHandler(websocket.WebSocketHandler):
     def check_origin(self, origin):
         """Allow connections from anywhere."""
@@ -225,26 +271,9 @@ class BrokerWebsocketHandler(websocket.WebSocketHandler):
         """Triggered when a message is received from the web client."""
 
         internal_logger.debug("Message received: ".format(message))
-        data = None
-        try:
-            data = json.loads(message)
-        except json.JSONDecodeError:
-            internal_logger.warning("Non valid websocket message received : "
-                                    "'{}'".format(message))
-
-        if data is not None:
-            node = data['node']
-            path = data['path']
-            payload = data['payload']
-            internal_logger.debug("Translate websocket message ('{}') "
-                                  "received to CoAP PUT request".format(data))
-
-            if CoapNode(node) not in GLOBALS['coap_nodes']:
-                return
-            code, payload = yield _coap_resource(
-                'coap://[{0}]{1}'.format(node, path),
-                method=PUT,
-                payload=payload.encode('ascii'))
+        res = _forward_message_to_node(message)
+        if res is not None:
+            self.close(code=1003, reason=res)
 
     def on_close(self):
         """Remove websocket from internal list."""
@@ -264,9 +293,12 @@ class BrokerApplication(web.Application):
             self._log.setLevel(logging.DEBUG)
 
         handlers = [
+            (r"/post", BrokerPostHandler),
             (r"/ws", BrokerWebsocketHandler),
         ]
-        settings = {'debug': True}
+        settings = {'debug': True,
+                    'cookie_secret': 'MY_COOKIE_ID',
+                    'xsrf_cookies': False}
         super().__init__(handlers, **settings)
         self._log.info('Application started, listening on port {0}'
                        .format(options.port))

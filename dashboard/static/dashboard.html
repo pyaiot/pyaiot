@@ -607,9 +607,13 @@ function refresh_layout() {
 }
 
 function sendSwitchLed(node, state) {
-    ws.send(JSON.stringify({"node": node,
+    $.post('/post',
+            JSON.stringify({"node": node,
                             "path" : "/led",
-                            "payload": state }))
+                            "payload": state }),
+            function(data) {
+                console.log("LED switched to state", state, "on node", node)
+            });
 }
 
 $(document).on('change', '.led-btn', function() {
@@ -623,9 +627,13 @@ $(document).on('change', '.led-btn', function() {
 })
 
 function sendRobotDirection(robot, direction) {
-    ws.send(JSON.stringify({"node": robot,
+    $.post('/post',
+            JSON.stringify({"node": robot,
                             "path": "/robot",
-                            "payload": direction }))
+                            "payload": direction }),
+            function(data) {
+                console.log("Direction change to", direction, "on robot", node)
+            });
 }
 
 $(document).on('click', '.robot-btn', function() {
