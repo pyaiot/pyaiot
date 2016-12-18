@@ -606,42 +606,26 @@ function refresh_layout() {
     msnry.layout()
 }
 
-function sendSwitchLed(node, state) {
-    $.post('/post',
-            JSON.stringify({"node": node,
-                            "path" : "/led",
-                            "payload": state }),
-            function(data) {
-                console.log("LED switched to state", state, "on node", node)
-            });
+function sendData(data) {
+    ws.send(JSON.stringify(data))
 }
 
 $(document).on('change', '.led-btn', function() {
     var node = this.dataset.index
+    var payload = "0"
     if($(this).is(':checked')) {
-        sendSwitchLed(node, "1")
+        payload = "1"
     }
-    else {
-        sendSwitchLed(node, "0")
-    }
-})
 
-function sendRobotDirection(robot, direction) {
-    $.post('/post',
-            JSON.stringify({"node": robot,
-                            "path": "/robot",
-                            "payload": direction }),
-            function(data) {
-                console.log("Direction change to", direction, "on robot", node)
-            });
-}
+    sendData({"node": node, path: "/led", "payload": payload})
+})
 
 $(document).on('click', '.robot-btn', function() {
     var data = this.dataset.index.split(',')
     var direction = data[0]
     var node = data[1]
 
-    sendRobotDirection(node, direction)
+    sendData({"node": node, path: "/robot", "payload": direction})
 })
 
 $('#selectTheme').change(function () {

@@ -112,7 +112,8 @@ def _discover_node(node, ws=None):
                 internal_logger.debug("Cannot write on a closed websocket.")
 
 
-def _forward_message_to_node(message):
+@gen.coroutine
+def _forward_message_to_node(message, origin="POST"):
     """Forward a received message to the destination node.
 
     The message should be JSON and contain 'node', 'path' and 'payload'
@@ -125,8 +126,9 @@ def _forward_message_to_node(message):
     try:
         data = json.loads(message)
     except json.JSONDecodeError:
-        reason = ("Invalid message received : "
-                  "'{}'. Only JSON format is supported.".format(message))
+        reason = ("Invalid message received from {}: "
+                  "'{}'. Only JSON format is supported.".format(message,
+                                                                origin))
         internal_logger.warning(reason)
         return reason
     else:
@@ -267,11 +269,12 @@ class BrokerWebsocketHandler(websocket.WebSocketHandler):
                                            'node': node.address}))
             _discover_node(node, self)
 
+    @gen.coroutine
     def on_message(self, message):
         """Triggered when a message is received from the web client."""
 
         internal_logger.debug("Message received: ".format(message))
-        res = _forward_message_to_node(message)
+        res = _forward_message_to_node(message, origin="Websocket")
         if res is not None:
             self.close(code=1003, reason=res)
 
