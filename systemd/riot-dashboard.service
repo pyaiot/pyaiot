@@ -1,12 +1,11 @@
 [Unit]
 Description=Riot Dashboard Application
-After=riot-broker.service
+After=network.target radvd.service
 
 [Service]
 User=pi
-WorkingDirectory=/home/pi/demos/dashboard/
-ExecStart=/usr/bin/node /home/pi/demos/dashboard/dashboard.js
+ExecStart=/usr/bin/python3 /home/pi/demos/dashboard/dashboard.py --port=8082 --broker-port=80 --broker-host=riot-demo.inria.fr
 
 [Install]
 WantedBy=multi-user.target
-Alias=riot-dashboard.service
+Alias=riot-broker.service
