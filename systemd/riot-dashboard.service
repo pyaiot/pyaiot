@@ -8,4 +8,4 @@ ExecStart=/usr/bin/python3 /home/pi/demos/dashboard/dashboard.py --port=8080 --b
 
 [Install]
 WantedBy=multi-user.target
-Alias=riot-broker.service
+Alias=riot-dashboard.service
