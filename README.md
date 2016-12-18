@@ -4,18 +4,17 @@
 
 * [IoT-LAB open A8
   demo](https://gitlab.inria.fr/fit-saclay/demos/tree/master/utils/iotlab)
-  ```
-               _____   ___   _____     ___           _____           _          _      ____
-              |  ___| |_ _| |_   _|   |_ _|   ___   |_   _|         | |        / \    | __ )
-              | |_     | |    | |      | |   / _ \    | |    _____  | |       / _ \   |  _ \
-              |  _|    | |    | |      | |  | (_) |   | |   |_____| | |___   / ___ \  | |_) |
-              |_|     |___|   |_|     |___|  \___/    |_|           |_____| /_/   \_\ |____/
-  ```
   This demo automatically submit an experiment on IoT-LAB with two open A8
   nodes. The first node is configured as aborder router and the second node runs
   a firmware that integrates automatically on the RIOT Dashboard described
   below.
-
+```
+             _____   ___   _____     ___           _____           _          _      ____
+            |  ___| |_ _| |_   _|   |_ _|   ___   |_   _|         | |        / \    | __ )
+            | |_     | |    | |      | |   / _ \    | |    _____  | |       / _ \   |  _ \
+            |  _|    | |    | |      | |  | (_) |   | |   |_____| | |___   / ___ \  | |_) |
+            |_|     |___|   |_|     |___|  \___/    |_|           |_____| /_/   \_\ |____/
+```
 
 ### Prerequisites for setting up a demonstration server
 
@@ -78,18 +77,18 @@ $ make setup
 $ sudo systemctl status riot-broker.service
 ● riot-broker.service - Riot Broker Application
    Loaded: loaded (/lib/systemd/system/riot-broker.service; enabled)
-   Active: active (running) since Tue 2016-10-25 08:51:02 UTC; 4min 55s ago
- Main PID: 1469 (python3)
+   Active: active (running) since dim. 2016-12-18 14:59:56 CET; 35min ago
+ Main PID: 32411 (python3)
    CGroup: /system.slice/riot-broker.service
-           └─1469 /usr/bin/python3 /home/pi/demos/riot-broker.py
+           └─32411 /usr/bin/python3 /home/pi/demos/broker/broker.py --port=8082 --debug
 [...]
 $ sudo systemctl status riot-dashboard.service
 ● riot-dashboard.service - Riot Dashboard Application
    Loaded: loaded (/lib/systemd/system/riot-dashboard.service; enabled)
-   Active: active (running) since Tue 2016-10-25 11:19:57 CEST; 5s ago
- Main PID: 7398 (node)
+   Active: active (running) since dim. 2016-12-18 14:52:29 CET; 41min ago
+ Main PID: 32321 (python3)
    CGroup: /system.slice/riot-dashboard.service
-           └─7398 /usr/bin/node /home/pi/demos/dashboard/dashboard.js
+           └─32321 /usr/bin/python3 /home/pi/demos/dashboard/dashboard.py --port=8080 --broker-port=80 --broker...
 [...]
 </pre>
 
