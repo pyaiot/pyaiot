@@ -8,6 +8,8 @@
   nodes. The first node is configured as aborder router and the second node runs
   a firmware that integrates automatically on the RIOT Dashboard described
   below.
+
+
 ```
              _____   ___   _____     ___           _____           _          _      ____
             |  ___| |_ _| |_   _|   |_ _|   ___   |_   _|         | |        / \    | __ )
