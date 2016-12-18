@@ -136,7 +136,8 @@ def _forward_message_to_node(message, origin="POST"):
         path = data['path']
         payload = data['payload']
         internal_logger.debug("Translating message ('{}') "
-                              "received to CoAP PUT request".format(data))
+                              "received from {} to CoAP PUT "
+                              "request".format(data, origin))
 
         if CoapNode(node) not in GLOBALS['coap_nodes']:
             return
@@ -273,7 +274,6 @@ class BrokerWebsocketHandler(websocket.WebSocketHandler):
     def on_message(self, message):
         """Triggered when a message is received from the web client."""
 
-        internal_logger.debug("Message received: ".format(message))
         res = _forward_message_to_node(message, origin="Websocket")
         if res is not None:
             self.close(code=1003, reason=res)
