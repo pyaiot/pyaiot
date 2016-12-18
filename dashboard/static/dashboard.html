@@ -95,7 +95,7 @@ img {
     height: 300px;
     background-color: #999;
     /*background-image: url(/demo-cam/?action=stream), url(assets/ic_videocam_off.svg);*/
-    background-image: url(/demo-cam/?action=stream);
+    background-image: url({{ camera_url }});
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100%;
@@ -223,7 +223,7 @@ if (theme == 'dark') {
                             </a>
                             <ul class="dropdown-menu dropdown-menu-right">
                                 <li class="li-text">
-                                    <a href="/demo-cam/?action=stream">Live Camera</a>
+                                    <a href={{ camera_url }}>Live Camera</a>
                                 </li>
                             </ul>
                         </div>
@@ -391,9 +391,10 @@ ws.onmessage = function(event) {
 }
 ws.onclose = function(ev){
     console.log("WebSocket closed")
+    print_ws_close_reason(ev.code)
 }
 ws.onerror = function(ev){
-    console.log("WebSocket error")
+    console.log("WebSocket error", ev)
 }
 
 function receive_message(msg) {
@@ -605,32 +606,26 @@ function refresh_layout() {
     msnry.layout()
 }
 
-function postSwitchLed(node, state) {
-    $.post('/',
-        JSON.stringify({ "node": node, "path" : "/led", "payload": state }),
-        function(data) {
-            console.log("LED switched to state", state, "on node", node)
-        });
+function sendSwitchLed(node, state) {
+    ws.send(JSON.stringify({"node": node,
+                            "path" : "/led",
+                            "payload": state }))
 }
 
 $(document).on('change', '.led-btn', function() {
     var node = this.dataset.index
     if($(this).is(':checked')) {
-        postSwitchLed(node, "1")
+        sendSwitchLed(node, "1")
     }
     else {
-        postSwitchLed(node, "0")
+        sendSwitchLed(node, "0")
     }
 })
 
-function postRobotDirection(robot, direction) {
-    $.post('/',
-        JSON.stringify({ "node": robot,
-                         "path": "/robot",
-                         "payload": direction }),
-        function(data) {
-            console.log("Direction change to", direction, "on robot", node)
-        });
+function sendRobotDirection(robot, direction) {
+    ws.send(JSON.stringify({"node": robot,
+                            "path": "/robot",
+                            "payload": direction }))
 }
 
 $(document).on('click', '.robot-btn', function() {
@@ -638,7 +633,7 @@ $(document).on('click', '.robot-btn', function() {
     var direction = data[0]
     var node = data[1]
 
-    postRobotDirection(node, direction)
+    sendRobotDirection(node, direction)
 })
 
 $('#selectTheme').change(function () {
@@ -652,6 +647,83 @@ $('#selectTheme').change(function () {
 $('#settingsModal').on('hide.bs.modal', function (e) {
     localStorage.setItem('theme', $('#selectTheme').val())
 });
+
+function print_ws_close_reason(code) {
+    var reason;
+    // See http://tools.ietf.org/html/rfc6455#section-7.4.1
+    switch(code) {
+    case 1000:
+        reason = "Normal closure, meaning that the purpose for which the\
+                  connection was established has been fulfilled.";
+        break
+    case 1001:
+        reason = "An endpoint is \"going away\", such as a server going down\
+                  or a browser having navigated away from a page.";
+        break
+    case 1002:
+        reason = "An endpoint is terminating the connection due to a protocol\
+                  error";
+        break
+    case 1003:
+        reason = "An endpoint is terminating the connection because it has\
+                  received a type of data it cannot accept (e.g., an endpoint\
+                  that understands only text data MAY send this if it receives\
+                  a binary message).";
+        break
+    case 1004:
+        reason = "Reserved. The specific meaning might be defined in the\
+                  future.";
+        break
+    case 1005:
+        reason = "No status code was actually present.";
+        break
+    case 1006:
+       reason = "The connection was closed abnormally, e.g., without sending\
+                 or receiving a Close control frame";
+        break
+    case 1007:
+        reason = "An endpoint is terminating the connection because it has\
+                  received data within a message that was not consistent with\
+                  the type of the message (e.g., non-UTF-8\
+                  [http://tools.ietf.org/html/rfc3629] data within a text\
+                  message).";
+        break
+    case 1008:
+        reason = "An endpoint is terminating the connection because it has\
+                  received a message that \"violates its policy\". This\
+                  reason is given either if there is no other sutible\
+                  reason, or if there is a need to hide specific details\
+                  about the policy.";
+        break
+    case 1009:
+       reason = "An endpoint is terminating the connection because it has\
+                 received a message that is too big for it to process.";
+        break
+    case 1010:
+        // Note that this status code is not used by the server,
+        // because it can fail the WebSocket handshake instead.
+        reason = "An endpoint (client) is terminating the connection because\
+                  it has expected the server to negotiate one or more\
+                  extension, but the server didn't return them in the\
+                  response message of the WebSocket handshake. <br/>\
+                  Specifically, the extensions that are needed\
+                  are: " + event.reason;
+        break
+    case 1011:
+        reason = "A server is terminating the connection because it\
+                  encountered an unexpected condition that prevented it\
+                  from fulfilling the request.";
+        break
+    case 1015:
+        reason = "The connection was closed due to a failure to perform a\
+                  TLS handshake (e.g., the server certificate can't be\
+                  verified).";
+        break
+    default:
+        reason = "Unknown reason";
+    }
+    console.log("Code: ", code, "\nReason:", reason)
+}
 </script>
 <script src="{{ static_url('js/teapot.js') }}"></script>
 </body>

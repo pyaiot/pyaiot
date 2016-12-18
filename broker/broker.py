@@ -1,8 +1,5 @@
-
-import os
 import sys
 import time
-import os.path
 import tornado
 import asyncio
 import json
@@ -207,49 +204,15 @@ class CoapServerResource(resource.Resource):
                        payload="Received '{}'".format(payload).encode('utf-8'))
 
 
-class ActiveNodesHandler(web.RequestHandler):
-    @tornado.web.asynchronous
-    @gen.coroutine
-    def get(self):
-        nodes = []
-        for node in GLOBALS['coap_nodes']:
-            try:
-                nodes.append(json.dumps(node))
-            except:
-                pass
-        self.write({'nodes': json.dumps(nodes)})
-        self.finish()
+class BrokerWebsocketHandler(websocket.WebSocketHandler):
+    def check_origin(self, origin):
+        """Allow connections from anywhere."""
 
+        return True
 
-class DashboardHandler(web.RequestHandler):
-    @tornado.web.asynchronous
-    def get(self, path=None):
-        self.render("dashboard.html",
-                    wsserver="{}:{}".format(options.websocket_host,
-                                            options.websocket_port),
-                    title="RIOT Dashboard")
-
-    @tornado.web.asynchronous
-    @gen.coroutine
-    def post(self):
-        """Forward POST request to a CoAP PUT request."""
-        data = json.loads(self.request.body.decode('utf-8'))
-        node = data['node']
-        path = data['path']
-        payload = data['payload']
-        internal_logger.debug("Translate POST request ('{}') received to CoAP"
-                              "PUT request".format(data))
-
-        if CoapNode(node) not in GLOBALS['coap_nodes']:
-            return
-        code, payload = yield _coap_resource('coap://[{0}]{1}'
-                                             .format(node, path),
-                                             method=PUT,
-                                             payload=payload.encode('ascii'))
-
-
-class DashboardWebSocket(websocket.WebSocketHandler):
     def open(self):
+        """Discover nodes on each opened connection."""
+
         self.set_nodelay(True)
         internal_logger.debug("New websocket opened")
         GLOBALS['coap_sockets'].append(self)
@@ -258,47 +221,61 @@ class DashboardWebSocket(websocket.WebSocketHandler):
                                            'node': node.address}))
             _discover_node(node, self)
 
+    def on_message(self, message):
+        """Triggered when a message is received from the web client."""
+
+        internal_logger.debug("Message received: ".format(message))
+        data = None
+        try:
+            data = json.loads(message)
+        except json.JSONDecodeError:
+            internal_logger.warning("Non valid websocket message received : "
+                                    "'{}'".format(message))
+
+        if data is not None:
+            node = data['node']
+            path = data['path']
+            payload = data['payload']
+            internal_logger.debug("Translate websocket message ('{}') "
+                                  "received to CoAP PUT request".format(data))
+
+            if CoapNode(node) not in GLOBALS['coap_nodes']:
+                return
+            code, payload = yield _coap_resource(
+                'coap://[{0}]{1}'.format(node, path),
+                method=PUT,
+                payload=payload.encode('ascii'))
+
     def on_close(self):
+        """Remove websocket from internal list."""
+
         internal_logger.debug("Websocket closed")
         if self in GLOBALS['coap_sockets']:
             GLOBALS['coap_sockets'].remove(self)
 
 
-class RiotDashboardApplication(web.Application):
+class BrokerApplication(web.Application):
     """Tornado based web application providing live nodes on a network."""
 
     def __init__(self):
         self._nodes = {}
-        self._log = logging.getLogger("riot broker")
+        self._log = logging.getLogger("dashboard broker")
         if options.debug:
             self._log.setLevel(logging.DEBUG)
 
         handlers = [
-            (r'/', DashboardHandler),
-            (r"/ws", DashboardWebSocket),
-            (r'/nodes', ActiveNodesHandler),
+            (r"/ws", BrokerWebsocketHandler),
         ]
-        settings = {'debug': True,
-                    "cookie_secret": "MY_COOKIE_ID",
-                    "xsrf_cookies": False,
-                    'static_path': os.path.join(os.path.dirname(__file__),
-                                                "static"),
-                    'template_path': os.path.join(os.path.dirname(__file__),
-                                                  "static")
-                    }
+        settings = {'debug': True}
         super().__init__(handlers, **settings)
         self._log.info('Application started, listening on port {0}'
-                       .format(options.http_port))
+                       .format(options.port))
 
 
 def parse_command_line():
     """Parse command line arguments for Riot broker application."""
-    define("http_port", default=8080,
-           help="Web application HTTP port")
-    define("websocket_port", default=8080,
-           help="Web application websocket port")
-    define("websocket_host", default="localhost",
-           help="Public websocket server hostname")
+    define("port", default=8000,
+           help="Broker port")
     define("max_time", default=120,
            help="Retention time for lost nodes (s).")
     define("debug", default=False,
@@ -324,8 +301,8 @@ if __name__ == '__main__':
         asyncio.async(Context.create_server_context(root_coap))
 
         # Start tornado application
-        app = RiotDashboardApplication()
-        app.listen(options.http_port)
+        app = BrokerApplication()
+        app.listen(options.port)
         ioloop.run_forever()
     except KeyboardInterrupt:
         print("Exiting")
