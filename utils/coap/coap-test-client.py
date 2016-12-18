@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 
 @asyncio.coroutine
 def alive_message(args):
-    path = args.alive
+    path = args.path
     payload = args.payload,
     server = args.server
 
