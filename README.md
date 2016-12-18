@@ -1,24 +1,23 @@
-```
-             _____   ___   _____     ___           _____           _          _      ____
-            |  ___| |_ _| |_   _|   |_ _|   ___   |_   _|         | |        / \    | __ )
-            | |_     | |    | |      | |   / _ \    | |    _____  | |       / _ \   |  _ \
-            |  _|    | |    | |      | |  | (_) |   | |   |_____| | |___   / ___ \  | |_) |
-            |_|     |___|   |_|     |___|  \___/    |_|           |_____| /_/   \_\ |____/
-```
-
-## Demos for the FIT IoT-LAB testbed in Saclay
+## Demos for RIOT
 
 ### Available Demos
 
 * [IoT-LAB open A8
-  demo](https://gitlab.inria.fr/fit-saclay/demos/tree/master/scripts)
+  demo](https://gitlab.inria.fr/fit-saclay/demos/tree/master/utils/iotlab)
+  ```
+               _____   ___   _____     ___           _____           _          _      ____
+              |  ___| |_ _| |_   _|   |_ _|   ___   |_   _|         | |        / \    | __ )
+              | |_     | |    | |      | |   / _ \    | |    _____  | |       / _ \   |  _ \
+              |  _|    | |    | |      | |  | (_) |   | |   |_____| | |___   / ___ \  | |_) |
+              |_|     |___|   |_|     |___|  \___/    |_|           |_____| /_/   \_\ |____/
+  ```
   This demo automatically submit an experiment on IoT-LAB with two open A8
   nodes. The first node is configured as aborder router and the second node runs
   a firmware that integrates automatically on the RIOT Dashboard described
   below.
 
 
-### Prerequisites for setting up a demonstration
+### Prerequisites for setting up a demonstration server
 
 The Demos are designed to run on a prepared raspberry pi:
 * Hardware requirements:
@@ -38,40 +37,43 @@ $ dd bs=4M if=/dev/mmcblk0 | gzip > custom_raspbian.img.gz
 $ gzip -dc custom_raspbian.img.gz | sudo dd bs=4M of=/dev/mmcblk0
 ```
 
+### Broker and Dashboard applications for RIOT demo
 
-### Broker application for RIOT demo
+The broker manage a list of alive sensor nodes by running it's own CoAP
+and WebSocket servers.
 
-The broker manage a list of alive sensor nodes by listening on an UDP port.
-The list of alive nodes can be retrieved using HTTP from any host on a
-network.
+The Dashboard is a web page with some embeded javascript that display the list
+of available nodes and their status. It also allows to interact with the nodes
+(LED control, Robot control, etc)
 
-By default, the UDP port is listening on port 8888 and HTTP url is
-`http://<your_broker_host>:8000/nodes`
+When a node starts, it notifies itself the broker server by sending a CoAP
+post the broker CoAP server. The broker then starts a discovery of the
+available ressources provided by the node (using the CoAP .well-known/core
+resource). Once the node available resources are known, the broker sends to
+each web/mobile clients messages so that they can update themselves.
 
-The alive nodes are retrieved in the following json format:
-{ 'node':
- [ ip1, ip2, ip3]
-}
-
-If a sensor node has not sent a update within 60s, it's removed from the
-list of alived nodes automatically.
+To keep track of alive nodes, each node has to periodically send a notification
+message to the broker.
+If a sensor node has not sent this notification within 60s, the broker removes
+if from the list of alived nodes automatically and send a message to all
+web/mobile clients.
 
 #### Installation procedure:
 
 1. Install the required packages:
 <pre>
-$ sudo pip3 install tornado
+$ sudo pip3 install tornado aiocoap hbmqtt
 </pre>
-2. Copy the systemd service file:
+2. Clone this repository
 <pre>
-$ sudo cp systemd/riot-broker.service /lib/systemd/system/.
+$ git clone git@gitlab.inria.fr:/fit-saclay/demos.git
 </pre>
-3. Enable it and start it:
+3. Setup the services:
 <pre>
-$ sudo systemctl enable riot-broker.service
-$ sudo systemctl start riot-broker.service
+$ cd demos
+$ make setup
 </pre>
-4. Verify it's correctly running:
+4. Verify the services are correctly running:
 <pre>
 $ sudo systemctl status riot-broker.service
 ● riot-broker.service - Riot Broker Application
@@ -80,48 +82,7 @@ $ sudo systemctl status riot-broker.service
  Main PID: 1469 (python3)
    CGroup: /system.slice/riot-broker.service
            └─1469 /usr/bin/python3 /home/pi/demos/riot-broker.py
-Oct 25 08:51:37 raspberrypi python3[1469]: 2016-10-25 08:51:37,844 - tornado...s
-Oct 25 08:51:37 raspberrypi python3[1469]: 2016-10-25 08:51:37,875 - tornado...s
-Oct 25 08:52:01 raspberrypi python3[1469]: [124B blob data]
-Oct 25 08:52:31 raspberrypi python3[1469]: [124B blob data]
-Oct 25 08:53:01 raspberrypi python3[1469]: [124B blob data]
-Oct 25 08:53:31 raspberrypi python3[1469]: [124B blob data]
-Oct 25 08:54:01 raspberrypi python3[1469]: [124B blob data]
-Oct 25 08:54:31 raspberrypi python3[1469]: [124B blob data]
-Oct 25 08:55:01 raspberrypi python3[1469]: [124B blob data]
-Oct 25 08:55:31 raspberrypi python3[1469]: [124B blob data]
-Hint: Some lines were ellipsized, use -l to show in full.
-</pre>
-
-
-### RIOT Dashboard
-
-The dashboard displays the values of CoAP endpoints discovered on the known
-nodes. It also allows to interact with CoAP endpoints providing `PUT` requests.
-
-#### Installation procedure
-
-1. Install the latest nodejs version:
-<pre>
-$ curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-$ sudo apt install -y nodejs
-</pre>
-2. Install required node packages:
-<pre>
-$ cd dashboard
-$ npm install
-</pre>
-3. Copy the systemd service file:
-<pre>
-$ sudo cp systemd/riot-dashboard.service /lib/systemd/system/.
-</pre>
-4. Enable it and start it:
-<pre>
-$ sudo systemctl enable riot-dashboard.service
-$ sudo systemctl start riot-dashboard.service
-</pre>
-5. Verify it's correctly running:
-<pre>
+[...]
 $ sudo systemctl status riot-dashboard.service
 ● riot-dashboard.service - Riot Dashboard Application
    Loaded: loaded (/lib/systemd/system/riot-dashboard.service; enabled)
@@ -129,7 +90,25 @@ $ sudo systemctl status riot-dashboard.service
  Main PID: 7398 (node)
    CGroup: /system.slice/riot-dashboard.service
            └─7398 /usr/bin/node /home/pi/demos/dashboard/dashboard.js
-Oct 25 11:19:57 raspberrypi systemd[1]: Started Riot Dashboard Application.
-Oct 25 11:20:02 raspberrypi node[7398]: Web server running at http://[::1]:8080
-Hint: Some lines were ellipsized, use -l to show in full.
+[...]
 </pre>
+
+#### Dashboard local development against http://riot-demo.inria.fr
+
+A broker instance in running at http://riot-demo.inria.fr and its websocket
+server is reachable on port 80. As the broker and the dashboard are
+decoupled in 2 distinct services, it's possible to run a local dashboard
+application serving dashboard web page that itself connect to the broker.
+This way your dashboard will display the available nodes on the *real* demo.
+
+To achieve this, at the root of the project, simply run:
+```
+$ make run-dashboard
+```
+and open a web browser at [http://localhost:8080](http://localhost:8080).
+
+If want to display the *real* demo webcam, you can also use the `CAMERA_URL`
+variable:
+```
+$ CAMERA_URL=http://riot-demo.inria.fr/demo-cam/?action=stream make run-dashboard
+```
