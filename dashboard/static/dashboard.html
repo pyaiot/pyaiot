@@ -257,6 +257,10 @@ if (theme == 'dark') {
                     <div class="h1">{{!node.data.pressure}}</div>
                     <canvas class="chart" :id="'pres_chart'+node.ip"></canvas>
                 </div>
+                <div class="panel-body has-chart" v-if="node.data.illuminance">
+                    <div class="h5 text-muted">Illuminance</div>
+                    <div class="h1">{{!node.data.illuminance}}</div>
+                </div>
                 <div class="panel-body" v-if="node.data.robot">
                     <div class="h5 text-muted">Buggybot</div>
                     <div class="h1">{{!node.data.robot}}</div>
