@@ -168,6 +168,9 @@ img {
   /*background: grey;*/
   display: table-cell;
 }
+.pointer:hover {
+    cursor: pointer;
+}
 </style>
 
 <script>
@@ -517,6 +520,10 @@ function setup_teapot_charts(node) {
     teapot_charts[node] = node
     teapot.init()
     teapot.render()
+    $('#teapot').addClass('pointer').click(function() {
+        angle = [0, 0, 0]
+        teapot.setAngle(angle)
+    })
 }
 
 function setup_imu_charts(node) {
