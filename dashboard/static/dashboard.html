@@ -168,6 +168,9 @@ img {
   /*background: grey;*/
   display: table-cell;
 }
+.pointer:hover {
+    cursor: pointer;
+}
 </style>
 
 <script>
@@ -305,9 +308,9 @@ if (theme == 'dark') {
                     <div class="h5 text-muted">Gyroscope</div>
                     <canvas class="chart" :id="'imu_gyr'+node.ip"></canvas>
                 </div>
-              <!--   <div class="panel-body" v-if="node.data.imu">
+                <div class="panel-body" v-if="node.data.imu">
                     <div id="teapot"></div>
-                </div> -->
+                </div>
                 <div class="panel-body" :id="'led'+index" v-if="['0','1'].includes(node.data.led)">
                     <div class="h5 text-muted">LED</div>
                     <div v-if="node.data.led === '1'" class="h1">ON <i class="fa fa-circle led-color"></i></div>
@@ -517,6 +520,10 @@ function setup_teapot_charts(node) {
     teapot_charts[node] = node
     teapot.init()
     teapot.render()
+    $('#teapot').addClass('pointer').click(function() {
+        angle = [0, 0, 0]
+        teapot.setAngle(angle)
+    })
 }
 
 function setup_imu_charts(node) {
@@ -569,16 +576,38 @@ function setup_imu_charts(node) {
     }
 }
 
+var angle = [0, 0, 0]
+var lastTime = new Date().getTime()
+
 function update_imu_charts(msg) {
+    var currentTime = new Date().getTime()
     var data = JSON.parse(msg.data)
-    var acc = Math.sqrt(Math.pow(data[0].values[0], 2) +
-                        Math.pow(data[0].values[1], 2) +
-                        Math.pow(data[0].values[2], 2))
-    acc_charts[msg.node][1].append(new Date().getTime(), acc);
+    var acc = data[0].values
     var gyr = data[2].values
-    gyr_charts[msg.node][1]['x'].append(new Date().getTime(), data[2].values[0]);
-    gyr_charts[msg.node][1]['y'].append(new Date().getTime(), data[2].values[1]);
-    gyr_charts[msg.node][1]['z'].append(new Date().getTime(), data[2].values[2]);
+    var accNorm = Math.sqrt(Math.pow(acc[0], 2) +
+                            Math.pow(acc[1], 2) +
+                            Math.pow(acc[2], 2))
+    acc_charts[msg.node][1].append(currentTime, accNorm);
+    gyr_charts[msg.node][1]['x'].append(currentTime, gyr[0]);
+    gyr_charts[msg.node][1]['y'].append(currentTime, gyr[1]);
+    gyr_charts[msg.node][1]['z'].append(currentTime, gyr[2]);
+    // angle[0] = angle[0] + gyr[0] * (currentTime - lastTime) / 1000
+    // angle[1] = angle[1] + gyr[1] * (currentTime - lastTime) / 1000
+    // angle[2] = angle[2] + gyr[2] * (currentTime - lastTime) / 1000
+    angle = angle.map( (a,i) => a + gyr[i] * (currentTime - lastTime) / 1000)
+
+    // TODO: compensate gyro drift with accelerometer
+    // xAcc = Math.atan2(acc[1], acc[2]) * 180 / Math.PI
+    // yAcc = Math.atan2(acc[0], acc[2]) * 180 / Math.PI
+    // zAcc = Math.atan2(acc[0], acc[1]) * 180 / Math.PI
+    // angle[0] = 0.98 * angle[0] + 0.02 * xAcc * 75 / 90
+    // angle[1] = 0.98 * angle[1] + 0.02 * yAcc * 75 / 90
+    // angle[2] = 0.98 * angle[2] + 0.02 * zAcc * 75 / 90
+    
+    lastTime = currentTime
+    teapot.setAngle(angle.map(a => a * Math.PI / 150))
+    // console.info(angle)
+    // console.info(acc, xAcc, yAcc, zAcc)
 }
 
 function remove_charts(node) {
