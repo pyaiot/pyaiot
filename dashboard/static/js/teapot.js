@@ -33,6 +33,7 @@ var teapot = (function() {
     var specularColor = new THREE.Color();
 
     var holder = new THREE.Object3D();
+    var angle = [0, 0, 0];
 
     // init();
     // render();
@@ -321,11 +322,13 @@ var teapot = (function() {
 
         requestAnimationFrame(render);
 
-        holder.rotation.y += 0.01;
+        // holder.rotation.y += 0.01;
         // holder.rotation.x += 0.01;
         // holder.rotation.z += 0.01;
         // holder.rotation.z = 3.14;
-        holder.rotation.x = 0.35;
+        holder.rotation.x = angle[0] + 0.35;
+        holder.rotation.y = angle[2];
+        holder.rotation.z = -angle[1];
         renderer.render( scene, camera );
 
     }
@@ -363,14 +366,14 @@ var teapot = (function() {
 
     }
 
-    function toto() {
-        alert('toto')
+    function setAngle(data) {
+        angle = data;
     }
 
     return {
         init: init,
         render: render,
-        toto: toto
+        setAngle: setAngle
     }
 
 }());
