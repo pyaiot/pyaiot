@@ -308,7 +308,7 @@ class BrokerApplication(web.Application):
 
 
 def parse_command_line():
-    """Parse command line arguments for Riot broker application."""
+    """Parse command line arguments for IoT broker application."""
     define("port", default=8000,
            help="Broker port")
     define("max_time", default=120,
