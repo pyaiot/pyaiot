@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" href="{{ static_url('assets/favicon192.png') }}">
+    {% if favicon %}<link rel="icon" href="{{ favicon }}">{% end %}
     <meta name="description" content="">
     <meta name="author" content="">
 
@@ -190,8 +190,8 @@ if (theme == 'dark') {
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <img class="navbar-brand" src="{{ static_url('assets/logo-large.png') }}" style="margin-top: -3px">
-                <a class="navbar-brand" href="javascript:void(0)">RIOT Dashboard</a>
+                {% if logo_url %}<img class="navbar-brand" src="{{ logo_url }}" style="margin-top: -3px">{% end %}
+                <a class="navbar-brand" href="javascript:void(0)">{{ title }}</a>
             </div>
             <div class="navbar-collapse collapse navbar-inverse-collapse">
                 <ul class="nav navbar-nav">
@@ -207,7 +207,6 @@ if (theme == 'dark') {
                     </li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
-                    <li><a href="https://www.riot-os.org/">RIOT <i class="fa fa-external-link"></i></a></li>
                     <li><a data-toggle="modal" data-target="#settingsModal" href=""><i class="material-icons" style="line-height: inherit">settings</i></a></li>
                 </ul>
             </div>

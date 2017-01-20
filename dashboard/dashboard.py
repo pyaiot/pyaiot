@@ -21,15 +21,17 @@ class DashboardHandler(web.RequestHandler):
                     wsserver="{}:{}".format(options.broker_host,
                                             options.broker_port),
                     camera_url=options.camera_url,
-                    title="RIOT Dashboard")
+                    favicon=options.favicon,
+                    logo_url=options.logo,
+                    title=options.title)
 
 
-class RiotDashboardApplication(web.Application):
+class IoTDashboardApplication(web.Application):
     """Tornado based web application providing an IoT Dashboard."""
 
     def __init__(self):
         self._nodes = {}
-        self._log = logging.getLogger("riot dashboard")
+        self._log = logging.getLogger("iot dashboard")
         if options.debug:
             self._log.setLevel(logging.DEBUG)
 
@@ -50,7 +52,7 @@ class RiotDashboardApplication(web.Application):
 
 
 def parse_command_line():
-    """Parse command line arguments for Riot broker application."""
+    """Parse command line arguments for IoT broker application."""
 
     define("port", default=8080,
            help="Web application HTTP port")
@@ -60,6 +62,12 @@ def parse_command_line():
            help="Broker hostname")
     define("camera_url", default="/demo-cam/?action=stream",
            help="Default camera url")
+    define("title", default="IoT Dashboard",
+           help="Dashboard title")
+    define("logo", default=None,
+           help="URL for a logo in the dashboard navbar")
+    define("favicon", default=None,
+           help="Favicon url for your dashboard site")
     define("debug", default=False,
            help="Enable debug mode.")
     options.parse_command_line()
@@ -75,7 +83,7 @@ if __name__ == '__main__':
         tornado.platform.asyncio.AsyncIOMainLoop().install()
 
         # Start tornado application
-        app = RiotDashboardApplication()
+        app = IoTDashboardApplication()
         app.listen(options.port)
         ioloop.run_forever()
     except KeyboardInterrupt:
