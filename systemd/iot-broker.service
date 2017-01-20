@@ -1,5 +1,5 @@
 [Unit]
-Description=Riot Broker Application
+Description=IoT Broker Application
 After=network.target radvd.service
 
 [Service]
@@ -8,4 +8,4 @@ ExecStart=/usr/bin/python3 /home/pi/demos/broker/broker.py --port=8082
 
 [Install]
 WantedBy=multi-user.target
-Alias=riot-broker.service
+Alias=iot-broker.service

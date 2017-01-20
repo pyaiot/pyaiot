@@ -1,14 +1,16 @@
-## Demos for RIOT
+## An IoT Dashboard for open and great IoT demos
 
 ### Available Demos
+
+* [RIOT](http://riot-os.org): There is a permanent demo instance configured as
+  a showroom for RIOT. This showroom is available at http://riot-demo.inria.fr.
 
 * [IoT-LAB open A8
   demo](https://gitlab.inria.fr/fit-saclay/demos/tree/master/utils/iotlab)
   This demo automatically submit an experiment on IoT-LAB with two open A8
-  nodes. The first node is configured as aborder router and the second node runs
-  a firmware that integrates automatically on the RIOT Dashboard described
-  below.
-
+  nodes. The first node is configured as a border router and the second node
+  runs a firmware that integrates automatically on the RIOT demo described
+  above.
 
 ```
              _____   ___   _____     ___           _____           _          _      ____
@@ -38,7 +40,7 @@ $ dd bs=4M if=/dev/mmcblk0 | gzip > custom_raspbian.img.gz
 $ gzip -dc custom_raspbian.img.gz | sudo dd bs=4M of=/dev/mmcblk0
 ```
 
-### Broker and Dashboard applications for RIOT demo
+### Broker and Dashboard applications for an IoT dashboard
 
 The broker manage a list of alive sensor nodes by running it's own CoAP
 and WebSocket servers.
@@ -76,30 +78,31 @@ $ make setup
 </pre>
 4. Verify the services are correctly running:
 <pre>
-$ sudo systemctl status riot-broker.service
-● riot-broker.service - Riot Broker Application
-   Loaded: loaded (/lib/systemd/system/riot-broker.service; enabled)
+$ sudo systemctl status iot-broker.service
+● iot-broker.service - IoT Broker Application
+   Loaded: loaded (/lib/systemd/system/iot-broker.service; enabled)
    Active: active (running) since dim. 2016-12-18 14:59:56 CET; 35min ago
  Main PID: 32411 (python3)
    CGroup: /system.slice/riot-broker.service
            └─32411 /usr/bin/python3 /home/pi/demos/broker/broker.py --port=8082 --debug
 [...]
-$ sudo systemctl status riot-dashboard.service
-● riot-dashboard.service - Riot Dashboard Application
-   Loaded: loaded (/lib/systemd/system/riot-dashboard.service; enabled)
+$ sudo systemctl status iot-dashboard.service
+● iot-dashboard.service - IoT Dashboard Application
+   Loaded: loaded (/lib/systemd/system/iot-dashboard.service; enabled)
    Active: active (running) since dim. 2016-12-18 14:52:29 CET; 41min ago
  Main PID: 32321 (python3)
-   CGroup: /system.slice/riot-dashboard.service
+   CGroup: /system.slice/iot-dashboard.service
            └─32321 /usr/bin/python3 /home/pi/demos/dashboard/dashboard.py --port=8080 --broker-port=80 --broker...
 [...]
 </pre>
 
-#### Dashboard local development against http://riot-demo.inria.fr
+#### Dashboard local development against your IoT broker instance
 
-A broker instance in running at http://riot-demo.inria.fr and its websocket
-server is reachable on port 80. As the broker and the dashboard are
-decoupled in 2 distinct services, it's possible to run a local dashboard
-application serving dashboard web page that itself connect to the broker.
+Here we assume that you have an IoT broker instance running and available at
+http://broker.instance.org. Its websocket server is reachable on port 80.
+As the broker and the dashboard are decoupled in 2 distinct services,
+it's possible to run a local dashboard application serving dashboard web page
+that itself connect to the broker.
 This way your dashboard will display the available nodes on the *real* demo.
 
 To achieve this, at the root of the project, simply run:
@@ -107,9 +110,3 @@ To achieve this, at the root of the project, simply run:
 $ make run-dashboard
 ```
 and open a web browser at [http://localhost:8080](http://localhost:8080).
-
-If want to display the *real* demo webcam, you can also use the `CAMERA_URL`
-variable:
-```
-$ CAMERA_URL=http://riot-demo.inria.fr/demo-cam/?action=stream make run-dashboard
-```
