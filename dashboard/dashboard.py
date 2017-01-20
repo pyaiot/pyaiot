@@ -26,12 +26,12 @@ class DashboardHandler(web.RequestHandler):
                     title=options.dashboard_title)
 
 
-class RiotDashboardApplication(web.Application):
+class IoTDashboardApplication(web.Application):
     """Tornado based web application providing an IoT Dashboard."""
 
     def __init__(self):
         self._nodes = {}
-        self._log = logging.getLogger("riot dashboard")
+        self._log = logging.getLogger("iot dashboard")
         if options.debug:
             self._log.setLevel(logging.DEBUG)
 
@@ -52,7 +52,7 @@ class RiotDashboardApplication(web.Application):
 
 
 def parse_command_line():
-    """Parse command line arguments for Riot broker application."""
+    """Parse command line arguments for IoT broker application."""
 
     define("port", default=8080,
            help="Web application HTTP port")
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         tornado.platform.asyncio.AsyncIOMainLoop().install()
 
         # Start tornado application
-        app = RiotDashboardApplication()
+        app = IoTDashboardApplication()
         app.listen(options.port)
         ioloop.run_forever()
     except KeyboardInterrupt:
