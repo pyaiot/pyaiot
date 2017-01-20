@@ -21,7 +21,9 @@ class DashboardHandler(web.RequestHandler):
                     wsserver="{}:{}".format(options.broker_host,
                                             options.broker_port),
                     camera_url=options.camera_url,
-                    title="RIOT Dashboard")
+                    favicon=options.favicon,
+                    logo_url=options.dashboard_logo,
+                    title=options.dashboard_title)
 
 
 class RiotDashboardApplication(web.Application):
@@ -60,6 +62,12 @@ def parse_command_line():
            help="Broker hostname")
     define("camera_url", default="/demo-cam/?action=stream",
            help="Default camera url")
+    define("dashboard_title", default="IoT Dashboard",
+           help="Dashboard title")
+    define("dashboard_logo", default="/static/assets/logo-riot.png",
+           help="Logo for dashboard title")
+    define("favicon", default="/static/assets/favicon192.png",
+           help="Favicon url for your dashboard site")
     define("debug", default=False,
            help="Enable debug mode.")
     options.parse_command_line()
