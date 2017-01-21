@@ -1,14 +1,12 @@
-## Demos scripts
+## IoTLAB demo script
 
-Here one can find scripts to automatize the deployment of demonstrations. This
-README explains how to previously setup your environment and how to run the
-script.
+Here is a script that automatizes the deployment of demonstration nodes on
+IoT-LAB. This README explains how to setup your environment and how to run
+the script.
 
-### IoT-LAB A8-M3 demo
-
-This demonstration is provided by `iotlab-launch-demo` and will book 2 nodes in
-the IoT-LAB testbed in Saclay site. One of the node is configured as a boarder
-router, the other one is running the demonstration firmware `node_iotlab_a8_m3`.
+The `iotlab-launch-demo` script will book 2 nodes in the IoT-LAB testbed in
+Saclay site. One of the node is configured as a border router, the other one
+is running the demonstration firmware `node_iotlab_a8_m3`.
 
 You need an IoT-LAB account to run this script.
 
@@ -40,7 +38,6 @@ $ git clone git@gitlab.inria.fr:fit-saclay/demos.git
 $ cd demos/scripts
 $ ./iotlab-launch-demo.sh 144 ./gnrc_border_router.elf 145 ./dashboard_riot_a8_m3.elf 120
 </pre>
-5. You should now see the demo node on the [fit-demo live
-   camera](demo-fit.saclay.inria.fr) and play its LED from the [RIOT
-   dashboard](fit-demo.saclay.inria.fr/dashboard)
-
+5. You should now see a new node popping up on the
+   [RIOT Demo Dashboard](riot-demo.inria.fr). The A8_M3 node is also visible
+   on the [FIT Live Camera](demo-fit.saclay.inria.fr).

@@ -4,7 +4,7 @@ After=network.target radvd.service
 
 [Service]
 User=pi
-ExecStart=/usr/bin/python3 /home/pi/demos/broker/broker.py --port=8082
+ExecStart=/home/pi/demos/bin/iot-broker --port=8082
 
 [Install]
 WantedBy=multi-user.target

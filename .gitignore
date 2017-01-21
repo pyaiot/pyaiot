@@ -1,6 +1,7 @@
 *.pyc
 *.pyo
 .eggs
+*.egg-info/
 .*.swp
 *~
 *.o

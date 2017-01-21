@@ -6,5 +6,5 @@ On the same system running the dashboard, simply run:
 ```bash
 $ python riot-twitter.py
 ```
-and you should see twitter messages containing `riot-demo` appearing in the
+and you should see twitter messages containing `RIOT-OS` appearing in the
 dashboard.
