@@ -20,17 +20,17 @@ setup-broker:
 	sudo systemctl restart iot-broker.service
 
 setup-dashboard:
-	cd dashboard/static && npm install
+	cd iotkit/dashboard/static && npm install
 	sudo cp systemd/iot-dashboard.service /lib/systemd/system/.
 	sudo systemctl enable iot-dashboard.service
 	sudo systemctl daemon-reload
 	sudo systemctl restart iot-dashboard.service
 
 run-broker:
-	${PYTHON} broker/broker.py --port=${BROKER_PORT} --debug
+	iot-broker --port=${BROKER_PORT} --debug
 
 run-dashboard:
-	${PYTHON} dashboard/dashboard.py --port=${DASHBOARD_PORT}    \
+	iot-dashboard --port=${DASHBOARD_PORT}    \
 		--broker-port=${BROKER_PORT} --broker-host=${BROKER_HOST}\
 		--camera-url=${CAMERA_URL} --title=${DASHBOARD_TITLE}    \
 		--logo=${DASHBOARD_LOGO} --favicon=${DASHBOARD_FAVICON}  \

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import sys
 import os.path
@@ -56,7 +58,7 @@ def parse_command_line():
 
     define("port", default=8080,
            help="Web application HTTP port")
-    define("broker_port", default=8080,
+    define("broker_port", default=8000,
            help="Broker port")
     define("broker_host", default="localhost",
            help="Broker hostname")
@@ -76,7 +78,8 @@ def parse_command_line():
         internal_logger.setLevel(logging.DEBUG)
 
 
-if __name__ == '__main__':
+def run():
+    """Start an instance of a dashboard."""
     parse_command_line()
     try:
         ioloop = asyncio.get_event_loop()
@@ -90,3 +93,7 @@ if __name__ == '__main__':
         print("Exiting")
         ioloop.stop()
         sys.exit()
+
+
+if __name__ == '__main__':
+    run()

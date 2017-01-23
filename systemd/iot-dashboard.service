@@ -4,8 +4,8 @@ After=network.target radvd.service
 
 [Service]
 User=pi
-ExecStart=/usr/bin/python3 /home/pi/demos/dashboard/dashboard.py --port=8080 --broker-port=80 \
-        --broker-host=riot-demo.inria.fr "--title=RIOT Demo Dashboard" \
+ExecStart=/home/pi/demos/bin/iot-dashboard --port=8080 --broker-port=80 \
+        --broker-host=riot-demo.inria.fr "--title=RIOT Demo Dashboard"  \
         --logo=/static/assets/logo-riot.png --favicon=/static/assets/favicon192.png
 
 [Install]
