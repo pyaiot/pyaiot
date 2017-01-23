@@ -20,7 +20,7 @@ setup-broker:
 	sudo systemctl restart iot-broker.service
 
 setup-dashboard:
-	cd dashboard/static && npm install
+	cd iotkit/dashboard/static && npm install
 	sudo cp systemd/iot-dashboard.service /lib/systemd/system/.
 	sudo systemctl enable iot-dashboard.service
 	sudo systemctl daemon-reload
