@@ -21,8 +21,6 @@ Gemfile.lock
 .pydevproject
 parts/
 
-bin/
-
 node_modules/
 
 *.log
