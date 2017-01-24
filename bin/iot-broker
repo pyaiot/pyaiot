@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+
+import iotkit.broker
+
+if __name__ == '__main__':
+    iotkit.broker.run()
