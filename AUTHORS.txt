@@ -1,0 +1,2 @@
+Alexandre Abadie <alexandre.abadie@inria.fr>
+Benoit Formet <benoit.formet@inria.fr>
