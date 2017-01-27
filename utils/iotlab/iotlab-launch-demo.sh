@@ -46,9 +46,9 @@ SSH_MAX_TRIES=30
 }
 
 start_experiment() {
-    # Submit an experiment in Saclay on nodes A8 144 and 145
-    # - node-a8-144 will be used as a border router
-    # - node-a8-145 will run the dashboard enable firmware. This node is visible at
+    # Submit an experiment in Saclay on 2 A8 nodes
+    # - node-a8-${BR_A8_ID} will be used as a border router
+    # - node-a8-${DEMO_A8_ID} will run the dashboard enable firmware. This node is visible at
     # http://demo-fit.saclay.inria.fr
     echo "Starting new experiment"
     experiment-cli submit -d ${EXP_DURATION} -l saclay,a8,${BR_A8_ID}+${DEMO_A8_ID}
@@ -99,7 +99,7 @@ start_border_router() {
     ssh node-a8-${BR_A8_ID} "screen -X -S br quit" > /dev/null 2>&1
 
     # Start the border router
-    PREFIX_LINE=`ssh node-a8-144 "source /etc/profile.d/ipv6 && printenv | grep INET6_PREFIX= 2>/dev/null"`
+    PREFIX_LINE=`ssh node-a8-${BR_A8_ID} "source /etc/profile.d/ipv6 && printenv | grep INET6_PREFIX= 2>/dev/null"`
     PREFIX_LIST=(${PREFIX_LINE/\=/ })
     PREFIX=${PREFIX_LIST[${#PREFIX_LIST[@]} - 1]}::/64
     ssh node-a8-${BR_A8_ID} "screen -S br -dm bash -c \"cd ${ETHOS_DIR} && \
