@@ -35,7 +35,7 @@ $ git clone git@gitlab.inria.fr:fit-saclay/demos.git
 4. Launch the demo on nodes A8 141 (the border router) and A8 142 (the demo
    node). We configure an experiment with 120m duration.
 <pre>
-$ cd demos/scripts
+$ cd utils/iotlab 
 $ ./iotlab-launch-demo.sh 141 ./gnrc_border_router.elf 142 ./dashboard_riot_a8_m3.elf 120
 </pre>
 5. You should now see a new node popping up on the
