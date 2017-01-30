@@ -93,7 +93,7 @@ def parse_command_line():
            help="Broker port")
     define("broker_host", default="localhost",
            help="Broker hostname")
-    define("camera_url", default="/demo-cam/?action=stream",
+    define("camera_url", default=None,
            help="Default camera url")
     define("title", default="IoT Dashboard",
            help="Dashboard title")
