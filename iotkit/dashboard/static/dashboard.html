@@ -215,6 +215,7 @@ if (theme == 'dark') {
     <!-- <div class="container-fluid"> -->
     <div class="grid" data-masonry='{ "itemSelector": ".grid-item:not(.grid-hidden)", "fitWidth": "true" }'>
         <div class="grid-item">
+            {% if camera_url %}
             <!-- webcam -->
             <div class="panel panel-default" id="webcam">
                 <div class="panel-heading">
@@ -232,6 +233,7 @@ if (theme == 'dark') {
                     </div>
                 </div>
             </div>
+            {% end %}
         </div>
         <div class="grid-item" v-for="(node, index) in nodes">
             <div class="panel panel-default" :id="'node'+index">
