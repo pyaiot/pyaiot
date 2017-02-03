@@ -281,7 +281,7 @@ if (theme == 'dark') {
                     <div class="h5 text-muted">Illuminance</div>
                     <div class="h1">{{!node.data.illuminance}}</div>
                 </div>
-                <div class="panel-body" xv-if="node.data.robot">
+                <div class="panel-body" v-if="node.data.robot">
                     <div class="h5 text-muted">BuggyBot Direction Pad</div>
                     <!-- <div class="h1">{{!node.data.robot}}</div> -->
                     <svg class="pad" width="370" viewBox="0 0 400 270" xmlns="http://www.w3.org/2000/svg">
