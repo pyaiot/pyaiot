@@ -171,6 +171,22 @@ img {
 .pointer:hover {
     cursor: pointer;
 }
+
+/* BUGGYBOT DIRECTION PAD */
+
+svg.pad {
+    width: 74%;
+    margin-left: 13%;
+} 
+svg.pad path, svg.pad rect {
+    cursor: pointer;
+    fill-opacity: 0.1;
+    stroke-width: 3;
+}
+svg.pad path:hover, svg.pad rect:hover {
+    fill-opacity: 0.5;
+}
+
 </style>
 
 <script>
@@ -265,39 +281,17 @@ if (theme == 'dark') {
                     <div class="h5 text-muted">Illuminance</div>
                     <div class="h1">{{!node.data.illuminance}}</div>
                 </div>
-                <div class="panel-body" v-if="node.data.robot">
-                    <div class="h5 text-muted">Buggybot</div>
-                    <div class="h1">{{!node.data.robot}}</div>
-                    <p><center>Direction Pad</center></p>
-                    <div class="card card-block">
-                        <center>
-                            <div class="btn-grid">
-                                <div class="btn-row">
-                                    <div class="btn-cell"></div>
-                                    <div class="btn-cell">
-                                        <center><button type="button" class="robot-btn btn btn-success" :data-index="'f,'+node.ip">Forward</button></center>
-                                    </div>
-                                    <div class="btn-cell"></div>
-                                </div>
-                                <div class="btn-row">
-                                    <div class="btn-cell">
-                                        <center><button type="button" class="robot-btn btn btn-success" :data-index="'l,'+node.ip">Left</button></center>
-                                    </div>
-                                    <div class="btn-cell"></div>
-                                    <div class="btn-cell">
-                                        <center><button type="button" class="robot-btn btn btn-success" :data-index="'r,'+node.ip">Right</button></center>
-                                    </div>
-                                </div>
-                                <div class="btn-row">
-                                    <div class="btn-cell"></div>
-                                    <div class="btn-cell">
-                                        <center><button type="button" class="robot-btn btn btn-danger" :data-index="'s,'+node.ip">Stop</button></center>
-                                    </div>
-                                    <div class="btn-cell"></div>
-                                </div>
-                            </div>
-                        </center>
-                    </div>
+                <div class="panel-body" xv-if="node.data.robot">
+                    <div class="h5 text-muted">BuggyBot Direction Pad</div>
+                    <!-- <div class="h1">{{!node.data.robot}}</div> -->
+                    <svg class="pad" width="370" viewBox="0 0 400 270" xmlns="http://www.w3.org/2000/svg">
+                        <text text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" y="211" x="200" fill="firebrick">STOP</text>
+                        <rect height="100" width="100" y="150" x="150" stroke="firebrick" fill="#f00" @click="setRobotDirection(node.ip, 's')"/>
+                        <path d="m100,150l0,100l-75,-50z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.ip, 'l')"/>
+                        <path d="m300,150l0,100l75,-50z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.ip, 'r')"/>
+                        <path d="m150,100l100,0l-50,-75z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.ip, 'u')"/>
+                    </svg>
+
                 </div>
                 <div class="panel-body" v-if="node.data.twitter">
                     <div class="h1">{{!node.data.twitter}}</div>
@@ -654,13 +648,9 @@ $(document).on('change', '.led-btn', function() {
     sendData({"node": node, path: "/led", "payload": payload})
 })
 
-$(document).on('click', '.robot-btn', function() {
-    var data = this.dataset.index.split(',')
-    var direction = data[0]
-    var node = data[1]
-
+function setRobotDirection(node, direction) {
     sendData({"node": node, path: "/robot", "payload": direction})
-})
+}
 
 $('#selectTheme').change(function () {
     if ($(this).val() == 'dark') {
