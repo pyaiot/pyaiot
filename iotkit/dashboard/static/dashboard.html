@@ -187,6 +187,31 @@ svg.pad path:hover, svg.pad rect:hover {
     fill-opacity: 0.5;
 }
 
+/* JOYSTICK */
+
+.joystick {
+    width: 200px;
+    height: 200px;
+    margin: auto;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url({{ static_url( 'assets/joystick.svg' ) }});
+}
+.joystick .ball {
+    /*border: 1px solid black;*/
+    /*background-color: #ccc;*/
+    /*background-color: #222;*/
+    /*box-shadow: 0px 0px 8px 0px rgba(0,0,0,0.68);*/
+    background: radial-gradient(ellipse at center, rgb(76,76,76) 0%, rgb(89,89,89) 23%, rgb(102,102,102) 47%, rgb(71,71,71) 64%, rgb(1,1,1) 76%, rgb(0,0,0) 100%);
+    width: 37%;
+    height: 37%;
+    border-radius: 100%;
+    pointer-events: none;
+    transition: transform 0.08s;
+}
+
 </style>
 
 <script>
@@ -195,9 +220,64 @@ var theme = localStorage.theme || 'dark';
 if (theme == 'dark') {
     document.body.classList.add('dark')
 }
+
+
+var joystick = {
+    center: {
+        x: 100, // joystick.getClientRects()[0].width / 2
+        y: 100  // joystick.getClientRects()[0].height / 2
+    },
+    active: false,
+    timer: null,
+    interval: 250, // in milliseconds
+}
+
+joystick.start = function(node, event) {
+    joystick.active = true;
+    joystick.active_node = node;
+    joystick.move(event);
+    joystick.send();
+    joystick.timer = window.setInterval(joystick.send, joystick.interval);
+}
+
+joystick.send = function() {
+    $('#info').html(joystick.dx + ' % ' + joystick.dy);
+    var payload = `${joystick.dx}:${joystick.dy}:${joystick.dx+joystick.dy}\n`;
+    sendData({"node": joystick.active_node, path: "/ribot", "payload": payload});
+}
+
+joystick.move = function(event) {
+    if (!joystick.active) return;
+    var touch = event.touches ? event.touches[0] : event;
+
+    // normalize
+    var deltaMax = Math.min(joystick.center.x, joystick.center.y) * 0.5;
+    var deltaX = touch.offsetX - joystick.center.x;
+    var deltaY = touch.offsetY - joystick.center.y;
+    var delta = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
+    if (delta > deltaMax) {
+        deltaX *= deltaMax / delta;
+        deltaY *= deltaMax / delta;
+    }
+
+    joystick.dx = Math.round(deltaX * 255 / deltaMax) * -1
+    joystick.dy = Math.round(deltaY * 255 / deltaMax)
+    $('.ball').css('transform', `translate(${deltaX}px,${deltaY}px)`);
+}
+
+joystick.stop = function() {
+    if (joystick.active) {
+        joystick.active = false;
+        joystick.dx = joystick.dy = 0;
+        $('.ball').css('transform', `translate(0,0)`);
+        window.clearInterval(joystick.timer);
+        joystick.send()
+    }
+}
+
 </script>
 
-<div id="app">
+<div id="app" @mouseup="joystick.stop" @touchend="joystick.stop">
     <div class="navbar navbar-inverse">
         <div class="container-fluid">
             <div class="navbar-header">
@@ -291,7 +371,12 @@ if (theme == 'dark') {
                         <path d="m300,150l0,100l75,-50z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.ip, 'r')"/>
                         <path d="m150,100l100,0l-50,-75z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.ip, 'u')"/>
                     </svg>
-
+                </div>
+                <div class="panel-body" v-if="node.data.ribot">
+                    <div class="joystick" @mousemove="joystick.move" @touchmove="joystick.move" @mousedown="joystick.start(node.ip, $event)" @touchstart="joystick.start(node.ip, $event)">
+                        <div class="ball"></div>
+                    </div>
+                    <div id="info"></div>
                 </div>
                 <div class="panel-body" v-if="node.data.twitter">
                     <div class="h1">{{!node.data.twitter}}</div>
@@ -602,7 +687,7 @@ function update_imu_charts(msg) {
     // angle[0] = 0.98 * angle[0] + 0.02 * xAcc * 75 / 90
     // angle[1] = 0.98 * angle[1] + 0.02 * yAcc * 75 / 90
     // angle[2] = 0.98 * angle[2] + 0.02 * zAcc * 75 / 90
-    
+
     lastTime = currentTime
     teapot.setAngle(angle.map(a => a * Math.PI / 150))
     // console.info(angle)
