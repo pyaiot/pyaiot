@@ -54,10 +54,9 @@ if __name__ == '__main__':
           packages=['iotkit'],
           scripts=[pjoin('bin', 'iot-broker'),
                    pjoin('bin', 'iot-dashboard')],
-          python_requires='>=3.4',
           install_requires=[
             'tornado>=4.4.2',
-            'aiocoap>=0.3',
+            'aiocoap<=0.2',
             'hbmqtt>=0.8',
           ],
           classifiers=[
