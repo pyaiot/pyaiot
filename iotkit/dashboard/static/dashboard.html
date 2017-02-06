@@ -241,19 +241,27 @@ joystick.start = function(node, event) {
 }
 
 joystick.send = function() {
-    $('#info').html(joystick.dx + ' % ' + joystick.dy);
     var payload = `${joystick.dx}:${joystick.dy}:${joystick.dx+joystick.dy}\n`;
     sendData({"node": joystick.active_node, path: "/ribot", "payload": payload});
 }
 
 joystick.move = function(event) {
+    var offsetX, offsetY;
     if (!joystick.active) return;
-    var touch = event.touches ? event.touches[0] : event;
+
+    if (event.touches) {
+        var target = event.target.getBoundingClientRect();
+        offsetX = event.touches[0].clientX - target.left;
+        offsetY = event.touches[0].clientY - target.top;
+    } else {
+        offsetX = event.offsetX;
+        offsetY = event.offsetY;
+    }
 
     // normalize
     var deltaMax = Math.min(joystick.center.x, joystick.center.y) * 0.5;
-    var deltaX = touch.offsetX - joystick.center.x;
-    var deltaY = touch.offsetY - joystick.center.y;
+    var deltaX = offsetX - joystick.center.x;
+    var deltaY = offsetY - joystick.center.y;
     var delta = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
     if (delta > deltaMax) {
         deltaX *= deltaMax / delta;
@@ -373,10 +381,9 @@ joystick.stop = function() {
                     </svg>
                 </div>
                 <div class="panel-body" v-if="node.data.ribot">
-                    <div class="joystick" @mousemove="joystick.move" @touchmove="joystick.move" @mousedown="joystick.start(node.ip, $event)" @touchstart="joystick.start(node.ip, $event)">
+                    <div class="joystick" @mousemove.prevent="joystick.move" @touchmove.prevent="joystick.move" @mousedown.prevent="joystick.start(node.ip, $event)" @touchstart.prevent="joystick.start(node.ip, $event)">
                         <div class="ball"></div>
                     </div>
-                    <div id="info"></div>
                 </div>
                 <div class="panel-body" v-if="node.data.twitter">
                     <div class="h1">{{!node.data.twitter}}</div>
