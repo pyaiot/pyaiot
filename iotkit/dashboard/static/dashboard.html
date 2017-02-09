@@ -497,7 +497,7 @@ function receive_message(msg) {
     switch (msg.command) {
         case 'new':
             console.log("New node", node)
-            vm.nodes.push({ip: node, data: {board:'New node'}})
+            vm.nodes.push({ip: node, data: {board:'Discovering node...'}})
             break
         case 'out':
             if (index != -1) {
