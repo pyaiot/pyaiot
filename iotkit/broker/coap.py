@@ -98,9 +98,14 @@ def _discover_node(node, ws=None):
         elems = endpoint.split(';')
         path = elems.pop(0).replace('<', '').replace('>', '')
 
-        code, payload = yield _coap_resource('{0}{1}'
-                                             .format(coap_node_url, path),
-                                             method=GET)
+        try:
+            code, payload = yield _coap_resource('{0}{1}'
+                                                 .format(coap_node_url, path),
+                                                 method=GET)
+        except:
+            logger.debug("Cannot discover ressource {} on node {}"
+                         .format(endpoint, node.address))
+            return
         messages[endpoint] = json.dumps({'endpoint': path,
                                          'data': payload,
                                          'node': node.address,
@@ -115,6 +120,23 @@ def _discover_node(node, ws=None):
                 ws.write_message(message)
             except websocket.WebSocketClosedError:
                 logger.debug("Cannot write on a closed websocket.")
+
+
+def _check_dead_nodes():
+    """Find dead nodes in the list of known nodes and remove them."""
+    global coap_nodes
+    if len(coap_nodes) == 0:
+        return
+
+    nodes = []
+    for node in coap_nodes:
+        if node.active():
+            nodes += [node]
+        else:
+            logger.debug("Removing inactive node {}".format(node.address))
+            _broadcast_message(json.dumps({'node': node.address,
+                                           'command': 'out'}))
+    coap_nodes = nodes
 
 
 @gen.coroutine

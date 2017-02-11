@@ -38,9 +38,8 @@ from tornado.options import define, options
 import tornado.platform.asyncio
 
 from .application import BrokerApplication
-from .coap import coap_server_init
+from .coap import coap_server_init, _check_dead_nodes
 from .logger import logger
-from .utils import _check_dead_nodes
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '
