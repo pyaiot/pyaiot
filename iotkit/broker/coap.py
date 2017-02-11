@@ -130,6 +130,9 @@ def _forward_message_to_node(message, origin="POST"):
     """
     try:
         data = json.loads(message)
+    except TypeError as e:
+        logger.warning(e)
+        return "{}".format(e)
     except json.JSONDecodeError:
         reason = ("Invalid message received from {}: "
                   "'{}'. Only JSON format is supported.".format(message,
