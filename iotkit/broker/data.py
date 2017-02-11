@@ -29,5 +29,23 @@
 
 """Global broker application data module"""
 
-coap_nodes = []
+COAP_NODES = []
 client_sockets = []
+
+
+def coap_nodes():
+    return COAP_NODES
+
+
+def add_coap_node(node):
+    if node not in COAP_NODES:
+        COAP_NODES.append(node)
+
+
+def remove_coap_node(node):
+    COAP_NODES.remove(node)
+
+
+def update_coap_node_check(node, check_time):
+    index = COAP_NODES.index(node)
+    COAP_NODES[index].check_time = check_time

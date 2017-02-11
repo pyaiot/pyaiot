@@ -64,7 +64,7 @@ class BrokerWebsocketHandler(websocket.WebSocketHandler):
         self.set_nodelay(True)
         logger.debug("New websocket opened")
         client_sockets.append(self)
-        for node in coap_nodes:
+        for node in coap_nodes():
             self.write_message(json.dumps({'command': 'new',
                                            'node': node.address}))
             _discover_node(node, self)
