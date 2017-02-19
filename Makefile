@@ -7,7 +7,7 @@ DASHBOARD_PORT    ?= 8080
 DASHBOARD_TITLE   ?= "RIOT Demo Dashboard"
 DASHBOARD_LOGO    ?= /static/assets/logo-riot.png
 DASHBOARD_FAVICON ?= /static/assets/favicon192.png
-CAMERA_URL ?= /demo-cam/?action=stream
+CAMERA_URL ?= http://riot-demo.inria.fr/demo-cam/?action=stream
 
 # Targets
 
