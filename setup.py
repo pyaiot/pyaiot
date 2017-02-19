@@ -56,7 +56,7 @@ if __name__ == '__main__':
                    pjoin('bin', 'iot-dashboard')],
           install_requires=[
             'tornado>=4.4.2',
-            'aiocoap<=0.2',
+            'aiocoap>=0.2',
             'hbmqtt>=0.8',
           ],
           classifiers=[
