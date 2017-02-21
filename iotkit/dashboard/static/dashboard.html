@@ -342,19 +342,17 @@ joystick.stop = function() {
         <div class="grid-item" v-for="(node, index) in nodes">
             <div class="panel panel-default" :id="'node'+index">
                 <div class="panel-heading">
-                    <span v-if="node.data.name">{{!node.data.name}}</span>
-                    <span v-if="node.data.start">{{!node.data.start}}</span>
+                    {{! node.data.name || 'Discovering node...' }}
                     <div class="pull-right">
-                        Details
                         <div class="btn-group" style="margin-bottom: 0">
                             <a href="" class="menu-btn btn btn-link dropdown-toggle" data-toggle="dropdown">
                                 <span class="glyphicon glyphicon-option-vertical text-muted"></span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-right">
-                                <li v-if="node.data.os" class="li-text"><span>OS:</span>&nbsp;<b>{{!node.data.os}}</b></li>
-                                <li v-if="node.data.board"class="li-text"><span>Board:</span>&nbsp;<b>{{!node.data.board}}</b></li>
-                                <li v-if="node.data.mcu" class="li-text"><span>MCU:</span>&nbsp;<b>{{!node.data.mcu}}</b></li>
-                                <li class="li-text"><span>IP:</span>&nbsp;<b>{{!node.ip}}</b></li>
+                                <li v-if="node.data.os" class="li-text"><span>OS:</span>&nbsp;<b>{{! node.data.os }}</b></li>
+                                <li v-if="node.data.board" class="li-text"><span>Board:</span>&nbsp;<b>{{! node.data.board }}</b></li>
+                                <li v-if="node.data.mcu" class="li-text"><span>MCU:</span>&nbsp;<b>{{! node.data.mcu }}</b></li>
+                                <li class="li-text"><span>IP:</span>&nbsp;<b>{{! node.ip }}</b></li>
 
                             </ul>
                         </div>
@@ -502,7 +500,7 @@ function receive_message(msg) {
     switch (msg.command) {
         case 'new':
             console.log("New node", node)
-            vm.nodes.push({ip: node, data: {start:'Discovering node...'}})
+            vm.nodes.push({ip: node, data: {}})
             break
         case 'out':
             if (index != -1) {
@@ -517,7 +515,6 @@ function receive_message(msg) {
 
                 // Remove initial discover message and set a neutral name
                 if (!vm.nodes[index].data.hasOwnProperty("name")) {
-                    delete vm.nodes[index].data["start"]
                     Vue.set(vm.nodes[index].data, "name", "Node")
                 }
 
