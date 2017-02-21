@@ -4,7 +4,8 @@ After=network.target radvd.service
 
 [Service]
 User=pi
-ExecStart=/home/pi/demos/bin/iot-broker --port=8082
+Environment='BROKER_PORT=8082'
+ExecStart=/usr/local/bin/iot-broker --port=$BROKER_PORT
 
 [Install]
 WantedBy=multi-user.target

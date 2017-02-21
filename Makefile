@@ -1,17 +1,21 @@
 
 # Define default variables
-PYTHON            ?= /usr/bin/python3
 BROKER_PORT       ?= 80
 BROKER_HOST       ?= riot-demo.inria.fr
 DASHBOARD_PORT    ?= 8080
-DASHBOARD_TITLE   ?= "RIOT Demo Dashboard"
+DASHBOARD_TITLE   ?= "Local RIOT Demo Dashboard"
 DASHBOARD_LOGO    ?= /static/assets/logo-riot.png
 DASHBOARD_FAVICON ?= /static/assets/favicon192.png
 CAMERA_URL ?= http://riot-demo.inria.fr/demo-cam/?action=stream
 
 # Targets
+deploy: install-dev setup-services
 
-setup: setup-broker setup-dashboard
+install-dev:
+	sudo apt-get install python3-pip libyaml-dev -y
+	sudo pip3 install -e .
+
+setup-services: setup-broker setup-dashboard
 
 setup-broker:
 	sudo cp systemd/iot-broker.service /lib/systemd/system/.
@@ -30,8 +34,8 @@ run-broker:
 	iot-broker --port=${BROKER_PORT} --debug
 
 run-dashboard:
-	iot-dashboard --port=${DASHBOARD_PORT}    \
-		--broker-port=${BROKER_PORT} --broker-host=${BROKER_HOST}\
-		--camera-url=${CAMERA_URL} --title=${DASHBOARD_TITLE}    \
-		--logo=${DASHBOARD_LOGO} --favicon=${DASHBOARD_FAVICON}  \
+	iot-dashboard --port=${DASHBOARD_PORT}                        \
+		--broker-port=${BROKER_PORT} --broker-host=${BROKER_HOST} \
+		--camera-url=${CAMERA_URL} --title=${DASHBOARD_TITLE}     \
+		--logo=${DASHBOARD_LOGO} --favicon=${DASHBOARD_FAVICON}   \
 		--debug

@@ -1,12 +1,25 @@
 [Unit]
-Description=IoT Dashboard Application (RIOT version)
+Description=IoT Dashboard Application
 After=network.target radvd.service
 
 [Service]
 User=pi
-ExecStart=/home/pi/demos/bin/iot-dashboard --port=8080 --broker-port=80 \
-        --broker-host=riot-demo.inria.fr "--title=RIOT Demo Dashboard"  \
-        --logo=/static/assets/logo-riot.png --favicon=/static/assets/favicon192.png
+Environment='HTTP_PORT=8080' \
+        'BROKER_PORT=8082' \
+        'BROKER_HOST=localhost' \
+        'APP_TITLE=' \
+        'APP_LOGO=' \
+        'APP_FAVICON=' \
+        'CAMERA_URL='
+
+ExecStart=/usr/local/bin/iot-dashboard \
+        --port=${HTTP_PORT} \
+        --broker-port=${BROKER_PORT} \
+        --broker-host=${BROKER_HOST} \
+        "--title=${APP_TITLE}" \
+        --logo=${APP_LOGO} \
+        --favicon=${APP_FAVICON} \
+        --camera-url=${CAMERA_URL}
 
 [Install]
 WantedBy=multi-user.target

@@ -30,7 +30,7 @@ $ cd ..
    Important: use the same directories on the Saclay site ssh frontend
 3. Clone this repository:
 <pre>
-$ git clone git@gitlab.inria.fr:fit-saclay/demos.git
+$ git clone https://github.com/iot-lab/iot-kit.git
 </pre>
 4. Add the following lines in your `~/.ssh/config` file (replace <login> with
    your IoT-Lab login:
@@ -38,7 +38,7 @@ $ git clone git@gitlab.inria.fr:fit-saclay/demos.git
 Host iotlab
      Hostname saclay.iot-lab.info
      User <login>
-Host node-a8-* 
+Host node-a8-*
     User root
     ProxyCommand ssh iotlab -W %h:%p
     StrictHostKeyChecking no
@@ -47,8 +47,8 @@ Host node-a8-*
 5. Launch the demo on nodes A8 140 (the border router) and A8 138, 139, 141 and
    142 (the demo nodes). We configure an experiment with 120m duration.
 <pre>
-$ cd utils/iotlab 
-$ ./iotlab-launch-demo.sh 120 140 '138 139 141 142' 
+$ cd utils/iotlab
+$ ./iotlab-launch-demo.sh 120 140 '138 139 141 142'
 </pre>
 6. You should now see a new node popping up on the
    [RIOT Demo Dashboard](http://riot-demo.inria.fr). The A8_M3 node is also visible
