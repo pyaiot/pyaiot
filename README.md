@@ -56,16 +56,16 @@ For a custom setup, please edit the `Environment` option of the
 **before** deploying. The broker port should be the same in both service files
 if you want the two to work together.
 
-1. Install the iot-kit package from the source:
-  1. Clone this repository
+Here are the installation steps:
+1. Clone this repository
 <pre>
     $ git clone https://github.com/iot-lab/iot-kit.git
 </pre>
-  2. Deploy the system (debian/raspbian/ubuntu):
+2. Deploy the system (debian/raspbian/ubuntu):
 <pre>
     $ make deploy
 </pre>
-  3. Verify that the services are correctly running:
+3. Verify that the services are correctly running:
 <pre>
     $ sudo systemctl status iot-broker.service
     ● iot-broker.service - IoT Broker Application
@@ -86,8 +86,8 @@ if you want the two to work together.
 </pre>
 
 You can also
-update `Environment` option in the services definition files after deployment
-as they are locate in `/lib/systemd/system/iot-broker.service` and
+update `Environment` option in the services definition files **after**
+deployment as they are locate in `/lib/systemd/system/iot-broker.service` and
 `/lib/systemd/system/iot-dashboard.service`. In this case, you'all also need
 to reload the systemd daemon services and restart the `iot-broker` and
 `iot-dashboard` services:
