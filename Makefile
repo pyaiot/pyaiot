@@ -12,7 +12,7 @@ CAMERA_URL ?= http://riot-demo.inria.fr/demo-cam/?action=stream
 deploy: install-dev setup-services
 
 install-dev:
-	sudo apt-get install python3-pip libyaml-dev -y
+	sudo apt-get install python3-pip libyaml-dev npm -y
 	sudo pip3 install -e .
 	make setup-dashboard-npm
 
