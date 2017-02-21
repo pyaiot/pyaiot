@@ -172,6 +172,12 @@ img {
     cursor: pointer;
 }
 
+.node-icon {
+    max-height: 20px;
+    margin-left: -5px;
+    margin-right: 5px;
+}
+
 /* BUGGYBOT DIRECTION PAD */
 
 svg.pad {
@@ -342,6 +348,7 @@ joystick.stop = function() {
         <div class="grid-item" v-for="(node, index) in nodes">
             <div class="panel panel-default" :id="'node'+index">
                 <div class="panel-heading">
+                    <img class="node-icon" src="{{ static_url( 'assets/favicon192.png' ) }}" v-if="node.data.os == 'riot'">
                     {{! node.data.name || 'Discovering node...' }}
                     <div class="pull-right">
                         <div class="btn-group" style="margin-bottom: 0">
