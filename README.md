@@ -57,6 +57,7 @@ For a custom setup, please edit the `Environment` option of the
 if you want the two to work together.
 
 Here are the installation steps:
+
 1. Clone this repository
 <pre>
     $ git clone https://github.com/iot-lab/iot-kit.git
