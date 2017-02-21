@@ -14,17 +14,20 @@ deploy: install-dev setup-services
 install-dev:
 	sudo apt-get install python3-pip libyaml-dev -y
 	sudo pip3 install -e .
+	make setup-dashboard-npm
 
-setup-services: setup-broker setup-dashboard
+setup-services: setup-broker-service setup-dashboard-service
 
-setup-broker:
+setup-broker-service:
 	sudo cp systemd/iot-broker.service /lib/systemd/system/.
 	sudo systemctl enable iot-broker.service
 	sudo systemctl daemon-reload
 	sudo systemctl restart iot-broker.service
 
-setup-dashboard:
+setup-dashboard-npm:
 	cd iotkit/dashboard/static && npm install
+
+setup-dashboard-service:
 	sudo cp systemd/iot-dashboard.service /lib/systemd/system/.
 	sudo systemctl enable iot-dashboard.service
 	sudo systemctl daemon-reload
