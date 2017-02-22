@@ -178,6 +178,15 @@ img {
     margin-right: 5px;
 }
 
+.inline-table td, .inline-table th{
+    border: 8px solid transparent;
+    padding: 0 2px;
+}
+.inline-table th{
+    font-weight: normal;
+    color: #777;
+}
+
 /* BUGGYBOT DIRECTION PAD */
 
 svg.pad {
@@ -355,13 +364,26 @@ joystick.stop = function() {
                             <a href="" class="menu-btn btn btn-link dropdown-toggle" data-toggle="dropdown">
                                 <span class="glyphicon glyphicon-option-vertical text-muted"></span>
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-right">
-                                <li v-if="node.data.os" class="li-text"><span>OS:</span>&nbsp;<b>{{! node.data.os }}</b></li>
-                                <li v-if="node.data.board" class="li-text"><span>Board:</span>&nbsp;<b>{{! node.data.board }}</b></li>
-                                <li v-if="node.data.mcu" class="li-text"><span>MCU:</span>&nbsp;<b>{{! node.data.mcu }}</b></li>
-                                <li class="li-text"><span>IP:</span>&nbsp;<b>{{! node.ip }}</b></li>
-
-                            </ul>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <table class="inline-table">
+                                    <tr v-if="node.data.os">
+                                        <th>OS</th>
+                                        <td>{{! node.data.os }}</td>
+                                    </tr>
+                                    <tr v-if="node.data.board">
+                                        <th>Board</th>
+                                        <td>{{! node.data.board }}</td>
+                                    </tr>
+                                    <tr v-if="node.data.mcu">
+                                        <th>MCU</th>
+                                        <td>{{! node.data.mcu }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>IP</th>
+                                        <td>{{! node.ip }}</td>
+                                    </tr>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
