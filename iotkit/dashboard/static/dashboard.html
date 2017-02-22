@@ -63,6 +63,9 @@ body.dark .navbar.navbar-inverse {
 body.dark .panel.panel-default>.panel-heading, body.dark .panel>.panel-heading {
     background-color: #ddd;
 }
+body.dark .panel.panel-default:target>.panel-heading, body.dark .panel:target>.panel-heading {
+    background-color: powderblue;
+}
 .panel-body + .panel-body {
     border-top: 1px solid #ddd;
 }
@@ -132,8 +135,8 @@ img {
     margin-top: 10px;
 }
 .menu-btn {
-    padding: 0px 3px;
-    border-radius: 100%;
+    padding: 1px 3px 0px 4px;
+    border-radius: 4px;
 }
 .panel-body {
     position: relative;
@@ -320,7 +323,7 @@ joystick.stop = function() {
                         </a>
                         <ul class="dropdown-menu">
                             <li v-for="(node, index) in nodes">
-                                <a :href="'#node'+index">{{!node.ip}}</a>
+                                <a :href="'#node'+index">{{! node.displayName() }}</a>
                             </li>
                         </ul>
                     </li>
@@ -358,7 +361,7 @@ joystick.stop = function() {
             <div class="panel panel-default" :id="'node'+index">
                 <div class="panel-heading">
                     <img class="node-icon" src="{{ static_url( 'assets/favicon192.png' ) }}" v-if="node.data.os == 'riot'">
-                    {{! node.data.name || 'Discovering node...' }}
+                    {{! node.displayName() }}
                     <div class="pull-right">
                         <div class="btn-group" style="margin-bottom: 0">
                             <a href="" class="menu-btn btn btn-link dropdown-toggle" data-toggle="dropdown">
@@ -523,13 +526,26 @@ ws.onerror = function(ev){
     console.log("WebSocket error", ev)
 }
 
+function Node(ip, data={}) {
+    this.ip = ip
+    this.data = data
+
+    this.displayName = function() {
+        // show temporary name while waiting for the node data
+        if (Object.keys(this.data).length === 0)
+            return 'Discovering node...'
+
+        return this.data.name || 'Node'
+    }
+}
+
 function receive_message(msg) {
     let node = msg.node
     let index = vm.nodes.map(e => e.ip).indexOf(node)
     switch (msg.command) {
         case 'new':
             console.log("New node", node)
-            vm.nodes.push({ip: node, data: {}})
+            vm.nodes.push(new Node(node))
             break
         case 'out':
             if (index != -1) {
@@ -541,11 +557,6 @@ function receive_message(msg) {
         case 'update':
             if (index != -1) {
                 let endpoint = msg.endpoint.replace(/^\//g, '') // remove leading slash
-
-                // Remove initial discover message and set a neutral name
-                if (!vm.nodes[index].data.hasOwnProperty("name")) {
-                    Vue.set(vm.nodes[index].data, "name", "Node")
-                }
 
                 console.log("Updating node", node, "with", endpoint)
                 Vue.set(vm.nodes[index].data, endpoint, msg.data) // same as vm.nodes[index].data[endpoint] = msg.data, but triggers UI update
