@@ -74,13 +74,13 @@ if __name__ == '__main__':
             'hbmqtt>=0.8',
           ],
           classifiers=[
-            'Development Status :: 3 - Beta',
+            'Development Status :: 4 - Beta',
             'Programming Language :: Python :: 3 :: Only',
             'Programming Language :: Python :: 3.4',
             'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
             'Intended Audience :: Developers',
-            'Environment :: Console'
+            'Environment :: Console',
             'Topic :: Communications',
             'License :: OSI Approved :: '
             'GNU Lesser General Public License v3 or later (LGPLv3+)', ],
