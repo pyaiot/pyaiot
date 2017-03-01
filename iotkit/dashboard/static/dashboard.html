@@ -612,6 +612,8 @@ function setup_temp_charts(node) {
     temp_canva.setAttribute('height', temp_canva.clientHeight)
     if (temp_canva) {
         temp_charts[node] = [new SmoothieChart({ millisPerPixel:1000,
+                                                 labels:{ fillStyle:'#545454',
+                                                          precision:0},
                                                  grid:{ strokeStyle: 'transparent',
                                                         fillStyle:'transparent',
                                                         borderVisible:false,
@@ -637,6 +639,8 @@ function setup_pres_charts(node) {
     pres_canva.setAttribute('height', pres_canva.clientHeight)
     if (pres_canva) {
         pres_charts[node] = [new SmoothieChart({ millisPerPixel:5000,
+                                                 labels:{ fillStyle:'#545454',
+                                                          precision:0},
                                                  grid:{ strokeStyle: 'transparent',
                                                         fillStyle:'transparent',
                                                         borderVisible:false,
