@@ -400,6 +400,11 @@ joystick.stop = function() {
                     <div class="h1">{{!node.data.pressure}}</div>
                     <canvas class="chart" :id="'pres_chart'+node.ip"></canvas>
                 </div>
+                <div class="panel-body has-chart" v-if="node.data.humidity">
+                    <div class="h5 text-muted">Relative humidity</div>
+                    <div class="h1">{{!node.data.humidity}}</div>
+                    <canvas class="chart" :id="'hum_chart'+node.ip"></canvas>
+                </div>
                 <div class="panel-body has-chart" v-if="node.data.illuminance">
                     <div class="h5 text-muted">Illuminance</div>
                     <div class="h1">{{!node.data.illuminance}}</div>
@@ -489,6 +494,7 @@ var acc_charts = {}
 var gyr_charts = {}
 var temp_charts = {}
 var pres_charts = {}
+var hum_charts = {}
 var teapot_charts = {}
 
 var data = {nodes: []}
@@ -604,6 +610,15 @@ function update_charts(msg) {
 
         update_pres_charts(msg)
     }
+
+    // humidity charts management
+    if (msg.endpoint === "/humidity") {
+        if (!(msg.node in hum_charts)) {
+            setup_hum_charts(msg.node)
+        }
+
+        update_hum_charts(msg)
+    }
 }
 
 function setup_temp_charts(node) {
@@ -658,6 +673,33 @@ function setup_pres_charts(node) {
 
 function update_pres_charts(msg) {
     pres_charts[msg.node][1].append(new Date().getTime(), msg.data.slice(0, -3));
+}
+
+function setup_hum_charts(node) {
+    var hum_canva = document.getElementById('hum_chart' + node)
+    hum_canva.setAttribute('width', hum_canva.clientWidth)
+    hum_canva.setAttribute('height', hum_canva.clientHeight)
+    if (hum_canva) {
+        hum_charts[node] = [new SmoothieChart({ millisPerPixel:5000,
+                                                labels:{ fillStyle:'#545454',
+                                                         precision:0},
+                                                grid:{ strokeStyle: 'transparent',
+                                                       fillStyle:'transparent',
+                                                       borderVisible:false,
+                                                       sharpLines:true },
+                                                minValue: 0,
+                                                maxValue: 100}),
+                            new TimeSeries()]
+        hum_charts[node][0].addTimeSeries(hum_charts[node][1],
+                                          { strokeStyle: 'rgba(0, 142, 255, 1)',
+                                            fillStyle: 'rgba(0, 142, 255, 0.2)',
+                                            lineWidth: 1.5 });
+        hum_charts[node][0].streamTo(hum_canva, 500);
+    }
+}
+
+function update_hum_charts(msg) {
+    hum_charts[msg.node][1].append(new Date().getTime(), msg.data.slice(0, -3));
 }
 
 function setup_teapot_charts(node) {
@@ -766,6 +808,9 @@ function remove_charts(node) {
     }
     if (node in pres_charts) {
         delete pres_charts[node]
+    }
+    if (node in hum_charts) {
+        delete hum_charts[node]
     }
 }
 
