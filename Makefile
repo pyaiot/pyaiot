@@ -43,4 +43,4 @@ run-dashboard:
 		--broker-port=${BROKER_PORT} --broker-host=${BROKER_HOST} \
 		--camera-url=${CAMERA_URL} --title=${DASHBOARD_TITLE}     \
 		--logo=${DASHBOARD_LOGO} --favicon=${DASHBOARD_FAVICON}   \
-		--debug
+		--show-map --debug

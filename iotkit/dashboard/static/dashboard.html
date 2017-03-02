@@ -229,7 +229,17 @@ svg.pad path:hover, svg.pad rect:hover {
     pointer-events: none;
     transition: transform 0.08s;
 }
-
+#map .panel-body {
+    position: absolute;
+    left:0;
+    right: 0;
+}
+#map {
+    height: 300px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
 </style>
 
 <script>
@@ -362,6 +372,18 @@ joystick.stop = function() {
                             </ul>
                         </div>
                     </div>
+                </div>
+            </div>
+            {% end %}
+        </div>
+        <div class="grid-item">
+            {% if show_map %}
+            <!-- map -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    Nodes Map
+                </div>
+                <div class="panel-body" id="map">
                 </div>
             </div>
             {% end %}
@@ -499,6 +521,8 @@ joystick.stop = function() {
         </div>
     </div>
 </div>
+<!-- Google Map API v3 -->
+<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js"></script>
 
 <script>
 // Smoothie charts containers
@@ -521,9 +545,12 @@ var vm = new Vue({
         }
     }
 });
-</script>
 
-<script>
+// For embedded google map
+var map;
+var map_bounds;
+var map_markers = [];
+
 // initialize bootstrap material design
 $.material.init()
 
@@ -572,6 +599,8 @@ function receive_message(msg) {
                 console.log("Removing node", node)
                 vm.nodes.splice(index, 1)
             }
+
+            reset_map()
             remove_charts(node)
             break
         case 'update':
@@ -588,6 +617,10 @@ function receive_message(msg) {
                 console.log("Updating node", node, "with", endpoint, "data:", data)
                 Vue.set(vm.nodes[index].data, endpoint, data) // same as vm.nodes[index].data[endpoint] = msg.data, but triggers UI update
 
+                // update google map
+                if (endpoint == "position") {
+                    add_node_to_map(vm.nodes[index])
+                }
                 // force material UI refresh
                 $.material.init()
 
@@ -876,6 +909,64 @@ $('#selectTheme').change(function () {
 $('#settingsModal').on('hide.bs.modal', function (e) {
     localStorage.setItem('theme', $('#selectTheme').val())
 });
+
+function initialize_map() {
+    var inriaLatLng = {lat: 48.7146403, lng: 2.2056539}
+    map_bounds = new google.maps.LatLngBounds();
+    map = new google.maps.Map(document.getElementById("map"), {
+        mapTypeControl: false,
+        streetViewControl: false,
+        maxZoom: 17,
+        zoom: 17,
+        center: inriaLatLng
+    });
+}
+
+initialize_map();
+
+function add_node_to_map(node) {
+    var riot_logo = "{{ static_url('assets/logo-riot.png') }}"
+    var nodeString =
+    '<div id="content">' +
+    '<div id="siteNotice">' +
+    '</div>' +
+    '<div id="bodyContent">' +
+    '<a href=http://riot-os.org><img style="max-width:120px;" src="' + riot_logo + '"></a>' +
+    '</div>' +
+    '</div>' +
+    '</div>';
+
+    var nodeWindow = new google.maps.InfoWindow({
+    content: nodeString,
+    maxWidth: 140
+    });
+    var position = JSON.parse(node.data.position)
+
+    var marker = new google.maps.Marker({
+      position: position,
+      map: map,
+      title: node.ip
+    });
+
+    marker.addListener('click', function() {
+        nodeWindow.open(map, marker);
+    });
+
+    map_bounds.extend(marker.position);
+    map.fitBounds(map_bounds);
+    map_markers.push(marker)
+}
+
+function reset_map() {
+    for (var i = 0; i < map_markers.length; i++) {
+        map_markers[i].setMap(null);
+    }
+    map_markers = [];
+
+    for (var index = 0; index < vm.nodes.length; ++i) {
+        add_node_to_map()
+    }
+}
 
 function print_ws_close_reason(code) {
     var reason;
