@@ -240,6 +240,11 @@ svg.pad path:hover, svg.pad rect:hover {
     margin: 0;
     padding: 0;
 }
+.map-icon {
+    max-height: 20px;
+    margin-left: 0px;
+    margin-right: 5px;
+}
 </style>
 
 <script>
@@ -549,7 +554,7 @@ var vm = new Vue({
 // For embedded google map
 var map;
 var map_bounds;
-var map_markers = [];
+var map_markers = {};
 
 // initialize bootstrap material design
 $.material.init()
@@ -599,8 +604,7 @@ function receive_message(msg) {
                 console.log("Removing node", node)
                 vm.nodes.splice(index, 1)
             }
-
-            reset_map()
+            remove_node_from_map(node)
             remove_charts(node)
             break
         case 'update':
@@ -617,14 +621,15 @@ function receive_message(msg) {
                 console.log("Updating node", node, "with", endpoint, "data:", data)
                 Vue.set(vm.nodes[index].data, endpoint, data) // same as vm.nodes[index].data[endpoint] = msg.data, but triggers UI update
 
-                // update google map
-                if (endpoint == "position") {
-                    add_node_to_map(vm.nodes[index])
-                }
                 // force material UI refresh
                 $.material.init()
 
                 Vue.nextTick(_ => update_charts(msg))
+
+                // update google map
+                if (endpoint == "position") {
+                    Vue.nextTick(_ => add_node_to_map(vm.nodes[index]))
+                }
             }
             break
         default:
@@ -925,46 +930,42 @@ function initialize_map() {
 initialize_map();
 
 function add_node_to_map(node) {
-    var riot_logo = "{{ static_url('assets/logo-riot.png') }}"
+    var riot_logo = "{{ static_url('assets/favicon192.png') }}"
+    var logo_string = ""
+    if (node.data.os == "riot") {
+        logo_string = '<span><img class="map-icon" src="' + riot_logo + '"></img></span>'
+    }
     var nodeString =
-    '<div id="content">' +
-    '<div id="siteNotice">' +
-    '</div>' +
-    '<div id="bodyContent">' +
-    '<a href=http://riot-os.org><img style="max-width:120px;" src="' + riot_logo + '"></a>' +
-    '</div>' +
-    '</div>' +
-    '</div>';
+        '<div id="content">' +
+            '<div id="bodyContent">' +
+                '<div id="map_label">' + logo_string + '<span>' + node.data.name + '</span></div>' +
+            '</div>'
+        '</div>';
 
     var nodeWindow = new google.maps.InfoWindow({
-    content: nodeString,
-    maxWidth: 140
+        content: nodeString,
+        maxWidth: 250
     });
     var position = JSON.parse(node.data.position)
 
-    var marker = new google.maps.Marker({
-      position: position,
-      map: map,
-      title: node.ip
+    map_markers[node.ip] = new google.maps.Marker({
+        position: position,
+        map: map,
+        title: node.ip
     });
 
-    marker.addListener('click', function() {
-        nodeWindow.open(map, marker);
+    map_markers[node.ip].addListener('click', function() {
+        nodeWindow.open(map, map_markers[node.ip]);
     });
 
-    map_bounds.extend(marker.position);
+    map_bounds.extend(map_markers[node.ip].position);
     map.fitBounds(map_bounds);
-    map_markers.push(marker)
 }
 
-function reset_map() {
-    for (var i = 0; i < map_markers.length; i++) {
-        map_markers[i].setMap(null);
-    }
-    map_markers = [];
-
-    for (var index = 0; index < vm.nodes.length; ++i) {
-        add_node_to_map()
+function remove_node_from_map(node) {
+    if (node in map_markers) {
+        map_markers[node].setMap(null);
+        delete map_markers[node]
     }
 }
 
