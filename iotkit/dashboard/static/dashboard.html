@@ -490,12 +490,6 @@ joystick.stop = function() {
     </div>
 </div>
 
-<!-- Dropdown.js -->
-<script src="https://cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.js"></script>
-<script>
-$("#settingsModal select").dropdown();
-</script>
-
 <script>
 // Smoothie charts containers
 var acc_charts = {}
@@ -939,6 +933,11 @@ function print_ws_close_reason(code) {
     }
     console.log("Code: ", code, "\nReason:", reason)
 }
+</script>
+<!-- Dropdown.js -->
+<script src="https://cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.js"></script>
+<script>
+$("#settingsModal select").dropdown();
 </script>
 <script src="{{ static_url('js/teapot.js') }}"></script>
 </body>
