@@ -400,6 +400,10 @@ joystick.stop = function() {
                         </div>
                     </div>
                 </div>
+                <div class="panel-body" v-if="node.data.position">
+                    <div class="h5 text-muted">Position</div>
+                    <div class="h4">Lat: {{!node.data.position.lat}}° &nbsp;- &nbsp;Lng: {{!node.data.position.lng}}°</div>
+                </div>
                 <div class="panel-body has-chart" v-if="node.data.temperature">
                     <div class="h5 text-muted">Temperature</div>
                     <div class="h1">{{!node.data.temperature}}</div>
@@ -434,6 +438,10 @@ joystick.stop = function() {
                     <div class="joystick" @mousemove.prevent="joystick.move" @touchmove.prevent="joystick.move" @mousedown.prevent="joystick.start(node.ip, $event)" @touchstart.prevent="joystick.start(node.ip, $event)">
                         <div class="ball"></div>
                     </div>
+                </div>
+                <div class="panel-body" v-if="node.data.text">
+                    <div class="h5 text-muted">Message</div>
+                    <div class="h4">{{!node.data.text}}</div>
                 </div>
                 <div class="panel-body" v-if="node.data.twitter">
                     <div class="h1">{{!node.data.twitter}}</div>
@@ -570,8 +578,15 @@ function receive_message(msg) {
             if (index != -1) {
                 let endpoint = msg.endpoint.replace(/^\//g, '') // remove leading slash
 
-                console.log("Updating node", node, "with", endpoint)
-                Vue.set(vm.nodes[index].data, endpoint, msg.data) // same as vm.nodes[index].data[endpoint] = msg.data, but triggers UI update
+                var data = msg.data
+                if (endpoint == 'position') {
+                    try {
+                        data = JSON.parse(msg.data)
+                    }
+                    catch(err) {}
+                }
+                console.log("Updating node", node, "with", endpoint, "data:", data)
+                Vue.set(vm.nodes[index].data, endpoint, data) // same as vm.nodes[index].data[endpoint] = msg.data, but triggers UI update
 
                 // force material UI refresh
                 $.material.init()
