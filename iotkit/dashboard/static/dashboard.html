@@ -260,7 +260,8 @@ joystick.start = function(node, event) {
 
 joystick.send = function() {
     var payload = `${joystick.dx}:${joystick.dy}:${joystick.dx+joystick.dy}\n`;
-    sendData({"node": joystick.active_node, path: "/ribot", "payload": payload});
+    sendData("update",
+             {"node": joystick.active_node, path: "/ribot", "payload": payload});
 }
 
 joystick.move = function(event) {
@@ -369,6 +370,7 @@ joystick.stop = function() {
             <div class="panel panel-default" :id="'node'+index">
                 <div class="panel-heading">
                     <img class="node-icon" src="{{ static_url( 'assets/favicon192.png' ) }}" v-if="node.data.os == 'riot'">
+                    <img class="node-icon" src="{{ static_url( 'assets/android-logo.png' ) }}" v-if="node.data.os == 'android'">
                     {{! node.displayName() }}
                     <div class="pull-right">
                         <div class="btn-group" style="margin-bottom: 0">
@@ -521,6 +523,7 @@ var ws = new WebSocket('ws://{{ wsserver }}/ws')
 
 ws.onopen = function() {
     console.log("WebSocket is ready")
+    sendData("new", "client")
 }
 ws.onmessage = function(event) {
     let msg = JSON.parse(event.data)
@@ -827,8 +830,8 @@ function refresh_layout() {
     msnry.layout()
 }
 
-function sendData(data) {
-    ws.send(JSON.stringify(data))
+function sendData(type, data) {
+    ws.send(JSON.stringify({"type": type, "data": data}))
 }
 
 $(document).on('change', '.led-btn', function() {
@@ -838,11 +841,13 @@ $(document).on('change', '.led-btn', function() {
         payload = "1"
     }
 
-    sendData({"node": node, path: "/led", "payload": payload})
+    sendData("update",
+             {"node": node, "path": "/led", "payload": payload})
 })
 
 function setRobotDirection(node, direction) {
-    sendData({"node": node, path: "/robot", "payload": direction})
+    sendData("update",
+             {"node": node, "path": "/robot", "payload": direction})
 }
 
 $('#selectTheme').change(function () {

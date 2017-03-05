@@ -32,12 +32,14 @@
 import json
 import tornado
 import logging
+import uuid
 
 from tornado import gen, web, websocket
 
-from .coap import _forward_message_to_node, _discover_node
-from .data import coap_nodes, client_sockets
+from .coap import _forward_data_to_node, _discover_node
+from .data import coap_nodes, client_sockets, node_sockets
 from .logger import logger
+from .utils import _broadcast_message
 
 
 class BrokerPostHandler(web.RequestHandler):
@@ -49,7 +51,19 @@ class BrokerPostHandler(web.RequestHandler):
     @gen.coroutine
     def post(self):
         """Forward POST request to a CoAP PUT request."""
-        _forward_message_to_node(self.request.body.decode('utf-8'))
+        message = self.request.body.decode('utf-8')
+        try:
+            data = json.loads(message)
+        except TypeError as e:
+            logger.warning(e)
+            return "{}".format(e)
+        except json.JSONDecodeError:
+            reason = ("Invalid message received "
+                      "'{}'. Only JSON format is supported.".format(message))
+            logger.warning(reason)
+            return reason
+
+        _forward_data_to_node(data['data'])
 
 
 class BrokerWebsocketHandler(websocket.WebSocketHandler):
@@ -63,19 +77,54 @@ class BrokerWebsocketHandler(websocket.WebSocketHandler):
 
         self.set_nodelay(True)
         logger.debug("New websocket opened")
-        client_sockets.append(self)
-        for node in coap_nodes():
-            self.write_message(json.dumps({'command': 'new',
-                                           'node': node.address}))
-            _discover_node(node, self)
 
     @gen.coroutine
     def on_message(self, message):
         """Triggered when a message is received from the web client."""
+        try:
+            data = json.loads(message)
+        except TypeError as e:
+            logger.warning(e)
+            self.close(code=1003,
+                       reason="Invalid message '{}'.".format(message))
+            return
+        except json.JSONDecodeError:
+            reason = ("Invalid message received "
+                      "'{}'. Only JSON format is supported.".format(message))
+            logger.warning(reason)
+            self.close(code=1003, reason="{}.".format(reason))
+            return
 
-        res = _forward_message_to_node(message, origin="Websocket")
-        if res is not None:
-            self.close(code=1003, reason=res)
+        if 'type' not in data and 'data' not in data:
+            self.close(code=1003,
+                       reason="Invalid message '{}'.".format(message))
+
+        if data['type'] == "new":
+            if data['data'] == "client":
+                client_sockets.append(self)
+                for node in coap_nodes():
+                    self.write_message(json.dumps({'command': 'new',
+                                                   'node': node.address}))
+                    _discover_node(node, self)
+
+            elif data['data'] == "node":
+                node_sockets.update({self: str(uuid.uuid4())})
+                _broadcast_message(json.dumps({'command': 'new',
+                                               'node': node_sockets[self]}))
+        elif data['type'] == "update":
+            if self in client_sockets:
+                _forward_data_to_node(data['data'], origin="Websocket")
+            elif self in node_sockets:
+                for key, value in data['data'].items():
+                    _broadcast_message(
+                        json.dumps({'command': 'update',
+                                    'node': node_sockets[self],
+                                    'endpoint': '/' + key,
+                                    'data': value}))
+        else:
+            self.close(code=1003,
+                       reason="Unknown message type '{}'.".format(
+                              data['type']))
 
     def on_close(self):
         """Remove websocket from internal list."""
@@ -83,6 +132,10 @@ class BrokerWebsocketHandler(websocket.WebSocketHandler):
         logger.debug("Websocket closed")
         if self in client_sockets:
             client_sockets.remove(self)
+        elif self in node_sockets:
+            _broadcast_message(json.dumps({'node': node_sockets[self],
+                                           'command': 'out'}))
+            node_sockets.pop(self)
 
 
 class BrokerApplication(web.Application):

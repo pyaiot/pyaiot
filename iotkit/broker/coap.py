@@ -138,8 +138,8 @@ def _check_dead_nodes():
 
 
 @gen.coroutine
-def _forward_message_to_node(message, origin="POST"):
-    """Forward a received message to the destination node.
+def _forward_data_to_node(data, origin="POST"):
+    """Forward received message data to the destination node.
 
     The message should be JSON and contain 'node', 'path' and 'payload'
     keys.
@@ -148,30 +148,18 @@ def _forward_message_to_node(message, origin="POST"):
     - 'path' corresponds to the CoAP resource on the node
     - 'payload' corresponds to the new payload for the CoAP resource.
     """
-    try:
-        data = json.loads(message)
-    except TypeError as e:
-        logger.warning(e)
-        return "{}".format(e)
-    except json.JSONDecodeError:
-        reason = ("Invalid message received from {}: "
-                  "'{}'. Only JSON format is supported.".format(message,
-                                                                origin))
-        logger.warning(reason)
-        return reason
-    else:
-        node = data['node']
-        path = data['path']
-        payload = data['payload']
-        logger.debug("Translating message ('{}') received from {} to CoAP PUT "
-                     "request".format(data, origin))
+    node = data['node']
+    path = data['path']
+    payload = data['payload']
+    logger.debug("Translating message ('{}') received from {} to CoAP PUT "
+                 "request".format(data, origin))
 
-        if CoapNode(node) not in coap_nodes():
-            return
-        code, payload = yield _coap_resource(
-            'coap://[{0}]{1}'.format(node, path),
-            method=PUT,
-            payload=payload.encode('ascii'))
+    if CoapNode(node) not in coap_nodes():
+        return
+    code, payload = yield _coap_resource(
+        'coap://[{0}]{1}'.format(node, path),
+        method=PUT,
+        payload=payload.encode('ascii'))
 
     return
 

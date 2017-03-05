@@ -31,6 +31,7 @@
 
 COAP_NODES = []
 client_sockets = []
+node_sockets = {}
 
 
 def coap_nodes():
