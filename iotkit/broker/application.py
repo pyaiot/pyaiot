@@ -106,6 +106,10 @@ class BrokerWebsocketHandler(websocket.WebSocketHandler):
                     self.write_message(json.dumps({'command': 'new',
                                                    'node': node.address}))
                     _discover_node(node, self)
+                for ws, uid in node_sockets.items():
+                    self.write_message(json.dumps({'command': 'new',
+                                                   'node': uid}))
+                    ws.write_message(json.dumps({'request': 'discover'}))
 
             elif data['data'] == "node":
                 node_sockets.update({self: str(uuid.uuid4())})
