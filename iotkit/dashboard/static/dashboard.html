@@ -327,9 +327,9 @@ joystick.stop = function() {
                                 <a :href="'#node'+index">
                                     <div class="checkbox" style="display: inline; margin-right: 5px;" @click.stop @change="Vue.nextTick(refresh_layout)">
                                         <label>
-                                            <input type="checkbox" v-model="node.visible"> 
+                                            <input type="checkbox" v-model="node.visible">
                                         </label>
-                                    </div> 
+                                    </div>
                                     {{! node.displayName() }}
                                 </a>
                             </li>
@@ -800,7 +800,7 @@ function update_imu_charts(msg) {
 }
 
 function remove_charts(node) {
-    if (node in acc_charsts) {
+    if (node in acc_charts) {
         delete acc_charts[node]
     }
     if (node in gyr_charts) {
