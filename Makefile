@@ -1,5 +1,6 @@
 
 # Define default variables
+STATIC_PATH       ?= ./iotkit/dashboard/static/
 BROKER_PORT       ?= 80
 BROKER_HOST       ?= riot-demo.inria.fr
 DASHBOARD_PORT    ?= 8080
@@ -13,7 +14,7 @@ deploy: install-dev setup-services
 
 install-dev:
 	sudo apt-get install python3-pip libyaml-dev npm -y
-	sudo pip3 install -e .
+	sudo pip3 install .
 	make setup-dashboard-npm
 
 setup-services: setup-broker-service setup-dashboard-service
@@ -37,7 +38,8 @@ run-broker:
 	iot-broker --port=${BROKER_PORT} --debug
 
 run-dashboard:
-	iot-dashboard --port=${DASHBOARD_PORT}                        \
+	iot-dashboard --static-path=${STATIC_PATH}                         \
+		--port=${DASHBOARD_PORT}                                  \
 		--broker-port=${BROKER_PORT} --broker-host=${BROKER_HOST} \
 		--camera-url=${CAMERA_URL} --title=${DASHBOARD_TITLE}     \
 		--logo=${DASHBOARD_LOGO} --favicon=${DASHBOARD_FAVICON}   \

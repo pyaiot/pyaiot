@@ -74,7 +74,7 @@ Here are the installation steps:
        Active: active (running) since dim. 2016-12-18 14:59:56 CET; 35min ago
      Main PID: 32411 (python3)
        CGroup: /system.slice/riot-broker.service
-               └─32411 /usr/bin/python3 /home/pi/demos/bin/iot-broker --port=8082 --debug
+               └─32411 /usr/bin/python3 /usr/local/bin/iot-broker --port=8082 --debug
     [...]
     $ sudo systemctl status iot-dashboard.service
     ● iot-dashboard.service - IoT Dashboard Application
@@ -82,7 +82,7 @@ Here are the installation steps:
        Active: active (running) since dim. 2016-12-18 14:52:29 CET; 41min ago
      Main PID: 32321 (python3)
        CGroup: /system.slice/iot-dashboard.service
-               └─32321 /usr/bin/python3 /home/pi/demos/bin/iot-dashboard --port=8080 --broker-port=8082 --broker...
+               └─32321 /usr/bin/python3 /usr/local/bin/iot-dashboard --port=8080 --broker-port=8082 --broker...
     [...]
 </pre>
 
@@ -105,7 +105,8 @@ Environment='BROKER_PORT=8082'
 ```
 * iot-dashboard:
 ```
-Environment='HTTP_PORT=8080' \
+Environment='STATIC_PATH=/home/pi/demos/iotkit/dashboard/static' \
+        'HTTP_PORT=8080' \
         'BROKER_PORT=80' \  # This is because the broker is behind an apache proxy
         'BROKER_HOST=riot-demo.inria.fr' \
         'APP_TITLE=RIOT Demo Dashboard' \

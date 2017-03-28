@@ -74,10 +74,8 @@ class IoTDashboardApplication(web.Application):
         settings = {'debug': True,
                     "cookie_secret": "MY_COOKIE_ID",
                     "xsrf_cookies": False,
-                    'static_path': os.path.join(os.path.dirname(__file__),
-                                                "static"),
-                    'template_path': os.path.join(os.path.dirname(__file__),
-                                                  "static")
+                    'static_path': options.static_path,
+                    'template_path': options.static_path
                     }
         super().__init__(handlers, **settings)
         self._log.info('Application started, listening on port {0}'
@@ -87,6 +85,9 @@ class IoTDashboardApplication(web.Application):
 def parse_command_line():
     """Parse command line arguments for IoT broker application."""
 
+    define("static-path",
+           default=os.path.join(os.path.dirname(__file__), "static"),
+           help="Static files path (containing npm package.json file)")
     define("port", default=8080,
            help="Web application HTTP port")
     define("broker_port", default=8000,
