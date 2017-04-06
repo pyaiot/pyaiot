@@ -222,7 +222,13 @@ svg.pad path:hover, svg.pad rect:hover {
     /*background-color: #ccc;*/
     /*background-color: #222;*/
     /*box-shadow: 0px 0px 8px 0px rgba(0,0,0,0.68);*/
-    background: radial-gradient(ellipse at center, rgb(76,76,76) 0%, rgb(89,89,89) 23%, rgb(102,102,102) 47%, rgb(71,71,71) 64%, rgb(1,1,1) 76%, rgb(0,0,0) 100%);
+    background: radial-gradient(ellipse at center,
+        rgb(76,76,76) 0%,
+        rgb(89,89,89) 23%,
+        rgb(102,102,102) 47%,
+        rgb(71,71,71) 64%,
+        rgb(1,1,1) 76%,
+        rgb(0,0,0) 100%);
     width: 37%;
     height: 37%;
     border-radius: 100%;
@@ -249,11 +255,12 @@ svg.pad path:hover, svg.pad rect:hover {
 
 <script>
 var theme = localStorage.theme || 'dark';
+var initMap = localStorage.showMap || 'true';
+var initCam = localStorage.showCam || 'true';
 
 if (theme == 'dark') {
     document.body.classList.add('dark')
 }
-
 
 var joystick = {
     center: {
@@ -353,15 +360,21 @@ joystick.stop = function() {
                     </li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
-                    <li><a data-toggle="modal" data-target="#settingsModal" href=""><i class="material-icons" style="line-height: inherit">settings</i></a></li>
+                    <li>
+                        <a data-toggle="modal" data-target="#settingsModal" href="">
+                            <i class="material-icons" style="line-height: inherit">settings</i>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
     </div>
     <!-- <div class="container-fluid"> -->
     <div class="grid" data-masonry='{ "itemSelector": ".grid-item:not(.grid-hidden)", "fitWidth": "true" }'>
+        <!-- Hack to avoid weird layout issues when playing with Map and Camera visibility -->
         <div class="grid-item">
-            {% if camera_url %}
+        </div>
+        <div class="grid-item" v-show="showCam">
             <!-- webcam -->
             <div class="panel panel-default" id="webcam">
                 <div class="panel-heading">
@@ -379,19 +392,13 @@ joystick.stop = function() {
                     </div>
                 </div>
             </div>
-            {% end %}
         </div>
-        <div class="grid-item">
-            {% if show_map %}
+        <!-- Use v-show for map to avoid recomputation -->
+        <div class="grid-item" v-show="showMap">
             <!-- map -->
             <div class="panel panel-default">
-                <div class="panel-heading">
-                    Nodes Map
-                </div>
-                <div class="panel-body" id="map">
-                </div>
+                <div class="panel-body" id="map"></div>
             </div>
-            {% end %}
         </div>
         <div class="grid-item" v-for="(node, index) in nodes" v-show="node.visible">
             <div class="panel panel-default" :id="'node'+index">
@@ -510,6 +517,18 @@ joystick.stop = function() {
                         <h2 class="modal-title">Settings</h2>
                 </div>
                 <div class="modal-body">
+                    <div class="checkbox">
+                        <label for="showCamCheckbox" class="control-label">
+                            <input type="checkbox" id="showCamCheckbox" v-model="showCam" @change="Vue.nextTick(refresh_layout)">
+                            Show live camera
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="showMapCheckbox" class="control-label">
+                            <input type="checkbox" id="showMapCheckbox" v-model="showMap" @change="Vue.nextTick(refresh_layout)">
+                            Show nodes map
+                        </label>
+                    </div>
                     <div class="form-group" style="margin: 0">
                         <label for="selectTheme" class="control-label">Theme</label>
                         <select id="selectTheme" class="form-control">
@@ -538,7 +557,12 @@ var pres_charts = {}
 var hum_charts = {}
 var teapot_charts = {}
 
-var data = {nodes: []}
+var data = {
+    nodes: [],
+    showMap: initMap == "true",
+    showCam: initCam == "true",
+}
+
 var vm = new Vue({
     el: '#app',
     data: data,
@@ -913,6 +937,13 @@ $('#selectTheme').change(function () {
 
 $('#settingsModal').on('hide.bs.modal', function (e) {
     localStorage.setItem('theme', $('#selectTheme').val())
+    localStorage.setItem('showMap', vm.showMap ? 'true': 'false')
+    localStorage.setItem('showCam', vm.showCam ? 'true': 'false')
+
+    if (vm.showMap) {
+        google.maps.event.trigger(map, 'resize');
+        map.fitBounds(map_bounds);
+    }
 });
 
 function initialize_map() {
@@ -946,10 +977,9 @@ function add_node_to_map(node) {
         content: nodeString,
         maxWidth: 250
     });
-    var position = JSON.parse(node.data.position)
 
     map_markers[node.ip] = new google.maps.Marker({
-        position: position,
+        position: node.data.position,
         map: map,
         title: node.ip
     });

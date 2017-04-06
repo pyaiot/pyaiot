@@ -56,8 +56,7 @@ class DashboardHandler(web.RequestHandler):
                     camera_url=options.camera_url,
                     favicon=options.favicon,
                     logo_url=options.logo,
-                    title=options.title,
-                    show_map=options.show_map)
+                    title=options.title)
 
 
 class IoTDashboardApplication(web.Application):
@@ -97,8 +96,6 @@ def parse_command_line():
            help="Broker hostname")
     define("camera_url", default=None,
            help="Default camera url")
-    define("show_map", default=False,
-           help="Display map with nodes position.")
     define("title", default="IoT Dashboard",
            help="Dashboard title")
     define("logo", default=None,
