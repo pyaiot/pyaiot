@@ -50,48 +50,13 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r82/three.min.js"></script>
     <script src="{{ static_url('js/TeapotBufferGeometry.js') }}"></script>
+
+    <!-- IoT-Kit dashboard css -->
+    <link rel="stylesheet" type="text/css" href="{{ static_url('css/dashboard.css') }}">
 </head>
 
 <body>
-<style type="text/css">
-body.dark {
-    background-color: #333;
-}
-body.dark .navbar.navbar-inverse {
-    background-color: black;
-}
-body.dark .panel.panel-default>.panel-heading, body.dark .panel>.panel-heading {
-    background-color: #ddd;
-}
-body.dark .panel.panel-default:target>.panel-heading, body.dark .panel:target>.panel-heading {
-    background-color: powderblue;
-}
-.panel-body + .panel-body {
-    border-top: 1px solid #ddd;
-}
-.led-color {
-    color: firebrick;
-}
-.li-text {
-    padding: 5px;
-}
-.grid {
-    margin: 0 auto;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-.grid-item {
-    width: 400px;
-    max-width: 100%;
-    margin: 0 15px;
-}
-.grid-hidden {
-    display: none;
-}
-img {
-    max-width: 100%;
-}
+<style>
 #webcam {
     overflow: hidden;
     position: relative;
@@ -102,154 +67,6 @@ img {
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100%;
-}
-#webcam .panel-heading {
-    position: absolute;
-    left:0;
-    right: 0;
-    /*background-color: rgba(0,0,0,0.2);*/
-    /*mix-blend-mode: multiply;*/
-    /*mix-blend-mode: difference;*/
-    /*background-color: #222;*/
-    background-color: transparent;
-}
-#webcam .panel-heading::before {
-    content: "webcam";
-    position: absolute;
-    left:0;
-    right: 0;
-    top: 0;
-    /*background-color: rgba(0,0,0,0.2);*/
-    /*mix-blend-mode: multiply;*/
-    mix-blend-mode: difference;
-    background-color: #222;
-    color: #999;
-    padding: inherit;
-}
-
-.panel-heading .btn-group {
-    margin: 0;
-}
-
-.panel-heading .dropdown-menu {
-    margin-top: 10px;
-}
-.menu-btn {
-    padding: 1px 3px 0px 4px;
-    border-radius: 4px;
-}
-.panel-body {
-    position: relative;
-    z-index: 1;
-}
-.panel-body.has-chart {
-    min-height: 110px;
-}
-.chart {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    /*background-color: #333;*/
-}
-#teapot {
-    height: 277px;
-    width: 100%;
-}
-.btn-grid {
-  display: table;
-  border-spacing: 5px
-}
-.btn-row {
-  display: table-row
-}
-.btn-cell {
-  width: 50px;
-  height: 50px;
-  /*background: grey;*/
-  display: table-cell;
-}
-.pointer:hover {
-    cursor: pointer;
-}
-
-.node-icon {
-    max-height: 20px;
-    margin-left: -5px;
-    margin-right: 5px;
-}
-
-.inline-table td, .inline-table th{
-    border: 8px solid transparent;
-    padding: 0 2px;
-}
-.inline-table th{
-    font-weight: normal;
-    color: #777;
-}
-
-/* BUGGYBOT DIRECTION PAD */
-
-svg.pad {
-    width: 74%;
-    margin-left: 13%;
-}
-svg.pad path, svg.pad rect {
-    cursor: pointer;
-    fill-opacity: 0.1;
-    stroke-width: 3;
-}
-svg.pad path:hover, svg.pad rect:hover {
-    fill-opacity: 0.5;
-}
-
-/* JOYSTICK */
-
-.joystick {
-    width: 200px;
-    height: 200px;
-    margin: auto;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-image: url({{ static_url( 'assets/joystick.svg' ) }});
-}
-.joystick .ball {
-    /*border: 1px solid black;*/
-    /*background-color: #ccc;*/
-    /*background-color: #222;*/
-    /*box-shadow: 0px 0px 8px 0px rgba(0,0,0,0.68);*/
-    background: radial-gradient(ellipse at center,
-        rgb(76,76,76) 0%,
-        rgb(89,89,89) 23%,
-        rgb(102,102,102) 47%,
-        rgb(71,71,71) 64%,
-        rgb(1,1,1) 76%,
-        rgb(0,0,0) 100%);
-    width: 37%;
-    height: 37%;
-    border-radius: 100%;
-    pointer-events: none;
-    transition: transform 0.08s;
-}
-#map .panel-body {
-    position: absolute;
-    left:0;
-    right: 0;
-}
-#map {
-    height: 300px;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-}
-.map-icon {
-    max-height: 20px;
-    margin-left: 0px;
-    margin-right: 5px;
 }
 </style>
 
