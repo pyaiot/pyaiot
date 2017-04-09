@@ -104,6 +104,24 @@ var joystick = initJoystick()
                             </li>
                         </ul>
                     </li>
+                    <li class="dropdown">
+                        <a href="bootstrap-elements.html" data-target="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Resources displayed
+                            <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li v-for="(resource, index) in resources">
+                                <a :href="'#resource'+index">
+                                    <div class="checkbox" style="display: inline; margin-right: 5px;" @click.stop @change="Vue.nextTick(refresh_layout)">
+                                        <label>
+                                            <input type="checkbox" v-model="resource.visible">
+                                        </label>
+                                    </div>
+                                    {{! resource.name }}
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <li>
@@ -180,30 +198,30 @@ var joystick = initJoystick()
                         </div>
                     </div>
                 </div>
-                <div class="panel-body" v-if="node.data.position">
+                <div class="panel-body" v-if="node.data.position" v-show="resources.position.visible">
                     <div class="h5 text-muted">Position</div>
                     <div class="h4">Lat: {{!node.data.position.lat}}° &nbsp;- &nbsp;Lng: {{!node.data.position.lng}}°</div>
                 </div>
-                <div class="panel-body has-chart" v-if="node.data.temperature">
+                <div class="panel-body has-chart" v-if="node.data.temperature" v-show="resources.temperature.visible">
                     <div class="h5 text-muted">Temperature</div>
                     <div class="h1">{{!node.data.temperature}}</div>
                     <canvas class="chart" :id="'temp_chart'+node.ip"></canvas>
                 </div>
-                <div class="panel-body has-chart" v-if="node.data.pressure">
+                <div class="panel-body has-chart" v-if="node.data.pressure" v-show="resources.pressure.visible">
                     <div class="h5 text-muted">Pressure</div>
                     <div class="h1">{{!node.data.pressure}}</div>
                     <canvas class="chart" :id="'pres_chart'+node.ip"></canvas>
                 </div>
-                <div class="panel-body has-chart" v-if="node.data.humidity">
+                <div class="panel-body has-chart" v-if="node.data.humidity" v-show="resources.humidity.visible">
                     <div class="h5 text-muted">Relative humidity</div>
                     <div class="h1">{{!node.data.humidity}}</div>
                     <canvas class="chart" :id="'hum_chart'+node.ip"></canvas>
                 </div>
-                <div class="panel-body has-chart" v-if="node.data.illuminance">
+                <div class="panel-body has-chart" v-if="node.data.illuminance" v-show="resources.illuminance.visible">
                     <div class="h5 text-muted">Illuminance</div>
                     <div class="h1">{{!node.data.illuminance}}</div>
                 </div>
-                <div class="panel-body" v-if="node.data.robot">
+                <div class="panel-body" v-if="node.data.robot" v-show="resources.robot.visible">
                     <div class="h5 text-muted">BuggyBot Direction Pad</div>
                     <!-- <div class="h1">{{!node.data.robot}}</div> -->
                     <svg class="pad" width="370" viewBox="0 0 400 270" xmlns="http://www.w3.org/2000/svg">
@@ -214,38 +232,38 @@ var joystick = initJoystick()
                         <path d="m150,100l100,0l-50,-75z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.ip, 'u')"/>
                     </svg>
                 </div>
-                <div class="panel-body" v-if="node.data.ribot">
+                <div class="panel-body" v-if="node.data.ribot" v-show="resources.ribot.visible">
                     <div class="joystick" @mousemove.prevent="joystick.move" @touchmove.prevent="joystick.move" @mousedown.prevent="joystick.start(node.ip, $event)" @touchstart.prevent="joystick.start(node.ip, $event)">
                         <div class="ball"></div>
                     </div>
                 </div>
-                <div class="panel-body" v-if="node.data.text">
+                <div class="panel-body" v-if="node.data.text" v-show="resources.text.visible">
                     <div class="h5 text-muted">Message</div>
                     <div class="h4">{{!node.data.text}}</div>
                 </div>
                 <div class="panel-body" v-if="node.data.twitter">
                     <div class="h1">{{!node.data.twitter}}</div>
                 </div>
-                <div class="panel-body" v-if="node.data.webcam">
+                <div class="panel-body" v-if="node.data.webcam" v-show="resources.webcam.visible">
                     <img width="370" height="278" :src="node.data.webcam"></img>
                 </div>
-                <div class="panel-body has-chart" v-if="node.data.imu">
+                <div class="panel-body has-chart" v-if="node.data.imu" v-show="resources.imu.visible">
                     <div class="h5 text-muted">Accelerometer</div>
                     <canvas class="chart" :id="'imu_acc'+node.ip"></canvas>
                 </div>
-                <div class="panel-body has-chart" v-if="node.data.imu">
+                <div class="panel-body has-chart" v-if="node.data.imu" v-show="resources.imu.visible">
                     <div class="h5 text-muted">Gyroscope</div>
                     <canvas class="chart" :id="'imu_gyr'+node.ip"></canvas>
                 </div>
-                <div class="panel-body" v-if="node.data.imu">
+                <div class="panel-body" v-if="node.data.imu" v-show="resources.imu.visible">
                     <div id="teapot"></div>
                 </div>
-                <div class="panel-body" :id="'led'+index" v-if="['0','1'].includes(node.data.led)">
+                <div class="panel-body" :id="'led'+index" v-if="['0','1'].includes(node.data.led)" v-show="resources.led.visible">
                     <div class="h5 text-muted">LED</div>
                     <div v-if="node.data.led === '1'" class="h1">ON <i class="fa fa-circle led-color"></i></div>
                     <div v-else class="h1">OFF <i class="fa fa-circle-thin led-color"></i></div>
                 </div>
-                <div class="panel-body" v-if="node.data.led">
+                <div class="panel-body" v-if="node.data.led" v-show="resources.led.visible">
                     <div class="togglebutton">
                         <label>
                             <input class="led-btn" type="checkbox" :data-index="node.ip" :checked="node.data.led === '1'">Toggle led
@@ -309,7 +327,25 @@ var pres_charts = {}
 var hum_charts = {}
 var teapot_charts = {}
 
+function Resource(name, visible=true) {
+    return {name: name, visible: visible}
+}
+
 var data = {
+    resources: {
+        led: Resource("LED"),
+        temperature: Resource("Temperature"),
+        pressure: Resource("Pressure"),
+        humidity: Resource("Humidity"),
+        illuminance: Resource("Illuminance"),
+        uvindex: Resource("UV-Index"),
+        imu: Resource("IMU"),
+        text: Resource("Text"),
+        position: Resource("Position"),
+        webcam: Resource("Webcam"),
+        buggybot: Resource("BuggyBot"),
+        ribot: Resource("RiBot"),
+    },
     nodes: [],
     showMap: initMap == "true",
     showCam: initCam == "true",
