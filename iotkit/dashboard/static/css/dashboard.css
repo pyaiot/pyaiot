@@ -59,6 +59,17 @@ img {
     color: #999;
     padding: inherit;
 }
+#webcam {
+    overflow: hidden;
+    position: relative;
+    height: 300px;
+    background-color: #999;
+    /*background-image: url(/demo-cam/?action=stream), url(assets/ic_videocam_off.svg);*/
+    /*background-image: url({{ camera_url }});*/
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100%;
+}
 
 .panel-heading .btn-group {
     margin: 0;

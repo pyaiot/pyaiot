@@ -57,19 +57,6 @@
 </head>
 
 <body>
-<style>
-#webcam {
-    overflow: hidden;
-    position: relative;
-    height: 300px;
-    background-color: #999;
-    /*background-image: url(/demo-cam/?action=stream), url(assets/ic_videocam_off.svg);*/
-    background-image: url({{ camera_url }});
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 100%;
-}
-</style>
 
 <script>
 var theme = localStorage.theme || 'dark';
@@ -336,6 +323,9 @@ var vm = new Vue({
 var map;
 var map_bounds;
 var map_markers = {};
+
+// Webcam
+update_live_camera_content("url({{ camera_url }})", vm.showCam)
 
 // initialize bootstrap material design
 $.material.init()
@@ -701,7 +691,18 @@ $('#settingsModal').on('hide.bs.modal', function (e) {
         google.maps.event.trigger(map, 'resize');
         map.fitBounds(map_bounds);
     }
+
+    update_live_camera_content("url({{ camera_url }})", vm.showCam)
 });
+
+function update_live_camera_content(url, visible) {
+    if (visible) {
+        $('#webcam').css("background-image", url);
+    }
+    else {
+        $('#webcam').css("background-image", "url({{ static_url('assets/video-icon.svg') }})");
+    }
+}
 
 function initialize_map() {
     var inriaLatLng = {lat: 48.7146403, lng: 2.2056539}
