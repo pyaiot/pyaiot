@@ -62,6 +62,7 @@
 var theme = localStorage.theme || 'dark';
 var initMap = localStorage.showMap || 'true';
 var initCam = localStorage.showCam || 'true';
+var initCamUrl = localStorage.camUrl || "{{ camera_url }}";
 
 if (theme == 'dark') {
     document.body.classList.add('dark')
@@ -262,16 +263,22 @@ var joystick = initJoystick()
                 </div>
                 <div class="modal-body">
                     <div class="checkbox">
+                        <label for="showMapCheckbox" class="control-label">
+                            <input type="checkbox" id="showMapCheckbox" v-model="showMap" @change="Vue.nextTick(refresh_layout)">
+                            Show nodes map
+                        </label>
+                    </div>
+                    <div class="checkbox">
                         <label for="showCamCheckbox" class="control-label">
                             <input type="checkbox" id="showCamCheckbox" v-model="showCam" @change="Vue.nextTick(refresh_layout)">
                             Show live camera
                         </label>
                     </div>
-                    <div class="checkbox">
-                        <label for="showMapCheckbox" class="control-label">
-                            <input type="checkbox" id="showMapCheckbox" v-model="showMap" @change="Vue.nextTick(refresh_layout)">
-                            Show nodes map
+                    <div class="form-group" style="margin: 0">
+                        <label for="camUrlEdit" class="control-label">
+                            Live camera url
                         </label>
+                        <input type="text" class="form-control" id=camUrlEdit v-model="camUrl" rows="5">
                     </div>
                     <div class="form-group" style="margin: 0">
                         <label for="selectTheme" class="control-label">Theme</label>
@@ -305,6 +312,7 @@ var data = {
     nodes: [],
     showMap: initMap == "true",
     showCam: initCam == "true",
+    camUrl: initCamUrl,
 }
 
 var vm = new Vue({
@@ -325,7 +333,7 @@ var map_bounds;
 var map_markers = {};
 
 // Webcam
-update_live_camera_content("url({{ camera_url }})", vm.showCam)
+update_live_camera_content(vm.camUrl, vm.showCam)
 
 // initialize bootstrap material design
 $.material.init()
@@ -686,18 +694,19 @@ $('#settingsModal').on('hide.bs.modal', function (e) {
     localStorage.setItem('theme', $('#selectTheme').val())
     localStorage.setItem('showMap', vm.showMap ? 'true': 'false')
     localStorage.setItem('showCam', vm.showCam ? 'true': 'false')
+    localStorage.setItem('camUrl', vm.camUrl)
 
     if (vm.showMap) {
         google.maps.event.trigger(map, 'resize');
         map.fitBounds(map_bounds);
     }
 
-    update_live_camera_content("url({{ camera_url }})", vm.showCam)
+    update_live_camera_content(vm.camUrl, vm.showCam)
 });
 
 function update_live_camera_content(url, visible) {
     if (visible) {
-        $('#webcam').css("background-image", url);
+        $('#webcam').css("background-image", "url(" + url + ")");
     }
     else {
         $('#webcam').css("background-image", "url({{ static_url('assets/video-icon.svg') }})");
