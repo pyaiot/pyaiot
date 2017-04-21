@@ -7,6 +7,18 @@ Tornado, Aiocoap.
 Pyaiot tries to only use standard protocols and common practices to connect the
 the web with the IoT nodes: CoAP, HTTP, etc
 
+### The nodes
+
+Pyaiot main objective is to provide high level services for communicating
+with **constrained** nodes.
+Those nodes are generally microcontroller based and generally not able to run
+Linux. Thus, on those kind of nodes we need a specific OS. We choose
+[RIOT](https://riot-os.org) because it provides an hardware independent layer
+along with the standard network stacks required to communicate with the nodes.
+
+The source code of the RIOT firmwares running on the nodes are available on
+[another repository on GitHub](https://github.com:pyaiot/riot-firmwares).
+
 ### Available Demos
 
 See Pyaiot in action within 2 demos:
