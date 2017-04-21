@@ -17,7 +17,7 @@ Linux. Thus, on those kind of nodes we need a specific OS. We choose
 along with the standard network stacks required to communicate with the nodes.
 
 The source code of the RIOT firmwares running on the nodes are available on
-[another repository on GitHub](https://github.com:pyaiot/riot-firmwares).
+[another repository on GitHub](https://github.com/pyaiot/riot-firmwares).
 
 ### Available Demos
 
