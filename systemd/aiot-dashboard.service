@@ -1,5 +1,5 @@
 [Unit]
-Description=IoT Dashboard Application
+Description=Pyaiot Dashboard Application
 After=network.target radvd.service
 
 [Service]
@@ -13,7 +13,7 @@ Environment='STATIC_PATH=' \
         'APP_FAVICON=' \
         'CAMERA_URL='
 
-ExecStart=/usr/local/bin/iot-dashboard \
+ExecStart=/usr/local/bin/aiot-dashboard \
         --static-path=${STATIC_PATH} \
         --port=${HTTP_PORT} \
         --broker-port=${BROKER_PORT} \
@@ -25,4 +25,4 @@ ExecStart=/usr/local/bin/iot-dashboard \
 
 [Install]
 WantedBy=multi-user.target
-Alias=iot-dashboard.service
+Alias=aiot-dashboard.service

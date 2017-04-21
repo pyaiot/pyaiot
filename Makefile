@@ -1,6 +1,6 @@
 
 # Define default variables
-STATIC_PATH       ?= ./iotkit/dashboard/static/
+STATIC_PATH       ?= ./pyaiot/dashboard/static/
 BROKER_PORT       ?= 80
 BROKER_HOST       ?= riot-demo.inria.fr
 DASHBOARD_PORT    ?= 8080
@@ -20,25 +20,25 @@ install-dev:
 setup-services: setup-broker-service setup-dashboard-service
 
 setup-broker-service:
-	sudo cp systemd/iot-broker.service /lib/systemd/system/.
-	sudo systemctl enable iot-broker.service
+	sudo cp systemd/aiot-broker.service /lib/systemd/system/.
+	sudo systemctl enable aiot-broker.service
 	sudo systemctl daemon-reload
-	sudo systemctl restart iot-broker.service
+	sudo systemctl restart aiot-broker.service
 
 setup-dashboard-npm:
-	cd iotkit/dashboard/static && npm install
+	cd pyaiot/dashboard/static && npm install
 
 setup-dashboard-service:
-	sudo cp systemd/iot-dashboard.service /lib/systemd/system/.
-	sudo systemctl enable iot-dashboard.service
+	sudo cp systemd/aiot-dashboard.service /lib/systemd/system/.
+	sudo systemctl enable aiot-dashboard.service
 	sudo systemctl daemon-reload
-	sudo systemctl restart iot-dashboard.service
+	sudo systemctl restart aiot-dashboard.service
 
 run-broker:
-	iot-broker --port=${BROKER_PORT} --debug
+	aiot-broker --port=${BROKER_PORT} --debug
 
 run-dashboard:
-	iot-dashboard --static-path=${STATIC_PATH}                         \
+	aiot-dashboard --static-path=${STATIC_PATH}                         \
 		--port=${DASHBOARD_PORT}                                  \
 		--broker-port=${BROKER_PORT} --broker-host=${BROKER_HOST} \
 		--camera-url=${CAMERA_URL} --title=${DASHBOARD_TITLE}     \

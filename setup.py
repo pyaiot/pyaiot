@@ -34,7 +34,7 @@ from os.path import join as pjoin
 from setuptools import setup
 
 
-PACKAGE = 'iotkit'
+PACKAGE = 'pyaiot'
 
 
 def readme(fname):
@@ -65,9 +65,11 @@ if __name__ == '__main__':
           license='BSD',
           keywords="iot demonstration web coap mqtt",
           platforms='any',
-          packages=['iotkit'],
-          scripts=[pjoin('bin', 'iot-broker'),
-                   pjoin('bin', 'iot-dashboard')],
+          packages=['pyaiot'],
+          scripts=[pjoin('bin', 'aiot-broker'),
+                   pjoin('bin', 'aiot-broker-coap'),
+                   pjoin('bin', 'aiot-broker-mqtt'),
+                   pjoin('bin', 'aiot-dashboard')],
           install_requires=[
             'tornado>=4.4.2',
             'aiocoap>=0.2',
@@ -82,7 +84,7 @@ if __name__ == '__main__':
             'Intended Audience :: Developers',
             'Environment :: Console',
             'Topic :: Communications',
-            'License :: OSI Approved :: '
-            'GNU Lesser General Public License v3 or later (LGPLv3+)', ],
+            'License :: OSI Approved :: ',
+            'License :: OSI Approved :: BSD License'],
           zip_safe=False,
           )

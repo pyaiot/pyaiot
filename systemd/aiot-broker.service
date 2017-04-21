@@ -1,12 +1,12 @@
 [Unit]
-Description=IoT Broker Application
+Description=Pyaiot Broker Application
 After=network.target radvd.service
 
 [Service]
 User=pi
 Environment='BROKER_PORT=8082'
-ExecStart=/usr/local/bin/iot-broker --port=${BROKER_PORT}
+ExecStart=/usr/local/bin/aiot-broker --port=${BROKER_PORT}
 
 [Install]
 WantedBy=multi-user.target
-Alias=iot-broker.service
+Alias=aiot-broker.service
