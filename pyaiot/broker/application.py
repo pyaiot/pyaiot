@@ -69,12 +69,10 @@ class BrokerPostHandler(web.RequestHandler):
 class BrokerWebsocketHandler(websocket.WebSocketHandler):
     def check_origin(self, origin):
         """Allow connections from anywhere."""
-
         return True
 
     def open(self):
         """Discover nodes on each opened connection."""
-
         self.set_nodelay(True)
         logger.debug("New websocket opened")
 
@@ -101,6 +99,7 @@ class BrokerWebsocketHandler(websocket.WebSocketHandler):
 
         if data['type'] == "new":
             if data['data'] == "client":
+                logger.debug("new client connected")
                 client_sockets.append(self)
                 for node in coap_nodes():
                     self.write_message(json.dumps({'command': 'new',
@@ -112,13 +111,17 @@ class BrokerWebsocketHandler(websocket.WebSocketHandler):
                     ws.write_message(json.dumps({'request': 'discover'}))
 
             elif data['data'] == "node":
+                logger.debug("new node from websocket")
                 node_sockets.update({self: str(uuid.uuid4())})
                 _broadcast_message(json.dumps({'command': 'new',
                                                'node': node_sockets[self]}))
+
         elif data['type'] == "update":
             if self in client_sockets:
+                logger.debug("new update from client websocket")
                 _forward_data_to_node(data['data'], origin="Websocket")
             elif self in node_sockets:
+                logger.debug("new update from node websocket")
                 for key, value in data['data'].items():
                     _broadcast_message(
                         json.dumps({'command': 'update',
