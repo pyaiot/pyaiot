@@ -138,8 +138,7 @@ class BrokerApplication(web.Application):
         elif message['type'] == "update":
             if ws in self.client_sockets:
                 logger.debug("new update from client websocket")
-                self._coap_controller.send_data_to_node(message['data'],
-                                                        origin="Websocket")
+                self._coap_controller.send_data_to_node(message['data'])
             elif ws in self.node_sockets:
                 logger.debug("new update from node websocket")
                 for key, value in message['data'].items():
