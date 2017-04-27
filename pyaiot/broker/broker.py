@@ -31,14 +31,11 @@
 
 import sys
 import tornado
-import asyncio
 import logging
-from tornado.ioloop import PeriodicCallback
 from tornado.options import define, options
 import tornado.platform.asyncio
 
 from .application import BrokerApplication
-from .coap import coap_server_init, _check_dead_nodes
 from .logger import logger
 
 logging.basicConfig(level=logging.DEBUG,
@@ -48,39 +45,37 @@ logging.basicConfig(level=logging.DEBUG,
 
 def parse_command_line():
     """Parse command line arguments for IoT broker application."""
-    define("port", default=8000,
-           help="Broker port")
-    define("max_time", default=120,
-           help="Retention time for lost nodes (s).")
-    define("debug", default=False,
-           help="Enable debug mode.")
+    if not hasattr(options, "port"):
+        define("port", default=8000, help="Broker port")
+    if not hasattr(options, "max_time"):
+        define("max_time", default=120,
+               help="Retention time for lost nodes (s).")
+    if not hasattr(options, "debug"):
+        define("debug", default=False, help="Enable debug mode.")
     options.parse_command_line()
 
     if options.debug:
         logger.setLevel(logging.DEBUG)
 
 
-def run():
+def run(arguments=[]):
     """Start a broker instance."""
+    if arguments != []:
+        sys.argv[1:] = arguments
+
     parse_command_line()
     try:
-        # Tornado ioloop initialization
-        ioloop = asyncio.get_event_loop()
-        tornado.platform.asyncio.AsyncIOMainLoop().install()
-        PeriodicCallback(_check_dead_nodes, 1000).start()
+        # Application ioloop initialization
+        if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
+            tornado.platform.asyncio.AsyncIOMainLoop().install()
 
-        # Initialize Coap server
-        coap_server_init(options.max_time)
-
-        # Start tornado application
+        # Start controller application (Tornado based)
         app = BrokerApplication(options=options)
         app.listen(options.port)
-        ioloop.run_forever()
+        tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
-        print("Exiting")
-        ioloop.stop()
-        sys.exit()
-
+        logger.debug("Stopping application")
+        tornado.ioloop.IOLoop.instance().stop()
 
 if __name__ == '__main__':
     run()

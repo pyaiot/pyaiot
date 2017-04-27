@@ -36,13 +36,12 @@ import aiocoap.resource as resource
 
 from tornado import gen, websocket
 from aiocoap import Context, Message, GET, PUT, CHANGED
-
-from .data import (coap_nodes, add_coap_node, remove_coap_node,
-                   update_coap_node_check)
 from .logger import logger
-from .utils import _broadcast_message, _endpoints
 
-_max_time = None
+
+def _coap_endpoints(link_header):
+    link = link_header.replace(' ', '')
+    return link.split(',')
 
 
 @gen.coroutine
@@ -66,115 +65,6 @@ def _coap_resource(url, method=GET, payload=b''):
     return code, payload
 
 
-def _refresh_node(remote):
-    """Refresh node last check or add it to the list of active nodes."""
-    node = CoapNode(remote)
-    node.check_time = time.time()
-    nodes = coap_nodes()
-    if node not in nodes:
-        add_coap_node(node)
-        _broadcast_message(json.dumps({'command': 'new',
-                                       'node': node.address}))
-        _discover_node(node)
-    else:
-        update_coap_node_check(node, time.time())
-
-
-@gen.coroutine
-def _discover_node(node, ws=None):
-    """Callback functions called after fetching new nodes."""
-    coap_node_url = 'coap://[{}]'.format(node.address)
-    if len(node.endpoints) == 0:
-        logger.debug("Discovering node {}".format(node.address))
-        code, payload = yield _coap_resource('{0}/.well-known/core'
-                                             .format(coap_node_url),
-                                             method=GET)
-        node.endpoints = _endpoints(payload)
-
-    messages = {}
-    endpoints = [endpoint
-                 for endpoint in node.endpoints
-                 if 'well-known/core' not in endpoint]
-    for endpoint in endpoints:
-        elems = endpoint.split(';')
-        path = elems.pop(0).replace('<', '').replace('>', '')
-
-        try:
-            code, payload = yield _coap_resource('{0}{1}'
-                                                 .format(coap_node_url, path),
-                                                 method=GET)
-        except:
-            logger.debug("Cannot discover ressource {} on node {}"
-                         .format(endpoint, node.address))
-            return
-        messages[endpoint] = json.dumps({'endpoint': path,
-                                         'data': payload,
-                                         'node': node.address,
-                                         'command': 'update'})
-
-    for endpoint in endpoints:
-        message = messages[endpoint]
-        if ws is None:
-            _broadcast_message(message)
-        else:
-            try:
-                ws.write_message(message)
-            except websocket.WebSocketClosedError:
-                logger.debug("Cannot write on a closed websocket.")
-
-
-def _check_dead_nodes():
-    """Find dead nodes in the list of known nodes and remove them."""
-    nodes = coap_nodes()
-    if len(nodes) == 0:
-        return
-
-    for node in nodes:
-        if not node.active():
-            remove_coap_node(node)
-            logger.debug("Removing inactive node {}".format(node.address))
-            _broadcast_message(json.dumps({'node': node.address,
-                                           'command': 'out'}))
-
-
-@gen.coroutine
-def _forward_data_to_node(data, origin="POST"):
-    """Forward received message data to the destination node.
-
-    The message should be JSON and contain 'node', 'path' and 'payload'
-    keys.
-
-    - 'node' corresponds to the node address (generally IPv6)
-    - 'path' corresponds to the CoAP resource on the node
-    - 'payload' corresponds to the new payload for the CoAP resource.
-    """
-    node = data['node']
-    path = data['path']
-    payload = data['payload']
-    logger.debug("Translating message ('{}') received from {} to CoAP PUT "
-                 "request".format(data, origin))
-
-    if CoapNode(node) not in coap_nodes():
-        return
-    code, payload = yield _coap_resource(
-        'coap://[{0}]{1}'.format(node, path),
-        method=PUT,
-        payload=payload.encode('ascii'))
-
-    return
-
-
-def coap_server_init(max_time):
-    """Initialize the CoAP server."""
-    global _max_time
-    _max_time = max_time
-
-    root_coap = resource.Site()
-    root_coap.add_resource(('server', ), CoapServerResource())
-    root_coap.add_resource(('alive', ), CoapAliveResource())
-    asyncio.async(Context.create_server_context(root_coap))
-
-
 class CoapNode(object):
     """Object defining a CoAP node."""
 
@@ -193,19 +83,13 @@ class CoapNode(object):
         return("Node '{}', Last check: {}, Endpoints: {}"
                .format(self.address, self.check_time, self.endpoints))
 
-    def active(self):
-        """check if the node is still active and responding."""
-        if _max_time is None:
-            return True
-
-        return int(time.time()) < self.check_time + _max_time
-
 
 class CoapAliveResource(resource.Resource):
     """CoAP server running within the tornado application."""
 
-    def __init__(self):
+    def __init__(self, controller):
         super(CoapAliveResource, self).__init__()
+        self._controller = controller
 
     @asyncio.coroutine
     def render_post(self, request):
@@ -216,8 +100,10 @@ class CoapAliveResource(resource.Resource):
             remote = request.remote.sockaddr[0]
         logger.debug("CoAP Alive POST received from {}".format(remote))
 
-        _refresh_node(remote)
+        # Let the controller handle this message
+        self._controller.handle_alive_message(remote)
 
+        # Kindly reply the message has been processed
         return Message(code=CHANGED,
                        payload="Received '{}'".format(payload).encode('utf-8'))
 
@@ -225,8 +111,9 @@ class CoapAliveResource(resource.Resource):
 class CoapServerResource(resource.Resource):
     """CoAP server running within the tornado application."""
 
-    def __init__(self):
+    def __init__(self, controller):
         super(CoapServerResource, self).__init__()
+        self._controller = controller
 
     @asyncio.coroutine
     def render_post(self, request):
@@ -238,11 +125,122 @@ class CoapServerResource(resource.Resource):
         logger.debug("CoAP POST received from {} with payload: {}"
                      .format(remote, payload))
 
-        if CoapNode(remote) in coap_nodes():
+        if CoapNode(remote) in self._controller.nodes:
             path, data = payload.split(":", 1)
-            _broadcast_message(json.dumps({'endpoint': '/' + path,
-                                           'data': data,
-                                           'node': remote,
-                                           'command': 'update'}))
+            self._controller.handle_post_message(
+                json.dumps({'endpoint': '/' + path, 'data': data,
+                            'node': remote, 'command': 'update'}))
         return Message(code=CHANGED,
                        payload="Received '{}'".format(payload).encode('utf-8'))
+
+
+class CoapController():
+    """CoAP controller with CoAP server inside."""
+
+    def __init__(self, application, max_time=120):
+        self._application = application
+        self.max_time = max_time
+        self.nodes = []
+        self.setup()
+
+    def setup(self):
+        """Setup CoAP resources exposed by this server."""
+        root_coap = resource.Site()
+        root_coap.add_resource(('server', ),
+                               CoapServerResource(self))
+        root_coap.add_resource(('alive', ),
+                               CoapAliveResource(self))
+        asyncio.async(Context.create_server_context(root_coap))
+
+    @gen.coroutine
+    def discover_node(self, node, ws=None):
+        """Discover resources available on a node."""
+        coap_node_url = 'coap://[{}]'.format(node.address)
+        if len(node.endpoints) == 0:
+            logger.debug("Discovering node {}".format(node.address))
+            code, payload = yield _coap_resource('{0}/.well-known/core'
+                                                 .format(coap_node_url),
+                                                 method=GET)
+            node.endpoints = _coap_endpoints(payload)
+
+        messages = {}
+        endpoints = [endpoint
+                     for endpoint in node.endpoints
+                     if 'well-known/core' not in endpoint]
+        for endpoint in endpoints:
+            elems = endpoint.split(';')
+            path = elems.pop(0).replace('<', '').replace('>', '')
+
+            try:
+                code, payload = yield _coap_resource(
+                    '{0}{1}'.format(coap_node_url, path), method=GET)
+            except:
+                logger.debug("Cannot discover ressource {} on node {}"
+                             .format(endpoint, node.address))
+                return
+            messages[endpoint] = json.dumps({'endpoint': path, 'data': payload,
+                                             'node': node.address,
+                                             'command': 'update'})
+
+        for endpoint in endpoints:
+            message = messages[endpoint]
+            if ws is None:
+                self._application.broadcast_to_clients(message)
+            else:
+                try:
+                    ws.write_message(message)
+                except websocket.WebSocketClosedError:
+                    logger.debug("Cannot write on a closed websocket.")
+
+    @gen.coroutine
+    def send_data_to_node(self, data):
+        """Forward received message data to the destination node.
+
+        The message should be JSON and contain 'node', 'path' and 'payload'
+        keys.
+
+        - 'node' corresponds to the node address (generally IPv6)
+        - 'path' corresponds to the CoAP resource on the node
+        - 'payload' corresponds to the new payload for the CoAP resource.
+        """
+        node = data['node']
+        path = data['path']
+        payload = data['payload']
+        logger.debug("Translating message ('{}') received to CoAP PUT "
+                     "request".format(data))
+
+        if CoapNode(node) not in self.nodes:
+            return
+        code, payload = yield _coap_resource(
+            'coap://[{0}]{1}'.format(node, path),
+            method=PUT,
+            payload=payload.encode('ascii'))
+
+        return
+
+    def handle_post_message(self, message):
+        """Handle post message received from coap node."""
+        self._application.broadcast_to_clients(message)
+
+    def handle_alive_message(self, node):
+        """Handle alive message received from coap node."""
+        node = CoapNode(node)
+        node.check_time = time.time()
+        if node not in self.nodes:
+            self.nodes.append(node)
+            self._application.broadcast_to_clients(
+                json.dumps({'command': 'new', 'node': node.address}))
+            self.discover_node(node)
+        else:
+            index = self.nodes.index(node)
+            self.nodes[index].check_time = time.time()
+
+    def check_dead_nodes(self):
+        """Check and remove nodes that are not alive anymore."""
+        for node in self.nodes:
+            if int(time.time()) > node.check_time + self.max_time:
+                self.nodes.remove(node)
+                logger.debug("Removing inactive node {}".format(node.address))
+
+                self._application.broadcast_to_clients(
+                    json.dumps({'node': node.address, 'command': 'out'}))

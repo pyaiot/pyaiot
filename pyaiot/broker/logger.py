@@ -29,4 +29,4 @@
 
 import logging
 
-logger = logging.getLogger("iotkit.broker")
+logger = logging.getLogger("pyaiot.broker")
