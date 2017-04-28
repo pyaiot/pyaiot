@@ -72,7 +72,7 @@ if (theme == 'dark') {
 var joystick = initJoystick()
 </script>
 
-<div id="app" @mouseup="joystick.stop" @touchend="joystick.stop">
+<div id="app">
     <div class="navbar navbar-inverse">
         <div class="container-fluid">
             <div class="navbar-header">
@@ -233,7 +233,13 @@ var joystick = initJoystick()
                     </svg>
                 </div>
                 <div class="panel-body" v-if="node.data.ribot" v-show="resources.ribot.visible">
-                    <div class="joystick" @mousemove.prevent="joystick.move" @touchmove.prevent="joystick.move" @mousedown.prevent="joystick.start(node.ip, $event)" @touchstart.prevent="joystick.start(node.ip, $event)">
+                    <div class="joystick"
+                            @mouseup="joystick.stop"
+                            @touchend="joystick.stop"
+                            @mousemove.prevent="joystick.move"
+                            @touchmove.prevent="joystick.move"
+                            @mousedown.prevent="joystick.start(node.ip, $event)"
+                            @touchstart.prevent="joystick.start(node.ip, $event)">
                         <div class="ball"></div>
                     </div>
                 </div>
