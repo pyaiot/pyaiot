@@ -34,7 +34,7 @@ import json
 import asyncio
 import aiocoap.resource as resource
 
-from tornado import gen, websocket
+from tornado import gen
 from aiocoap import Context, Message, GET, PUT, CHANGED
 from .logger import logger
 
@@ -137,8 +137,8 @@ class CoapServerResource(resource.Resource):
 class CoapController():
     """CoAP controller with CoAP server inside."""
 
-    def __init__(self, application, max_time=120):
-        self._application = application
+    def __init__(self, on_message_cb, max_time=120):
+        self._on_message_cb = on_message_cb
         self.max_time = max_time
         self.nodes = []
         self.setup()
@@ -153,7 +153,7 @@ class CoapController():
         asyncio.async(Context.create_server_context(root_coap))
 
     @gen.coroutine
-    def discover_node(self, node, ws=None):
+    def discover_node(self, node):
         """Discover resources available on a node."""
         coap_node_url = 'coap://[{}]'.format(node.address)
         if len(node.endpoints) == 0:
@@ -183,14 +183,7 @@ class CoapController():
                                              'command': 'update'})
 
         for endpoint in endpoints:
-            message = messages[endpoint]
-            if ws is None:
-                self._application.broadcast_to_clients(message)
-            else:
-                try:
-                    ws.write_message(message)
-                except websocket.WebSocketClosedError:
-                    logger.debug("Cannot write on a closed websocket.")
+            self._on_message_cb(messages[endpoint])
 
     @gen.coroutine
     def send_data_to_node(self, data):
@@ -220,7 +213,7 @@ class CoapController():
 
     def handle_post_message(self, message):
         """Handle post message received from coap node."""
-        self._application.broadcast_to_clients(message)
+        self._on_message_cb(message)
 
     def handle_alive_message(self, node):
         """Handle alive message received from coap node."""
@@ -228,8 +221,8 @@ class CoapController():
         node.check_time = time.time()
         if node not in self.nodes:
             self.nodes.append(node)
-            self._application.broadcast_to_clients(
-                json.dumps({'command': 'new', 'node': node.address}))
+            self._on_message_cb(json.dumps({'command': 'new',
+                                            'node': node.address}))
             self.discover_node(node)
         else:
             index = self.nodes.index(node)
@@ -242,5 +235,5 @@ class CoapController():
                 self.nodes.remove(node)
                 logger.debug("Removing inactive node {}".format(node.address))
 
-                self._application.broadcast_to_clients(
-                    json.dumps({'node': node.address, 'command': 'out'}))
+                self._on_message_cb(json.dumps({'node': node.address,
+                                                'command': 'out'}))

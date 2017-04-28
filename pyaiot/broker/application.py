@@ -79,7 +79,9 @@ class BrokerApplication(web.Application):
 
     def __init__(self, options=None):
         self._options = options
-        self._coap_controller = CoapController(self, max_time=options.max_time)
+        self._coap_controller = CoapController(
+            on_message_cb=self.broadcast_to_clients,
+            max_time=options.max_time)
         self.client_sockets = []
         self.node_sockets = {}
         self._log = logger
@@ -122,7 +124,7 @@ class BrokerApplication(web.Application):
                 for node in self._coap_controller.nodes:
                     ws.write_message(json.dumps({'command': 'new',
                                                  'node': node.address}))
-                    self._coap_controller.discover_node(node, ws=ws)
+                    self._coap_controller.discover_node(node)
                 for node_ws, uid in self.node_sockets.items():
                     ws.write_message(json.dumps({'command': 'new',
                                                  'node': uid}))
