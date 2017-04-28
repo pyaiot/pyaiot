@@ -117,7 +117,7 @@ Environment='BROKER_PORT=8082'
 ```
 * aiot-dashboard:
 ```
-Environment='STATIC_PATH=/home/pi/demos/iotkit/dashboard/static' \
+Environment='STATIC_PATH=/home/pi/demos/pyaiot/dashboard/static' \
         'HTTP_PORT=8080' \
         'BROKER_PORT=80' \  # This is because the broker is behind an apache proxy
         'BROKER_HOST=riot-demo.inria.fr' \
