@@ -126,7 +126,6 @@ def run(arguments=[]):
     except KeyboardInterrupt:
         print("Exiting")
         ioloop.stop()
-        sys.exit()
 
 
 if __name__ == '__main__':
