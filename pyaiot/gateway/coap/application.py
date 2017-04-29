@@ -32,7 +32,7 @@
 import json
 import logging
 from tornado.ioloop import PeriodicCallback
-from tornado import web
+from tornado import web, gen
 
 from ..common.client import BrokerWebsocketClient
 from .coap import CoapController
@@ -98,6 +98,7 @@ class CoapGatewayApplication(web.Application):
                          .format(message))
             self.parent_broker.write_message(message)
 
+    @gen.coroutine
     def handle_parent_broker_message(self, message):
         """Handle a message received from the parent broker websocket."""
         logger.debug("Handling message '{}' received from parent broker "
