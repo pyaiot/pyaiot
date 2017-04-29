@@ -67,6 +67,8 @@ if __name__ == '__main__':
           platforms='any',
           packages=['pyaiot'],
           scripts=[pjoin('bin', 'aiot-broker'),
+                   pjoin('bin', 'aiot-coap-gateway'),
+                   pjoin('bin', 'aiot-ws-gateway'),
                    pjoin('bin', 'aiot-dashboard')],
           install_requires=[
             'tornado>=4.4.2',
