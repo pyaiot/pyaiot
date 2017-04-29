@@ -33,6 +33,8 @@ import logging
 import json
 import websocket as websocket_client
 
+from tornado import gen
+
 logger = logging.getLogger("pyaiot.gw.common")
 
 
@@ -81,6 +83,7 @@ class BrokerWebsocketClient():
             logger.error("Cannot connect to websocket server at url '{}'"
                          .format(url))
 
+    @gen.coroutine
     def write_message(self, message):
         """Send message to parent broker."""
         if self._ws is not None:
