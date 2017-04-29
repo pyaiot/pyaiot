@@ -3,20 +3,21 @@
 Pyaiot provides a set of services to interact and transport data from IoT nodes
 with regular web protocols (HTTP) and technologies. Pyaiot relies on Python
 asyncio core module and on other more specific asyncio based packages such as
-Tornado, Aiocoap.
+Tornado and Aiocoap.
 Pyaiot tries to only use standard protocols and common practices to connect the
-the web with the IoT nodes: CoAP, HTTP, etc
+IoT nodes to the web: CoAP, HTTP, etc
 
 ### The nodes
 
 Pyaiot main objective is to provide high level services for communicating
 with **constrained** nodes.
-Those nodes are generally microcontroller based and generally not able to run
-Linux. Thus, on those kind of nodes we need a specific OS. We choose
+Those nodes are generally microcontroller based and not able to run Linux.
+Thus, we need a specific OS to run on those kind of nodes. For this, we choose
 [RIOT](https://riot-os.org) because it provides an hardware independent layer
-along with the standard network stacks required to communicate with the nodes.
+along with the standard network stacks required to communicate with the nodes
+from a network.
 
-The source code of the RIOT firmwares running on the nodes are available on
+The source code of RIOT firmwares running on the nodes is available on
 [another repository on GitHub](https://github.com/pyaiot/riot-firmwares).
 
 ### Available Demos
@@ -32,41 +33,78 @@ See Pyaiot in action within 2 demos:
   runs a firmware that integrates automatically in the RIOT Demo Dashboard
   described above.
 
-### Broker and Dashboard services for an IoT dashboard
+### Available services
 
-The broker manages a list of alive sensor nodes by running it's own CoAP
-and WebSocket servers.
+Pyaiot is built around several microservices:
+* A central **broker**
+* A **dashboard** web application
+* Distributed **gateways**
 
-The Dashboard is a web page with some embeded javascript that displays the list
-of available nodes and their status. It also allows to interact with the nodes
-(LED control, Robot control, etc)
+The role of the broker is to put in relation gateways and web clients in
+order to be able to transfer in a bi-directionnal way messages coming from
+nodes, via the gateways, to clients and vice versa.
 
-When a node starts, it notifies itself to the broker server by sending a CoAP
-post. The broker then starts a discovery of the ressources provided by the node
-(using the CoAP .well-known/core resource). Once the node available resources
-are known, the broker sends to each web/mobile clients notification messages
-so that they can update themselves.
+The broker is in charge of the management of the list of gateways. The role of
+the gateways is to convert protocols used by the nodes to the web protocols
+used internally by Pyaiot to transfer information between the different
+services. In order to garantee reactivity and security, this internally used
+protocols rely on HTTP websockets.
+
+The Dashboard is a web page with some embbeded javascript that displays the
+list of available nodes and their status. It also allows to interact with the
+nodes (LED control, Robot control, etc)
+
+2 examples of gateways are provided by pyaiot:
+* A CoAP gateway that manages a list of alive sensor nodes by running it's own
+CoAP server
+* A Websocket gateway dedicated to nodes: each node is connected via a
+websocket
+
+#### The CoAP gateway
+
+Here we describe how the CoAP gateway interacts with nodes.
+
+When a node starts, it notifies itself to its gateway by sending a CoAP
+post request. On reception, the gateway converts and forwards this message to
+the broker server. In the mean time, the gateway initiate a discovery of the
+ressources provided by the node (using the CoAP .well-known/core resource).
+Once available resources on the node are known, the gateway sends to the broker
+update messages.
+The broker simply broadcasts those notification messages to all connected
+web clients.
 
 To keep track of alive nodes, each node has to periodically send a notification
-message to the broker.
+message to its gateway.
 If a sensor node has not sent this notification within 120s (default,
-but this is configurable), the broker automatically removes it from the list
-of alived nodes and notifies all web/mobile clients.
+but this is configurable), the gateway automatically removes it from the list
+of alived nodes and notifies the broker.
 
-#### Installation procedure on a standalone system:
+#### The websocket gateway
 
-Here are the steps to install the IoT-Kit on a standalone system. The final
+The behavior with a websocket gateway is similar to a CoAP gateway except that
+the node doesn't have to send notifications periodically: the node is lost
+when the connection is closed.
+
+### Installation procedure on a standalone system:
+
+Here are the steps to install Pyaiot on a standalone system. The final
 setup will be as follows:
 * `aiot-broker` and `aiot-dashboard` running as systemd services
 * the `aiot-broker` websocket server listening on port 8082
 * the `aiot-dashboard` web application listening on port 8080. All served pages
   open a websocket client on the port 8082 of the broker
+* the `aiot-coap-gateway` listening on UDP 5683 CoAP port
+* the `aiot-ws-gateway` websocket server listening on port 8083
+
+The gateway services are optional.
 
 For a custom setup, please edit the `Environment` option of the
-[aiot-broker](systemd/aiot-broker.service) and
-[aiot-dashboard](systemd/aiot-dashboard.service) systemd service files
+[aiot-broker](systemd/aiot-broker.service),
+[aiot-dashboard](systemd/aiot-dashboard.service),
+[aiot-coap-gateway](systemd/aiot-coap-gateway.service) and
+[aiot-ws-gateway](systemd/aiot-ws-gateway.service) systemd service files
 **before** deploying. The broker port should be the same in both service files
-if you want the two to work together.
+if you want them to work together.
 
 Here are the installation steps:
 
@@ -74,7 +112,7 @@ Here are the installation steps:
 <pre>
     $ git clone https://github.com/iot-lab/iot-kit.git
 </pre>
-2. Deploy the system (debian/raspbian/ubuntu):
+2. Deploy the system (works for debian/raspbian/ubuntu):
 <pre>
     $ make deploy
 </pre>
@@ -97,17 +135,25 @@ Here are the installation steps:
                └─32321 /usr/bin/python3 /usr/local/bin/aiot-dashboard --port=8080 --broker-port=8082 --broker...
     [...]
 </pre>
+4. Deploy a coap gateway (optional):
+<pre>
+    $ make setup-coap-gateway-service
+</pre>
+5. Deploy a ws gateway (optional):
+<pre>
+    $ make setup-ws-gateway-service
+</pre>
 
-You can also
-update `Environment` option in the services definition files **after**
-deployment as they are locate in `/lib/systemd/system/aiot-broker.service` and
-`/lib/systemd/system/aiot-dashboard.service`. In this case, you'all also need
-to reload the systemd daemon services and restart the `aiot-broker` and
-`aiot-dashboard` services:
+You can also update the `Environment` option in the services definition files
+**after** deployment. The services files are located in `/lib/systemd/system.
+Note that you'all have to reload the systemd daemon services and restart
+services:
 ```
     $ sudo systemctl daemon-reload
     $ sudo systemctl restart aiot-broker
     $ sudo systemctl restart aiot-dashboard
+    $ sudo systemctl restart aiot-coap-gateway-service
+    $ sudo systemctl restart aiot-ws-gateway-service
 ```
 
 _**Example**_: Environments used in the online RIOT demo
@@ -125,8 +171,19 @@ Environment='STATIC_PATH=/home/pi/demos/pyaiot/dashboard/static' \
         'APP_LOGO=/static/assets/logo-riot.png' \
         'APP_FAVICON=/static/assets/favicon192.png'
 ```
+* aiot-coap-gateway:
+```
+Environment='BROKER_HOST=riot-demo.inria.fr' \
+            'BROKER_PORT=80'
+```
+* aiot-ws-gateway:
+```
+Environment='BROKER_HOST=riot-demo.inria.fr' \
+            'BROKER_PORT=80' \
+            'GATEWAY_PORT=8083'
+```
 
-#### Dashboard local development against an external IoT broker instance
+### Dashboard local development against an external IoT broker instance
 
 Here we take as example the online demo available at http://riot-demo.inria.fr.
 The websocket server of the broker service is reachable on port 80.
@@ -136,9 +193,8 @@ that itself connects to the broker.
 This way your dashboard will display the available nodes on the online RIOT
 demo.
 
-In this configuration, you don't need to install the `aiot-broker` and
-`aiot-dashboard` services but you still need to install the required
-development dependencies the first time:
+In this configuration, you don't need to install all the services but you still
+need to install the required development dependencies the first time:
 ```
     $ make install-dev
 ```
