@@ -31,9 +31,12 @@
 
 import json
 import logging
+import uuid
 from tornado import gen, web, websocket
 
-logger = logging.getLogger("pyaiot.broker")
+from ..common.client import BrokerWebsocketClient
+
+logger = logging.getLogger("pyaiot.gw.ws")
 
 
 def _check_ws_message(ws, raw):
@@ -62,7 +65,7 @@ def _check_ws_message(ws, raw):
     return message
 
 
-class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
+class WebsocketNodeHandler(websocket.WebSocketHandler):
     def check_origin(self, origin):
         """Allow connections from anywhere."""
         return True
@@ -70,94 +73,90 @@ class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
     def open(self):
         """Discover nodes on each opened connection."""
         self.set_nodelay(True)
-        logger.debug("New broker websocket opened")
-
-    @gen.coroutine
-    def on_message(self, message):
-        """Triggered when a message is received from the broker child."""
-        self.application.handle_gateway_message(message)
-
-    def on_close(self):
-        """Remove websocket from internal list."""
-        logger.debug("Broker websocket closed")
-        self.application.remove_ws(self)
-
-
-class BrokerWebsocketClientHandler(websocket.WebSocketHandler):
-    def check_origin(self, origin):
-        """Allow connections from anywhere."""
-        return True
-
-    def open(self):
-        """Discover nodes on each opened connection."""
-        self.set_nodelay(True)
-        logger.debug("New client websocket opened")
+        logger.debug("New node websocket opened")
 
     @gen.coroutine
     def on_message(self, raw):
         """Triggered when a message is received from the web client."""
         message = _check_ws_message(self, raw)
         if message is not None:
-            self.application.handle_client_message(self, message)
+            self.application.handle_node_message(self, message)
 
     def on_close(self):
         """Remove websocket from internal list."""
-        logger.debug("Client websocket closed")
+        logger.debug("Node websocket closed")
         self.application.remove_ws(self)
 
 
-class BrokerApplication(web.Application):
+class WebsocketGatewayApplication(web.Application):
     """Tornado based web application providing live nodes on a network."""
 
     def __init__(self, options=None):
         assert options
 
-        self.brokers = []
-        self.client_sockets = []
+        self.node_sockets = {}
 
         if options.debug:
             logger.setLevel(logging.DEBUG)
 
         handlers = [
-            (r"/ws", BrokerWebsocketClientHandler),
-            (r"/broker", BrokerWebsocketGatewayHandler),
+            (r"/node", WebsocketNodeHandler),
         ]
         settings = {'debug': True}
 
+        self.parent_broker = BrokerWebsocketClient(
+            self, "ws://{}:{}/broker".format(options.broker_host,
+                                             options.broker_port),
+            self.handle_parent_broker_message)
+
         super().__init__(handlers, **settings)
         logger.info('Application started, listening on port {}'
-                    .format(options.port))
+                    .format(options.gateway_port))
 
-    def broadcast(self, message):
-        """Broadcast message to all opened websockets clients."""
-        logger.debug("Broadcasting message '{}' to web clients."
-                     .format(message))
-        for ws in self.client_sockets:
-            ws.write_message(message)
+    def send_to_parent_broker(self, message):
+        """Send a message to the parent broker."""
+        if self.parent_broker is not None:
+            logger.debug("Forwarding message '{}' to parent broker."
+                         .format(message))
+            self.parent_broker.write_message(message)
 
-    def handle_client_message(self, ws, message):
-        """Handle a message received from a client websocket."""
-        logger.debug("Handling message '{}' received from client websocket."
-                     .format(message))
+    def handle_node_message(self, ws, message):
+        """Handle a message received from a node websocket."""
         if message['type'] == "new":
-            logger.debug("new client connected")
-            self.client_sockets.append(ws)
+            logger.debug("new node from websocket")
+            self.node_sockets.update({ws: str(uuid.uuid4())})
+            self.send_to_parent_broker(
+                json.dumps({'command': 'new',
+                            'node': self.node_sockets[ws],
+                            'origin': 'websocket'}))
         elif message['type'] == "update":
-            logger.debug("new update from client websocket")
+            logger.debug("new update from node websocket")
+            for key, value in message['data'].items():
+                self.send_to_parent_broker(
+                    json.dumps({'command': 'update',
+                                'node': self.node_sockets[ws],
+                                'endpoint': '/' + key,
+                                'data': value}))
 
-        # Simply forward this message to satellite brokers
-        for broker in self.brokers:
-            broker.write_message(json.dumps(message))
-
-    def handle_gateway_message(self, message):
-        """Handle a message received from a gateway."""
-        logger.debug("Handling message '{}' received from gateway."
-                     .format(message))
-        self.broadcast(message)
+    def handle_parent_broker_message(self, message):
+        """Handle a message received from the parent broker websocket."""
+        logger.debug("Handling message '{}' received from parent broker "
+                     "websocket.".format(message))
+        if message['type'] == "new":
+            for node in self._coap_controller.nodes:
+                self._coap_controller.discover_node(node)
+            for node_ws, uid in self.node_sockets.items():
+                node_ws.write_message(json.dumps({'request':
+                                                  'discover'}))
+        elif message['type'] == "update":
+            self._coap_controller.send_data_to_node(message['data'])
+            for node_ws, uid in self.node_sockets.items():
+                node_ws.write_message(message['data'])
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""
-        if ws in self.client_sockets:
-            self.client_sockets.remove(ws)
-        elif ws in self.brokers:
-            self.brokers.remove(ws)
+        if ws in self.node_sockets:
+            self.send_to_parent_broker(
+                json.dumps({'node': self.node_sockets[ws],
+                            'command': 'out'}))
+            self.node_sockets.pop(ws)

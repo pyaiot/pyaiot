@@ -32,11 +32,13 @@
 import time
 import json
 import asyncio
+import logging
 import aiocoap.resource as resource
 
 from tornado import gen
 from aiocoap import Context, Message, GET, PUT, CHANGED
-from .logger import logger
+
+logger = logging.getLogger("pyaiot.gw.coap")
 
 
 def _coap_endpoints(link_header):
@@ -222,7 +224,8 @@ class CoapController():
         if node not in self.nodes:
             self.nodes.append(node)
             self._on_message_cb(json.dumps({'command': 'new',
-                                            'node': node.address}))
+                                            'node': node.address,
+                                            'origin': 'coap'}))
             self.discover_node(node)
         else:
             index = self.nodes.index(node)

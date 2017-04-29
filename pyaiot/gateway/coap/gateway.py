@@ -27,26 +27,30 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Broker application module."""
+"""CoAP gateway application module."""
 
 import sys
-import tornado
 import logging
-from tornado.options import define, options
 import tornado.platform.asyncio
+from tornado.options import define, options
 
-from .application import BrokerApplication
+from .application import CoapGatewayApplication
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '
                            '%(levelname)5s - %(message)s')
-logger = logging.getLogger("pyaiot.broker")
+logger = logging.getLogger("pyaiot.gw.coap")
 
 
 def parse_command_line():
     """Parse command line arguments for IoT broker application."""
-    if not hasattr(options, "port"):
-        define("port", default=8000, help="Broker websocket port")
+    if not hasattr(options, "broker_host"):
+        define("broker_host", default="localhost", help="Broker host")
+    if not hasattr(options, "broker_port"):
+        define("broker_port", default=8000, help="Broker port")
+    if not hasattr(options, "max_time"):
+        define("max_time", default=120,
+               help="Maximum retention time (in s) for CoAP dead nodes")
     if not hasattr(options, "debug"):
         define("debug", default=False, help="Enable debug mode.")
     options.parse_command_line()
@@ -67,8 +71,8 @@ def run(arguments=[]):
         if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
             tornado.platform.asyncio.AsyncIOMainLoop().install()
 
-        app = BrokerApplication(options=options)
-        app.listen(options.port)
+        # Initialize the gateway application
+        CoapGatewayApplication(options=options)
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
         logger.debug("Stopping application")

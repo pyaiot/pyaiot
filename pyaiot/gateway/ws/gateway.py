@@ -35,18 +35,23 @@ import logging
 from tornado.options import define, options
 import tornado.platform.asyncio
 
-from .application import BrokerApplication
+from .application import WebsocketGatewayApplication
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '
                            '%(levelname)5s - %(message)s')
-logger = logging.getLogger("pyaiot.broker")
+logger = logging.getLogger("pyaiot.gw.ws")
 
 
 def parse_command_line():
     """Parse command line arguments for IoT broker application."""
-    if not hasattr(options, "port"):
-        define("port", default=8000, help="Broker websocket port")
+    if not hasattr(options, "broker_host"):
+        define("broker_host", default="localhost", help="Broker host")
+    if not hasattr(options, "broker_port"):
+        define("broker_port", default=8000, help="Broker port")
+    if not hasattr(options, "gateway_port"):
+        define("gateway_port", default=8001,
+               help="Node gateway websocket port")
     if not hasattr(options, "debug"):
         define("debug", default=False, help="Enable debug mode.")
     options.parse_command_line()
@@ -67,8 +72,9 @@ def run(arguments=[]):
         if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
             tornado.platform.asyncio.AsyncIOMainLoop().install()
 
-        app = BrokerApplication(options=options)
-        app.listen(options.port)
+        # Initialize the websocket gateway application
+        app = WebsocketGatewayApplication(options=options)
+        app.listen(options.gateway_port)
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
         logger.debug("Stopping application")

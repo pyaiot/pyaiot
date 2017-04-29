@@ -44,7 +44,7 @@ import tornado.platform.asyncio
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '
                            '%(levelname)5s - %(message)s')
-internal_logger = logging.getLogger("tornado.internal")
+logger = logging.getLogger("pyaiot.dashboard")
 
 
 class DashboardHandler(web.RequestHandler):
@@ -64,9 +64,8 @@ class IoTDashboardApplication(web.Application):
 
     def __init__(self):
         self._nodes = {}
-        self._log = logging.getLogger("iot dashboard")
         if options.debug:
-            self._log.setLevel(logging.DEBUG)
+            logger.setLevel(logging.DEBUG)
 
         handlers = [
             (r'/', DashboardHandler),
@@ -78,13 +77,12 @@ class IoTDashboardApplication(web.Application):
                     'template_path': options.static_path
                     }
         super().__init__(handlers, **settings)
-        self._log.info('Application started, listening on port {0}'
-                       .format(options.port))
+        logger.info('Application started, listening on port {0}'
+                    .format(options.port))
 
 
 def parse_command_line():
     """Parse command line arguments for IoT broker application."""
-
     define("static-path",
            default=os.path.join(os.path.dirname(__file__), "static"),
            help="Static files path (containing npm package.json file)")
@@ -106,13 +104,17 @@ def parse_command_line():
            help="Enable debug mode.")
     options.parse_command_line()
 
-    if options.debug:
-        internal_logger.setLevel(logging.DEBUG)
 
-
-def run():
+def run(arguments=[]):
     """Start an instance of a dashboard."""
+    if arguments != []:
+        sys.argv[1:] = arguments
+
     parse_command_line()
+
+    if options.debug:
+        logger.setLevel(logging.DEBUG)
+
     try:
         ioloop = asyncio.get_event_loop()
         tornado.platform.asyncio.AsyncIOMainLoop().install()
