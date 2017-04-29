@@ -1,0 +1,16 @@
+[Unit]
+Description=Pyaiot CoAP gateway service
+After=network.target radvd.service
+
+[Service]
+User=pi
+Environment='BROKER_HOST=localhost' \
+            'BROKER_PORT=8082'
+
+ExecStart=/usr/local/bin/aiot-coap-gateway \
+            --broker-host=${BROKER_HOST}   \
+            --broker-port=${BROKER_PORT}
+
+[Install]
+WantedBy=multi-user.target
+Alias=aiot-coap-gateway.service
