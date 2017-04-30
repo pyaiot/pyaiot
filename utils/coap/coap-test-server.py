@@ -112,16 +112,6 @@ def _send_pressure():
 
 
 @gen.coroutine
-def _send_led():
-    payload = ("led:{}"
-               .format(random.randint(0, 1))
-               .encode('utf-8'))
-    _, _ = yield _coap_resource('coap://{}/{}'.format(args.server, "server"),
-                                method=POST,
-                                payload=payload)
-
-
-@gen.coroutine
 def _send_imu():
     imu = json.dumps([{"type": "acc",
                        "values": [random.randrange(-500, 500, 1),
@@ -265,8 +255,6 @@ if __name__ == '__main__':
             PeriodicCallback(_send_pressure, 5000).start()
         if args.imu:
             PeriodicCallback(_send_imu, 200).start()
-        if args.led:
-            PeriodicCallback(_send_led, 5000).start()
 
         # Aiocoap server initialization
         root = resource.Site()
