@@ -78,28 +78,32 @@ class CoapGatewayApplication(web.Application):
         handlers = []
         settings = {'debug': True}
 
-        self.parent_broker = BrokerWebsocketClient(
-            self, "ws://{}:{}/broker".format(options.broker_host,
-                                             options.broker_port),
-            self.handle_parent_broker_message)
-        self._coap_controller = CoapController(
-            on_message_cb=self.send_to_parent_broker,
-            max_time=options.max_time)
+        # Connection to broker
+        self.broker = BrokerWebsocketClient(
+            "ws://{}:{}/broker".format(options.broker_host,
+                                       options.broker_port),
+            self.on_broker_message,
+            self.on_broker_disconnect)
+        self.broker.connect()
 
+        # Starts CoAP controller
+        self._coap_controller = CoapController(
+            on_message_cb=self.send_to_broker,
+            max_time=options.max_time)
         PeriodicCallback(self._coap_controller.check_dead_nodes, 1000).start()
 
         super().__init__(handlers, **settings)
         logger.info('CoAP gateway application started')
 
-    def send_to_parent_broker(self, message):
+    def send_to_broker(self, message):
         """Send a message to the parent broker."""
-        if self.parent_broker is not None:
+        if self.broker is not None:
             logger.debug("Forwarding message '{}' to parent broker."
                          .format(message))
-            self.parent_broker.write_message(message)
+            self.broker.send(message)
 
     @gen.coroutine
-    def handle_parent_broker_message(self, message):
+    def on_broker_message(self, message):
         """Handle a message received from the parent broker websocket."""
         logger.debug("Handling message '{}' received from parent broker "
                      "websocket.".format(message))
@@ -108,3 +112,8 @@ class CoapGatewayApplication(web.Application):
                 self._coap_controller.discover_node(node)
         elif message['type'] == "update":
             self._coap_controller.send_data_to_node(message['data'])
+
+    def on_broker_disconnect(self, reason=None):
+        """Handle connection loss from broker."""
+        logger.debug("Connection with broker lost, reason: '{}'."
+                     .format(reason))

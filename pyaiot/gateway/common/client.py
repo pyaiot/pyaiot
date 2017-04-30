@@ -30,64 +30,32 @@
 """Broker tornado application module."""
 
 import logging
-import json
-import websocket as websocket_client
+from ws4py.client.tornadoclient import TornadoWebSocketClient
 
 logger = logging.getLogger("pyaiot.gw.common")
 
 
-def _check_ws_message(ws, raw):
-    """Verify a received message is correctly formatted."""
-    reason = None
-    try:
-        message = json.loads(raw)
-    except TypeError as e:
-        logger.warning(e)
-        reason = "Invalid message '{}'.".format(raw)
-    except json.JSONDecodeError:
-        reason = ("Invalid message received "
-                  "'{}'. Only JSON format is supported.".format(raw))
-
-    if 'type' not in message and 'data' not in message:
-        reason = "Invalid message '{}'.".format(message)
-
-    if message['type'] != 'new' and message['type'] != 'update':
-        reason = "Invalid message type'{}'.".format(message['type'])
-
-    if reason is not None:
-        logger.warning(reason)
-        ws.close(code=1003, reason="{}.".format(reason))
-        message = None
-
-    return message
-
-
-class BrokerWebsocketClient():
+class BrokerWebsocketClient(TornadoWebSocketClient):
     """Class for managing broker to broker connection via a websocket."""
 
-    def __init__(self, controller, url, on_message_cb):
+    def __init__(self, url, on_message_cb, on_disconnect):
+
         self._on_message_cb = on_message_cb
-        self._ws = None
-        self.connect(url)
-        if self._ws is not None:
-            self._ws.message_cb = on_message_cb
-            self._ws.on_message = BrokerWebsocketClient.on_message
+        self._on_disconnect = on_disconnect
 
-    def connect(self, url):
-        """Connect to parent broker."""
-        try:
-            self._ws = websocket_client.create_connection(url)
-        except ConnectionRefusedError:
-            logger.error("Cannot connect to websocket server at url '{}'"
-                         .format(url))
+        super().__init__(url, protocols=['http-only', 'chat'])
 
-    def write_message(self, message):
-        """Send message to parent broker."""
-        if self._ws is not None:
-            self._ws.send(message)
+    def opened(self):
+        """Handle websocket opening."""
+        logger.debug("Gateway client websocket opened.")
 
-    @staticmethod
-    def on_message(ws, message):
-        """Forward message to controller."""
-        logger.debug("Message received from parent broker: {}".format(message))
-        ws.message_cb(message)
+    def received_message(self, message):
+        """Handle incoming message."""
+        logger.debug("Message received from broker: {}".format(message))
+        yield from self._on_message_cb(message)
+
+    def closed(self, code, reason=None):
+        """Handle closed connection."""
+        logger.debug("Gateway client websocket disconnected (code: {})."
+                     .format(code))
+        self._on_disconnect(reason)

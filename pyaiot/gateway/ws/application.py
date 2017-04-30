@@ -80,7 +80,7 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         """Triggered when a message is received from the web client."""
         message = _check_ws_message(self, raw)
         if message is not None:
-            self.application.handle_node_message(self, message)
+            self.application.on_node_message(self, message)
 
     def on_close(self):
         """Remove websocket from internal list."""
@@ -94,7 +94,7 @@ class WebsocketGatewayApplication(web.Application):
     def __init__(self, options=None):
         assert options
 
-        self.node_sockets = {}
+        self.nodes = {}
 
         if options.debug:
             logger.setLevel(logging.DEBUG)
@@ -104,59 +104,68 @@ class WebsocketGatewayApplication(web.Application):
         ]
         settings = {'debug': True}
 
-        self.parent_broker = BrokerWebsocketClient(
-            self, "ws://{}:{}/broker".format(options.broker_host,
-                                             options.broker_port),
-            self.handle_parent_broker_message)
+        self.broker = BrokerWebsocketClient(
+            "ws://{}:{}/broker".format(options.broker_host,
+                                       options.broker_port),
+            self.on_broker_message,
+            self.on_broker_disconnect)
+        self.broker.connect()
 
         super().__init__(handlers, **settings)
+
         logger.info('Application started, listening on port {}'
                     .format(options.gateway_port))
 
-    def send_to_parent_broker(self, message):
+    def send_to_broker(self, message):
         """Send a message to the parent broker."""
-        if self.parent_broker is not None:
+        if self.broker is not None:
             logger.debug("Forwarding message '{}' to parent broker."
                          .format(message))
-            self.parent_broker.write_message(message)
+            self.broker.send(message)
 
-    def handle_node_message(self, ws, message):
+    def on_node_message(self, ws, message):
         """Handle a message received from a node websocket."""
         if message['type'] == "new":
             logger.debug("new node from websocket")
-            self.node_sockets.update({ws: str(uuid.uuid4())})
-            self.send_to_parent_broker(
+            self.nodes.update({ws: str(uuid.uuid4())})
+            self.send_to_broker(
                 json.dumps({'command': 'new',
-                            'node': self.node_sockets[ws],
+                            'node': self.nodes[ws],
                             'origin': 'websocket'}))
         elif message['type'] == "update":
+            if ws not in self.nodes:
+                logger.debug("Node {} not in registered node".format(ws))
+                return
             logger.debug("new update from node websocket")
             for key, value in message['data'].items():
-                self.send_to_parent_broker(
+                self.send_to_broker(
                     json.dumps({'command': 'update',
-                                'node': self.node_sockets[ws],
+                                'node': self.nodes[ws],
                                 'endpoint': '/' + key,
                                 'data': value}))
 
-    def handle_parent_broker_message(self, message):
+    @gen.coroutine
+    def on_broker_message(self, message):
         """Handle a message received from the parent broker websocket."""
-        logger.debug("Handling message '{}' received from parent broker "
-                     "websocket.".format(message))
+        logger.debug("Handling message '{}' received from broker websocket."
+                     .format(message))
         if message['type'] == "new":
-            for node in self._coap_controller.nodes:
-                self._coap_controller.discover_node(node)
-            for node_ws, uid in self.node_sockets.items():
+            for node_ws, uid in self.nodes.items():
                 node_ws.write_message(json.dumps({'request':
                                                   'discover'}))
         elif message['type'] == "update":
-            self._coap_controller.send_data_to_node(message['data'])
-            for node_ws, uid in self.node_sockets.items():
+            for node_ws, uid in self.nodes.items():
                 node_ws.write_message(message['data'])
+
+    def on_broker_disconnect(self, reason=None):
+        """Handle connection loss from broker."""
+        logger.debug("Connection with broker lost, reason: '{}'."
+                     .format(reason))
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""
-        if ws in self.node_sockets:
-            self.send_to_parent_broker(
-                json.dumps({'node': self.node_sockets[ws],
+        if ws in self.nodes:
+            self.send_to_broker(
+                json.dumps({'node': self.nodes[ws],
                             'command': 'out'}))
-            self.node_sockets.pop(ws)
+            self.nodes.pop(ws)

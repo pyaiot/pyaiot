@@ -30,10 +30,9 @@
 """Broker application module."""
 
 import sys
-import tornado
 import logging
+from tornado import ioloop
 from tornado.options import define, options
-import tornado.platform.asyncio
 
 from .application import WebsocketGatewayApplication
 
@@ -68,17 +67,13 @@ def run(arguments=[]):
         logger.setLevel(logging.DEBUG)
 
     try:
-        # Application ioloop initialization
-        if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
-            tornado.platform.asyncio.AsyncIOMainLoop().install()
-
         # Initialize the websocket gateway application
         app = WebsocketGatewayApplication(options=options)
         app.listen(options.gateway_port)
-        tornado.ioloop.IOLoop.instance().start()
+        ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
         logger.debug("Stopping application")
-        tornado.ioloop.IOLoop.instance().stop()
+        ioloop.IOLoop.instance().stop()
 
 if __name__ == '__main__':
     run()

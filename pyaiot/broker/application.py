@@ -70,12 +70,13 @@ class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
     def open(self):
         """Discover nodes on each opened connection."""
         self.set_nodelay(True)
-        logger.debug("New broker websocket opened")
+        logger.debug("New gateway websocket opened")
+        self.application.gateways.append(self)
 
     @gen.coroutine
     def on_message(self, message):
         """Triggered when a message is received from the broker child."""
-        self.application.handle_gateway_message(message)
+        self.application.on_gateway_message(message)
 
     def on_close(self):
         """Remove websocket from internal list."""
@@ -98,7 +99,7 @@ class BrokerWebsocketClientHandler(websocket.WebSocketHandler):
         """Triggered when a message is received from the web client."""
         message = _check_ws_message(self, raw)
         if message is not None:
-            self.application.handle_client_message(self, message)
+            self.application.on_client_message(self, message)
 
     def on_close(self):
         """Remove websocket from internal list."""
@@ -112,8 +113,8 @@ class BrokerApplication(web.Application):
     def __init__(self, options=None):
         assert options
 
-        self.brokers = []
-        self.client_sockets = []
+        self.gateways = []
+        self.clients = []
 
         if options.debug:
             logger.setLevel(logging.DEBUG)
@@ -132,24 +133,25 @@ class BrokerApplication(web.Application):
         """Broadcast message to all opened websockets clients."""
         logger.debug("Broadcasting message '{}' to web clients."
                      .format(message))
-        for ws in self.client_sockets:
+        for ws in self.clients:
             ws.write_message(message)
 
-    def handle_client_message(self, ws, message):
+    def on_client_message(self, ws, message):
         """Handle a message received from a client websocket."""
         logger.debug("Handling message '{}' received from client websocket."
                      .format(message))
         if message['type'] == "new":
             logger.debug("new client connected")
-            self.client_sockets.append(ws)
+            self.clients.append(ws)
         elif message['type'] == "update":
             logger.debug("new update from client websocket")
 
-        # Simply forward this message to satellite brokers
-        for broker in self.brokers:
-            broker.write_message(json.dumps(message))
+        # Simply forward this message to satellite gateways
+        for gw in self.gateways:
+            logger.debug("Forwarding message {} to gateways".format(message))
+            gw.write_message(json.dumps(message))
 
-    def handle_gateway_message(self, message):
+    def on_gateway_message(self, message):
         """Handle a message received from a gateway."""
         logger.debug("Handling message '{}' received from gateway."
                      .format(message))
@@ -157,7 +159,7 @@ class BrokerApplication(web.Application):
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""
-        if ws in self.client_sockets:
-            self.client_sockets.remove(ws)
-        elif ws in self.brokers:
-            self.brokers.remove(ws)
+        if ws in self.clients:
+            self.clients.remove(ws)
+        elif ws in self.gateways:
+            self.gateways.remove(ws)
