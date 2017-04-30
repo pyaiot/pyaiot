@@ -151,6 +151,7 @@ class BrokerApplication(web.Application):
             logger.debug("Forwarding message {} to gateways".format(message))
             gw.write_message(json.dumps(message))
 
+    @gen.coroutine
     def on_gateway_message(self, message):
         """Handle a message received from a gateway."""
         logger.debug("Handling message '{}' received from gateway."

@@ -160,7 +160,7 @@ class CoapController():
         """Discover resources available on a node."""
         coap_node_url = 'coap://[{}]'.format(node.address)
         if len(node.endpoints) == 0:
-            logger.debug("Discovering node {}".format(node.address))
+            logger.debug("Discovering CoAP node {}".format(node.address))
             code, payload = yield _coap_resource('{0}/.well-known/core'
                                                  .format(coap_node_url),
                                                  method=GET)
@@ -170,6 +170,7 @@ class CoapController():
         endpoints = [endpoint
                      for endpoint in node.endpoints
                      if 'well-known/core' not in endpoint]
+        logger.debug("Fetching CoAP node resources: {}".format(endpoints))
         for endpoint in endpoints:
             elems = endpoint.split(';')
             path = elems.pop(0).replace('<', '').replace('>', '')
@@ -185,9 +186,11 @@ class CoapController():
                                              'node': node.address,
                                              'command': 'update'})
 
+        logger.debug("Sending CoAP node resources: {}".format(endpoints))
         for endpoint in endpoints:
             self._on_message_cb(messages[endpoint])
 
+    @gen.coroutine
     def send_data_to_node(self, data):
         """Forward received message data to the destination node.
 
@@ -206,6 +209,9 @@ class CoapController():
 
         if CoapNode(node) not in self.nodes:
             return
+
+        logger.debug("Updating CoAP node '{}' resource '{}'"
+                     .format(node, path))
         code, payload = yield _coap_resource(
             'coap://[{0}]{1}'.format(node, path),
             method=PUT,
