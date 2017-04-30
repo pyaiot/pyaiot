@@ -90,7 +90,12 @@ class CoapGatewayApplication(web.Application):
         message = json.loads(message)
 
         if message['type'] == "new":
+            # Received when a new client connects
             for node in self._coap_controller.nodes:
+                self.broker.write_message(json.dumps({'command': 'new',
+                                                      'node': node.address,
+                                                      'origin': 'coap'}))
                 self._coap_controller.discover_node(node)
         elif message['type'] == "update":
+            # Received when a client update a node
             self._coap_controller.send_data_to_node(message['data'])
