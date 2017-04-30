@@ -65,6 +65,7 @@ def run(arguments=[]):
 
     if options.debug:
         logger.setLevel(logging.DEBUG)
+        logging.getLogger("pyaiot.gw.client").setLevel(logging.DEBUG)
 
     try:
         # Application ioloop initialization

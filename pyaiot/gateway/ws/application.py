@@ -33,8 +33,7 @@ import json
 import logging
 import uuid
 from tornado import gen, web, websocket
-
-from ..common.client import BrokerWebsocketClient
+from tornado.websocket import websocket_connect
 
 logger = logging.getLogger("pyaiot.gw.ws")
 
@@ -104,24 +103,32 @@ class WebsocketGatewayApplication(web.Application):
         ]
         settings = {'debug': True}
 
-        self.broker = BrokerWebsocketClient(
-            "ws://{}:{}/broker".format(options.broker_host,
-                                       options.broker_port),
-            self.on_broker_message,
-            self.on_broker_disconnect)
-        self.broker.connect()
-
         super().__init__(handlers, **settings)
+
+        # Create connection to broker
+        self.create_broker_connection(
+            "ws://{}:{}/broker".format(options.broker_host,
+                                       options.broker_port))
 
         logger.info('Application started, listening on port {}'
                     .format(options.gateway_port))
+
+    @gen.coroutine
+    def create_broker_connection(self, url):
+        self.broker = yield websocket_connect(url)
+        while True:
+            message = yield self.broker.read_message()
+            if message is None:
+                logger.debug("Connection with broker lost.")
+                break
+            self.on_broker_message(message)
 
     def send_to_broker(self, message):
         """Send a message to the parent broker."""
         if self.broker is not None:
             logger.debug("Forwarding message '{}' to parent broker."
                          .format(message))
-            self.broker.send(message)
+            self.broker.write_message(message)
 
     def on_node_message(self, ws, message):
         """Handle a message received from a node websocket."""
@@ -144,23 +151,20 @@ class WebsocketGatewayApplication(web.Application):
                                 'endpoint': '/' + key,
                                 'data': value}))
 
-    @gen.coroutine
     def on_broker_message(self, message):
         """Handle a message received from the parent broker websocket."""
-        logger.warning("Handling message '{}' received from broker websocket."
-                       .format(message))
+        logger.debug("Handling message '{}' received from broker."
+                     .format(message))
+        message = json.loads(message)
+
         if message['type'] == "new":
             for node_ws, uid in self.nodes.items():
                 node_ws.write_message(json.dumps({'request':
                                                   'discover'}))
         elif message['type'] == "update":
+            print(self.nodes.items(), message['type'])
             for node_ws, uid in self.nodes.items():
                 node_ws.write_message(message['data'])
-
-    def on_broker_disconnect(self, reason=None):
-        """Handle connection loss from broker."""
-        logger.debug("Connection with broker lost, reason: '{}'."
-                     .format(reason))
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""

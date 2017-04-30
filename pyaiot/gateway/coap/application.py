@@ -33,37 +33,11 @@ import json
 import logging
 from tornado.ioloop import PeriodicCallback
 from tornado import web, gen
+from tornado.websocket import websocket_connect
 
-from ..common.client import BrokerWebsocketClient
 from .coap import CoapController
 
 logger = logging.getLogger("pyaiot.gw.coap")
-
-
-def _check_ws_message(ws, raw):
-    """Verify a received message is correctly formatted."""
-    reason = None
-    try:
-        message = json.loads(raw)
-    except TypeError as e:
-        logger.warning(e)
-        reason = "Invalid message '{}'.".format(raw)
-    except json.JSONDecodeError:
-        reason = ("Invalid message received "
-                  "'{}'. Only JSON format is supported.".format(raw))
-
-    if 'type' not in message and 'data' not in message:
-        reason = "Invalid message '{}'.".format(message)
-
-    if message['type'] != 'new' and message['type'] != 'update':
-        reason = "Invalid message type'{}'.".format(message['type'])
-
-    if reason is not None:
-        logger.warning(reason)
-        ws.close(code=1003, reason="{}.".format(reason))
-        message = None
-
-    return message
 
 
 class CoapGatewayApplication(web.Application):
@@ -78,42 +52,45 @@ class CoapGatewayApplication(web.Application):
         handlers = []
         settings = {'debug': True}
 
-        # Connection to broker
-        self.broker = BrokerWebsocketClient(
-            "ws://{}:{}/broker".format(options.broker_host,
-                                       options.broker_port),
-            self.on_broker_message,
-            self.on_broker_disconnect)
-        self.broker.connect()
-
         # Starts CoAP controller
         self._coap_controller = CoapController(
             on_message_cb=self.send_to_broker,
             max_time=options.max_time)
         PeriodicCallback(self._coap_controller.check_dead_nodes, 1000).start()
 
+        # Create connection to broker
+        self.create_broker_connection(
+            "ws://{}:{}/broker".format(options.broker_host,
+                                       options.broker_port))
+
         super().__init__(handlers, **settings)
         logger.info('CoAP gateway application started')
+
+    @gen.coroutine
+    def create_broker_connection(self, url):
+        self.broker = yield websocket_connect(url)
+        while True:
+            message = yield self.broker.read_message()
+            if message is None:
+                logger.debug("Connection with broker lost.")
+                break
+            self.on_broker_message(message)
 
     def send_to_broker(self, message):
         """Send a message to the parent broker."""
         if self.broker is not None:
             logger.debug("Forwarding message '{}' to parent broker."
                          .format(message))
-            self.broker.send(message)
+            self.broker.write_message(message)
 
-    @gen.coroutine
-    def on_broker_message(self, message):
+    def on_broker_message(self, message, callback=None):
         """Handle a message received from the parent broker websocket."""
-        logger.warning("Handling message '{}' received from parent broker "
-                       "websocket.".format(message))
+        logger.debug("Handling message '{}' received from broker."
+                     .format(message))
+        message = json.loads(message)
+
         if message['type'] == "new":
             for node in self._coap_controller.nodes:
                 self._coap_controller.discover_node(node)
         elif message['type'] == "update":
             self._coap_controller.send_data_to_node(message['data'])
-
-    def on_broker_disconnect(self, reason=None):
-        """Handle connection loss from broker."""
-        logger.debug("Connection with broker lost, reason: '{}'."
-                     .format(reason))

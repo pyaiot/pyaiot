@@ -73,8 +73,7 @@ if __name__ == '__main__':
           install_requires=[
             'tornado>=4.4.2',
             'aiocoap>=0.2',
-            'hbmqtt>=0.8',
-            'ws4py>=0.4',
+            'hbmqtt>=0.8'
           ],
           classifiers=[
             'Development Status :: 4 - Beta',

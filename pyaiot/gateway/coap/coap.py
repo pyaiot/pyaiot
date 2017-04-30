@@ -36,6 +36,7 @@ import logging
 import aiocoap.resource as resource
 
 from tornado import gen
+from tornado.ioloop import IOLoop
 from aiocoap import Context, Message, GET, PUT, CHANGED
 
 logger = logging.getLogger("pyaiot.gw.coap")
@@ -187,7 +188,6 @@ class CoapController():
         for endpoint in endpoints:
             self._on_message_cb(messages[endpoint])
 
-    @gen.coroutine
     def send_data_to_node(self, data):
         """Forward received message data to the destination node.
 
