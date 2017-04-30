@@ -159,6 +159,9 @@ class WebsocketGatewayApplication(web.Application):
 
         if message['type'] == "new":
             for node_ws, uid in self.nodes.items():
+                self.broker.write_message(json.dumps({'command': 'new',
+                                                      'node': uid,
+                                                      'origin': 'coap'}))
                 node_ws.write_message(json.dumps({'request':
                                                   'discover'}))
         elif message['type'] == "update":
