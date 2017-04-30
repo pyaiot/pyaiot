@@ -147,8 +147,8 @@ class WebsocketGatewayApplication(web.Application):
     @gen.coroutine
     def on_broker_message(self, message):
         """Handle a message received from the parent broker websocket."""
-        logger.debug("Handling message '{}' received from broker websocket."
-                     .format(message))
+        logger.warning("Handling message '{}' received from broker websocket."
+                       .format(message))
         if message['type'] == "new":
             for node_ws, uid in self.nodes.items():
                 node_ws.write_message(json.dumps({'request':

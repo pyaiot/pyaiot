@@ -105,8 +105,8 @@ class CoapGatewayApplication(web.Application):
     @gen.coroutine
     def on_broker_message(self, message):
         """Handle a message received from the parent broker websocket."""
-        logger.debug("Handling message '{}' received from parent broker "
-                     "websocket.".format(message))
+        logger.warning("Handling message '{}' received from parent broker "
+                       "websocket.".format(message))
         if message['type'] == "new":
             for node in self._coap_controller.nodes:
                 self._coap_controller.discover_node(node)
