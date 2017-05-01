@@ -35,6 +35,7 @@ import uuid
 from tornado import gen, web, websocket
 from tornado.websocket import websocket_connect
 
+from pyaiot.common.auth import auth_token
 from pyaiot.common.messaging import Message
 
 logger = logging.getLogger("pyaiot.gw.ws")
@@ -66,9 +67,10 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
 class WebsocketGatewayApplication(web.Application):
     """Tornado based web application providing live nodes on a network."""
 
-    def __init__(self, options=None):
+    def __init__(self, keys, options=None):
         assert options
 
+        self.keys = keys
         self.nodes = {}
 
         if options.debug:
@@ -83,21 +85,28 @@ class WebsocketGatewayApplication(web.Application):
 
         # Create connection to broker
         self.create_broker_connection(
-            "ws://{}:{}/broker".format(options.broker_host,
-                                       options.broker_port))
+            "ws://{}:{}/gw".format(options.broker_host, options.broker_port))
 
         logger.info('Application started, listening on port {}'
                     .format(options.gateway_port))
 
     @gen.coroutine
     def create_broker_connection(self, url):
-        self.broker = yield websocket_connect(url)
         while True:
-            message = yield self.broker.read_message()
-            if message is None:
-                logger.debug("Connection with broker lost.")
-                break
-            self.on_broker_message(message)
+            try:
+                self.broker = yield websocket_connect(url)
+            except ConnectionRefusedError:
+                logger.debug("Cannot connect, retrying in 1s")
+            else:
+                logger.debug("Connected to broker, sending auth token")
+                self.broker.write_message(auth_token(self.keys))
+                while True:
+                    message = yield self.broker.read_message()
+                    if message is None:
+                        logger.debug("Connection with broker lost.")
+                        break
+                    self.on_broker_message(message)
+            yield gen.sleep(1)
 
     def send_to_broker(self, message):
         """Send a message to the parent broker."""

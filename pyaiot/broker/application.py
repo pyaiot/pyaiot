@@ -33,30 +33,49 @@ import json
 import logging
 from tornado import gen, web, websocket
 
+from pyaiot.common.auth import verify_auth_token
 from pyaiot.common.messaging import Message
 
 logger = logging.getLogger("pyaiot.broker")
 
 
 class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
+
+    authentified = False
+
     def check_origin(self, origin):
         """Allow connections from anywhere."""
         return True
 
+    @gen.coroutine
     def open(self):
         """Discover nodes on each opened connection."""
         self.set_nodelay(True)
         logger.debug("New gateway websocket opened")
-        self.application.gateways.append(self)
+
+        # Wait 2 seconds to get the gateway authentication token.
+        yield gen.sleep(2)
+        if not self.authentified:
+            self.close()
 
     @gen.coroutine
     def on_message(self, message):
         """Triggered when a message is received from the broker child."""
-        self.application.on_gateway_message(message)
+        if not self.authentified:
+            if verify_auth_token(message, self.application.keys):
+                logger.debug("Gateway websocket authentication verified")
+                self.authentified = True
+                self.application.gateways.append(self)
+            else:
+                logger.debug("Gateway websocket authentication failed, "
+                             "closing.")
+                self.close()
+        else:
+            self.application.on_gateway_message(message)
 
     def on_close(self):
         """Remove websocket from internal list."""
-        logger.debug("Broker websocket closed")
+        logger.debug("Gateway websocket closed")
         self.application.remove_ws(self)
 
 
@@ -86,9 +105,10 @@ class BrokerWebsocketClientHandler(websocket.WebSocketHandler):
 class BrokerApplication(web.Application):
     """Tornado based web application providing live nodes on a network."""
 
-    def __init__(self, options=None):
+    def __init__(self, keys, options=None):
         assert options
 
+        self.keys = keys
         self.gateways = []
         self.clients = []
 
@@ -97,7 +117,7 @@ class BrokerApplication(web.Application):
 
         handlers = [
             (r"/ws", BrokerWebsocketClientHandler),
-            (r"/broker", BrokerWebsocketGatewayHandler),
+            (r"/gw", BrokerWebsocketGatewayHandler),
         ]
         settings = {'debug': True}
 

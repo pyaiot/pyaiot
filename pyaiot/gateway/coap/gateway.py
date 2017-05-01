@@ -34,6 +34,8 @@ import logging
 import tornado.platform.asyncio
 from tornado.options import define, options
 
+from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
+
 from .application import CoapGatewayApplication
 
 logging.basicConfig(level=logging.DEBUG,
@@ -51,6 +53,9 @@ def parse_command_line():
     if not hasattr(options, "max_time"):
         define("max_time", default=120,
                help="Maximum retention time (in s) for CoAP dead nodes")
+    if not hasattr(options, "key-file"):
+        define("key-file", default=DEFAULT_KEY_FILENAME,
+               help="Secret and private keys filename.")
     if not hasattr(options, "debug"):
         define("debug", default=False, help="Enable debug mode.")
     options.parse_command_line()
@@ -68,12 +73,18 @@ def run(arguments=[]):
         logging.getLogger("pyaiot.gw.client").setLevel(logging.DEBUG)
 
     try:
+        keys = check_key_file(options.key_file)
+    except ValueError as e:
+        logger.error(e)
+        return
+
+    try:
         # Application ioloop initialization
         if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
             tornado.platform.asyncio.AsyncIOMainLoop().install()
 
         # Initialize the gateway application
-        CoapGatewayApplication(options=options)
+        CoapGatewayApplication(keys, options=options)
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
         logger.debug("Stopping application")

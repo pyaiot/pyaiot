@@ -29,11 +29,14 @@
 
 """Broker application module."""
 
+import os.path
 import sys
 import tornado
 import logging
 from tornado.options import define, options
 import tornado.platform.asyncio
+
+from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
 
 from .application import BrokerApplication
 
@@ -49,6 +52,9 @@ def parse_command_line():
         define("port", default=8000, help="Broker websocket port")
     if not hasattr(options, "debug"):
         define("debug", default=False, help="Enable debug mode.")
+    if not hasattr(options, "key-file"):
+        define("key-file", default=DEFAULT_KEY_FILENAME,
+               help="Secret and private keys filename.")
     options.parse_command_line()
 
 
@@ -63,11 +69,17 @@ def run(arguments=[]):
         logger.setLevel(logging.DEBUG)
 
     try:
+        keys = check_key_file(options.key_file)
+    except ValueError as e:
+        logger.error(e)
+        return
+
+    try:
         # Application ioloop initialization
         if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
             tornado.platform.asyncio.AsyncIOMainLoop().install()
 
-        app = BrokerApplication(options=options)
+        app = BrokerApplication(keys, options=options)
         app.listen(options.port)
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
