@@ -35,33 +35,9 @@ import uuid
 from tornado import gen, web, websocket
 from tornado.websocket import websocket_connect
 
+from pyaiot.common.messaging import Message
+
 logger = logging.getLogger("pyaiot.gw.ws")
-
-
-def _check_ws_message(ws, raw):
-    """Verify a received message is correctly formatted."""
-    reason = None
-    try:
-        message = json.loads(raw)
-    except TypeError as e:
-        logger.warning(e)
-        reason = "Invalid message '{}'.".format(raw)
-    except json.JSONDecodeError:
-        reason = ("Invalid message received "
-                  "'{}'. Only JSON format is supported.".format(raw))
-
-    if 'type' not in message and 'data' not in message:
-        reason = "Invalid message '{}'.".format(message)
-
-    if message['type'] != 'new' and message['type'] != 'update':
-        reason = "Invalid message type'{}'.".format(message['type'])
-
-    if reason is not None:
-        logger.warning(reason)
-        ws.close(code=1003, reason="{}.".format(reason))
-        message = None
-
-    return message
 
 
 class WebsocketNodeHandler(websocket.WebSocketHandler):
@@ -77,7 +53,7 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
     @gen.coroutine
     def on_message(self, raw):
         """Triggered when a message is received from the web client."""
-        message = _check_ws_message(self, raw)
+        message = Message.check_ws_message(self, raw)
         if message is not None:
             self.application.on_node_message(self, message)
 
@@ -136,9 +112,7 @@ class WebsocketGatewayApplication(web.Application):
             logger.debug("new node from websocket")
             self.nodes.update({ws: str(uuid.uuid4())})
             self.send_to_broker(
-                json.dumps({'command': 'new',
-                            'node': self.nodes[ws],
-                            'origin': 'websocket'}))
+                Message.new_node(self.nodes[ws], 'websocket'))
         elif message['type'] == "update":
             if ws not in self.nodes:
                 logger.debug("Node {} not in registered node".format(ws))
@@ -146,10 +120,7 @@ class WebsocketGatewayApplication(web.Application):
             logger.debug("new update from node websocket")
             for key, value in message['data'].items():
                 self.send_to_broker(
-                    json.dumps({'command': 'update',
-                                'node': self.nodes[ws],
-                                'endpoint': '/' + key,
-                                'data': value}))
+                    Message.update_node(self.nodes[ws], '/' + key, value))
 
     def on_broker_message(self, message):
         """Handle a message received from the parent broker websocket."""
@@ -159,20 +130,15 @@ class WebsocketGatewayApplication(web.Application):
 
         if message['type'] == "new":
             for node_ws, uid in self.nodes.items():
-                self.broker.write_message(json.dumps({'command': 'new',
-                                                      'node': uid,
-                                                      'origin': 'coap'}))
-                node_ws.write_message(json.dumps({'request':
-                                                  'discover'}))
+                self.broker.write_message(
+                    Message.new_node(uid, 'websocket'))
+                node_ws.write_message(Message.discover_node())
         elif message['type'] == "update":
-            print(self.nodes.items(), message['type'])
             for node_ws, uid in self.nodes.items():
                 node_ws.write_message(message['data'])
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""
         if ws in self.nodes:
-            self.send_to_broker(
-                json.dumps({'node': self.nodes[ws],
-                            'command': 'out'}))
+            self.send_to_broker(Message.out_node(self.nodes[ws]))
             self.nodes.pop(ws)

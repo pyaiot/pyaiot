@@ -30,14 +30,14 @@
 """CoAP management module."""
 
 import time
-import json
 import asyncio
 import logging
 import aiocoap.resource as resource
 
 from tornado import gen
-from tornado.ioloop import IOLoop
 from aiocoap import Context, Message, GET, PUT, CHANGED
+
+from pyaiot.common.messaging import Message as Msg
 
 logger = logging.getLogger("pyaiot.gw.coap")
 
@@ -131,8 +131,7 @@ class CoapServerResource(resource.Resource):
         if CoapNode(remote) in self._controller.nodes:
             path, data = payload.split(":", 1)
             self._controller.handle_post_message(
-                json.dumps({'endpoint': '/' + path, 'data': data,
-                            'node': remote, 'command': 'update'}))
+                Msg.update_node(remote, path, data))
         return Message(code=CHANGED,
                        payload="Received '{}'".format(payload).encode('utf-8'))
 
@@ -182,9 +181,7 @@ class CoapController():
                 logger.debug("Cannot discover ressource {} on node {}"
                              .format(endpoint, node.address))
                 return
-            messages[endpoint] = json.dumps({'endpoint': path, 'data': payload,
-                                             'node': node.address,
-                                             'command': 'update'})
+            messages[endpoint] = Msg.update_node(node.address, path, payload)
 
         logger.debug("Sending CoAP node resources: {}".format(endpoints))
         for endpoint in endpoints:
@@ -229,9 +226,7 @@ class CoapController():
         node.check_time = time.time()
         if node not in self.nodes:
             self.nodes.append(node)
-            self._on_message_cb(json.dumps({'command': 'new',
-                                            'node': node.address,
-                                            'origin': 'coap'}))
+            self._on_message_cb(Msg.new_node(node.address, 'coap'))
             self.discover_node(node)
         else:
             index = self.nodes.index(node)
@@ -243,6 +238,4 @@ class CoapController():
             if int(time.time()) > node.check_time + self.max_time:
                 self.nodes.remove(node)
                 logger.debug("Removing inactive node {}".format(node.address))
-
-                self._on_message_cb(json.dumps({'node': node.address,
-                                                'command': 'out'}))
+                self._on_message_cb(Msg.out_node(node.address))

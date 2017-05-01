@@ -33,33 +33,9 @@ import json
 import logging
 from tornado import gen, web, websocket
 
+from pyaiot.common.messaging import Message
+
 logger = logging.getLogger("pyaiot.broker")
-
-
-def _check_ws_message(ws, raw):
-    """Verify a received message is correctly formatted."""
-    reason = None
-    try:
-        message = json.loads(raw)
-    except TypeError as e:
-        logger.warning(e)
-        reason = "Invalid message '{}'.".format(raw)
-    except json.JSONDecodeError:
-        reason = ("Invalid message received "
-                  "'{}'. Only JSON format is supported.".format(raw))
-
-    if 'type' not in message and 'data' not in message:
-        reason = "Invalid message '{}'.".format(message)
-
-    if message['type'] != 'new' and message['type'] != 'update':
-        reason = "Invalid message type'{}'.".format(message['type'])
-
-    if reason is not None:
-        logger.warning(reason)
-        ws.close(code=1003, reason="{}.".format(reason))
-        message = None
-
-    return message
 
 
 class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
@@ -97,7 +73,7 @@ class BrokerWebsocketClientHandler(websocket.WebSocketHandler):
     @gen.coroutine
     def on_message(self, raw):
         """Triggered when a message is received from the web client."""
-        message = _check_ws_message(self, raw)
+        message = Message.check_ws_message(self, raw)
         if message is not None:
             self.application.on_client_message(self, message)
 
