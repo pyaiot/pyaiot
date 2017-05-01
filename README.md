@@ -85,6 +85,29 @@ The behavior with a websocket gateway is similar to a CoAP gateway except that
 the node doesn't have to send notifications periodically: the node is lost
 when the connection is closed.
 
+#### Security
+
+A basic authentication mecanism based on symmetric cryptography exists between
+the broker and gateways. This prevents unwanted gateways to connect to your
+broker.
+
+Before any installation, a pair of keys needs to be generated using the
+provided tool `aiot-generate-keys`:
+
+```
+    bin/aiot-generate-keys
+```
+
+The tool writes the keys in the user home directory in `~/pyaiot/keys`.
+By default, the broker and gateway services look in this location but one can
+specify custom key file with the `--key-file` option when starting the
+services.
+
+Thanks to this, you can have gateways on different hosts connecting in a
+secured way to your central broker.
+The important thing is to have your broker reachable from the gateways and
+clients.
+
 ### Installation procedure on a standalone system:
 
 Here are the steps to install Pyaiot on a standalone system. The final
