@@ -66,8 +66,9 @@ def write_keys_to_file(filename, keys):
         config.write(f)
 
 
-def check_key_file(filename):
+def check_key_file(filename=DEFAULT_KEY_FILENAME):
     """Verify that filename exists and is correctly formatted."""
+    filename = os.path.expanduser(filename)
     if not os.path.isfile(filename):
         raise ValueError("Key file provided doesn't exists: '{}'"
                          .format(filename))

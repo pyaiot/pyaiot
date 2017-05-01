@@ -16,7 +16,7 @@ all: deploy
 deploy: install-dev setup-core-services
 
 install-dev:
-	sudo apt-get install python3-pip libyaml-dev npm -y
+	sudo apt-get install python3-pip libyaml-dev libffi-dev libssl-dev npm -y
 	sudo pip3 install .
 	make setup-dashboard-npm
 

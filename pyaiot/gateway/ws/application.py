@@ -100,12 +100,16 @@ class WebsocketGatewayApplication(web.Application):
             else:
                 logger.debug("Connected to broker, sending auth token")
                 self.broker.write_message(auth_token(self.keys))
+                message = yield self.broker.read_message()
+                if message is None:
+                    logger.debug("Authentication failed.")
+                    return
                 while True:
+                    self.on_broker_message(message)
                     message = yield self.broker.read_message()
                     if message is None:
                         logger.debug("Connection with broker lost.")
                         break
-                    self.on_broker_message(message)
             yield gen.sleep(1)
 
     def send_to_broker(self, message):
