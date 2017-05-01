@@ -69,11 +69,13 @@ if __name__ == '__main__':
           scripts=[pjoin('bin', 'aiot-broker'),
                    pjoin('bin', 'aiot-coap-gateway'),
                    pjoin('bin', 'aiot-ws-gateway'),
-                   pjoin('bin', 'aiot-dashboard')],
+                   pjoin('bin', 'aiot-dashboard'),
+                   pjoin('bin', 'aiot-generate-keys')],
           install_requires=[
             'tornado>=4.4.2',
             'aiocoap>=0.2',
-            'hbmqtt>=0.8'
+            'hbmqtt>=0.8',
+            'cryptography>=1.7.2'
           ],
           classifiers=[
             'Development Status :: 4 - Beta',
