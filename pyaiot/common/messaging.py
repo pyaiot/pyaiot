@@ -41,17 +41,17 @@ class Message():
     @staticmethod
     def new_node(node, origin):
         """Generate a text message indicating a new node."""
-        return json.dumps({'command': 'new', 'node': node, 'origin': origin})
+        return json.dumps({'type': 'new', 'node': node, 'origin': origin})
 
     @staticmethod
     def out_node(node):
         """Generate a text message indicating a node to remove."""
-        return json.dumps({'command': 'out', 'node': node})
+        return json.dumps({'type': 'out', 'node': node})
 
     @staticmethod
     def update_node(node, endpoint, data):
         """Generate a text message indicating a node update."""
-        return json.dumps({'command': 'update', 'node': node,
+        return json.dumps({'type': 'update', 'node': node,
                            'endpoint': endpoint, 'data': data})
 
     @staticmethod
@@ -75,8 +75,9 @@ class Message():
         if 'type' not in message and 'data' not in message:
             reason = "Invalid message '{}'.".format(message)
 
-        if message['type'] != 'new' and message['type'] != 'update':
-            reason = "Invalid message type'{}'.".format(message['type'])
+        if (message['type'] != 'new' and message['type'] != 'update' and
+                message['type'] != 'out'):
+            reason = "Invalid message type '{}'.".format(message['type'])
 
         if reason is not None:
             logger.warning(reason)

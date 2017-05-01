@@ -97,21 +97,18 @@ class WebsocketGatewayApplication(web.Application):
             try:
                 self.broker = yield websocket_connect(url)
             except ConnectionRefusedError:
-                logger.debug("Cannot connect, retrying in 1s")
+                logger.debug("Cannot connect, retrying in 3s")
             else:
                 logger.debug("Connected to broker, sending auth token")
                 self.broker.write_message(auth_token(self.keys))
-                message = yield self.broker.read_message()
-                if message is None:
-                    logger.debug("Authentication failed.")
-                    return
                 while True:
-                    self.on_broker_message(message)
                     message = yield self.broker.read_message()
                     if message is None:
                         logger.debug("Connection with broker lost.")
                         break
-            yield gen.sleep(1)
+                    self.on_broker_message(message)
+
+            yield gen.sleep(3)
 
     def send_to_broker(self, message):
         """Send a message to the parent broker."""
@@ -148,8 +145,10 @@ class WebsocketGatewayApplication(web.Application):
                     Message.new_node(uid, 'websocket'))
                 node_ws.write_message(Message.discover_node())
         elif message['type'] == "update":
+            node = message['data']['node']
             for node_ws, uid in self.nodes.items():
-                node_ws.write_message(message['data'])
+                if uid == node:
+                    node_ws.write_message(message['data'])
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""

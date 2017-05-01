@@ -59,19 +59,21 @@ class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
             self.close()
 
     @gen.coroutine
-    def on_message(self, message):
+    def on_message(self, raw):
         """Triggered when a message is received from the broker child."""
         if not self.authentified:
-            if verify_auth_token(message, self.application.keys):
+            if verify_auth_token(raw, self.application.keys):
                 logger.debug("Gateway websocket authentication verified")
                 self.authentified = True
-                self.application.gateways.append(self)
+                self.application.gateways.update({self: []})
             else:
                 logger.debug("Gateway websocket authentication failed, "
                              "closing.")
                 self.close()
         else:
-            self.application.on_gateway_message(message)
+            message = Message.check_ws_message(self, raw)
+            if message is not None:
+                self.application.on_gateway_message(self, message)
 
     def on_close(self):
         """Remove websocket from internal list."""
@@ -109,7 +111,7 @@ class BrokerApplication(web.Application):
         assert options
 
         self.keys = keys
-        self.gateways = []
+        self.gateways = {}
         self.clients = []
 
         if options.debug:
@@ -143,20 +145,30 @@ class BrokerApplication(web.Application):
             logger.debug("new update from client websocket")
 
         # Simply forward this message to satellite gateways
+        logger.debug("Forwarding message {} to gateways".format(message))
         for gw in self.gateways:
-            logger.debug("Forwarding message {} to gateways".format(message))
             gw.write_message(json.dumps(message))
 
     @gen.coroutine
-    def on_gateway_message(self, message):
+    def on_gateway_message(self, ws, message):
         """Handle a message received from a gateway."""
         logger.debug("Handling message '{}' received from gateway."
                      .format(message))
-        self.broadcast(message)
+        if (message['type'] == "new" and
+                not message['node'] in self.gateways[ws]):
+            self.gateways[ws].append(message['node'])
+        elif (message['type'] == "out" and
+                message['node'] in self.gateways[ws]):
+            self.gateways[ws].remove(message['node'])
+
+        self.broadcast(json.dumps(message))
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""
         if ws in self.clients:
             self.clients.remove(ws)
-        elif ws in self.gateways:
-            self.gateways.remove(ws)
+        elif ws in self.gateways.keys():
+            # Notify clients that the nodes behind the closed gateway are out.
+            for node in self.gateways[ws]:
+                self.broadcast(Message.out_node(node))
+            self.gateways.pop(ws)

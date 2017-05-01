@@ -75,21 +75,18 @@ class CoapGatewayApplication(web.Application):
             try:
                 self.broker = yield websocket_connect(url)
             except ConnectionRefusedError:
-                logger.debug("Cannot connect, retrying in 1s")
+                logger.debug("Cannot connect, retrying in 3s")
             else:
                 logger.debug("Connected to broker, sending auth token")
                 self.broker.write_message(auth_token(self.keys))
-                message = yield self.broker.read_message()
-                if message is None:
-                    logger.debug("Authentication failed.")
-                    return
                 while True:
-                    self.on_broker_message(message)
                     message = yield self.broker.read_message()
                     if message is None:
                         logger.debug("Connection with broker lost.")
                         break
-            yield gen.sleep(1)
+                    self.on_broker_message(message)
+
+            yield gen.sleep(3)
 
     def send_to_broker(self, message):
         """Send a message to the parent broker."""

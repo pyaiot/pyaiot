@@ -416,7 +416,7 @@ function Node(ip, data={}) {
 function receive_message(msg) {
     let node = msg.node
     let index = vm.nodes.map(e => e.ip).indexOf(node)
-    switch (msg.command) {
+    switch (msg.type) {
         case 'new':
             console.log("New node", node)
             vm.nodes.push(new Node(node))
