@@ -126,14 +126,14 @@ class BrokerApplication(web.Application):
                     .format(options.port))
 
     def broadcast(self, message):
-        """Broadcast message to all opened websockets clients."""
+        """Broadcast message to all clients."""
         logger.debug("Broadcasting message '{}' to web clients."
                      .format(message))
         for ws in self.clients:
             ws.write_message(message)
 
     def on_client_message(self, ws, message):
-        """Handle a message received from a client websocket."""
+        """Handle a message received from a client."""
         logger.debug("Handling message '{}' received from client websocket."
                      .format(message))
         if message['type'] == "new":

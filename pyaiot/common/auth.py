@@ -31,13 +31,10 @@
 
 import os.path
 import string
-import logging
 import configparser
 from collections import namedtuple
 from random import choice
 from cryptography.fernet import Fernet
-
-logger = logging.getLogger("pyaiot.common.auth")
 
 DEFAULT_KEY_FILENAME = "{}/.pyaiot/keys".format(os.path.expanduser("~"))
 

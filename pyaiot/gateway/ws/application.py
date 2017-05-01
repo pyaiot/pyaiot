@@ -65,7 +65,7 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
 
 
 class WebsocketGatewayApplication(web.Application):
-    """Tornado based web application providing live nodes on a network."""
+    """Tornado based gateway application for websocket nodes on a network."""
 
     def __init__(self, keys, options=None):
         assert options
@@ -92,6 +92,7 @@ class WebsocketGatewayApplication(web.Application):
 
     @gen.coroutine
     def create_broker_connection(self, url):
+        """Create an asynchronous connection to the broker."""
         while True:
             try:
                 self.broker = yield websocket_connect(url)

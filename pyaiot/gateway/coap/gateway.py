@@ -45,7 +45,7 @@ logger = logging.getLogger("pyaiot.gw.coap")
 
 
 def parse_command_line():
-    """Parse command line arguments for IoT broker application."""
+    """Parse command line arguments for CoAP gateway application."""
     if not hasattr(options, "broker_host"):
         define("broker_host", default="localhost", help="Broker host")
     if not hasattr(options, "broker_port"):
@@ -62,7 +62,7 @@ def parse_command_line():
 
 
 def run(arguments=[]):
-    """Start a broker instance."""
+    """Start the CoAP gateway instance."""
     if arguments != []:
         sys.argv[1:] = arguments
 

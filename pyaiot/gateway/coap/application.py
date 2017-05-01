@@ -43,7 +43,7 @@ logger = logging.getLogger("pyaiot.gw.coap")
 
 
 class CoapGatewayApplication(web.Application):
-    """Tornado based web application providing live nodes on a network."""
+    """Tornado based gateway application for CoAP nodes on a network."""
 
     def __init__(self, keys, options=None):
         assert options
@@ -70,6 +70,7 @@ class CoapGatewayApplication(web.Application):
 
     @gen.coroutine
     def create_broker_connection(self, url):
+        """Create an asynchronous connection to the broker."""
         while True:
             try:
                 self.broker = yield websocket_connect(url)

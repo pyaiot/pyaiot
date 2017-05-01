@@ -29,7 +29,6 @@
 
 """Broker application module."""
 
-import os.path
 import sys
 import tornado
 import logging
