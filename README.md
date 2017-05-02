@@ -133,7 +133,7 @@ Here are the installation steps:
 
 1. Clone this repository
 <pre>
-    $ git clone https://github.com/iot-lab/iot-kit.git
+    $ git clone https://github.com/pyaiot/pyaiot.git
 </pre>
 2. Deploy the system (works for debian/raspbian/ubuntu):
 <pre>
