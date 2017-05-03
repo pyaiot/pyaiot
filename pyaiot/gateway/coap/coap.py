@@ -131,7 +131,7 @@ class CoapServerResource(resource.Resource):
         if CoapNode(remote) in self._controller.nodes:
             path, data = payload.split(":", 1)
             self._controller.handle_post_message(
-                Msg.update_node(remote, path, data))
+                Msg.update_node(remote, '/' + path, data))
         return Message(code=CHANGED,
                        payload="Received '{}'".format(payload).encode('utf-8'))
 
