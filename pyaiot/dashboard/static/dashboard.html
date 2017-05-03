@@ -50,7 +50,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r82/three.min.js"></script>
     <script src="{{ static_url('js/TeapotBufferGeometry.js') }}"></script>
-    <script src="{{ static_url('js/joystick.js') }}"></script>
+    <!-- <script src="{{ static_url('js/joystick.js') }}"></script> -->
     <script src="{{ static_url('js/helpers.js') }}"></script>
 
     <!-- IoT-Kit dashboard css -->
@@ -69,7 +69,7 @@ if (theme == 'dark') {
     document.body.classList.add('dark')
 }
 
-var joystick = initJoystick()
+// var joystick = initJoystick()
 </script>
 
 <div id="app">
@@ -232,7 +232,7 @@ var joystick = initJoystick()
                         <path d="m150,100l100,0l-50,-75z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.ip, 'u')"/>
                     </svg>
                 </div>
-                <div class="panel-body" v-if="node.data.ribot" v-show="resources.ribot.visible">
+                <!-- <div class="panel-body" v-if="node.data.ribot" v-show="resources.ribot.visible">
                     <div class="joystick"
                             @mouseup="joystick.stop"
                             @touchend="joystick.stop"
@@ -242,7 +242,7 @@ var joystick = initJoystick()
                             @touchstart.prevent="joystick.start(node.ip, $event)">
                         <div class="ball"></div>
                     </div>
-                </div>
+                </div> -->
                 <div class="panel-body" v-if="node.data.text" v-show="resources.text.visible">
                     <div class="h5 text-muted">Message</div>
                     <div class="h4">{{!node.data.text}}</div>
