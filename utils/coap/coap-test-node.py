@@ -48,8 +48,10 @@ logging.basicConfig(level=logging.DEBUG,
 internal_logger = logging.getLogger("tornado.internal")
 
 parser = argparse.ArgumentParser(description="Test CoAP client")
-parser.add_argument('--server', type=str, default="localhost",
-                    help="Server host.")
+parser.add_argument('--gateway-host', type=str, default="localhost",
+                    help="Gateway Coap server host.")
+parser.add_argument('--gateway-port', type=int, default=5683,
+                    help="Gateway Coap server port.")
 parser.add_argument('--imu', action="store_true",
                     help="Activate IMU endpoint.")
 parser.add_argument('--led', action="store_true",
@@ -61,6 +63,9 @@ parser.add_argument('--pressure', action="store_true",
 parser.add_argument('--robot', action="store_true",
                     help="Activate Robot endpoint.")
 args = parser.parse_args()
+
+
+COAP_GATEWAY = 'coap://{}:{}'.format(args.gateway_host, args.gateway_port)
 
 
 @gen.coroutine
@@ -86,7 +91,7 @@ def _coap_resource(url, method=GET, payload=b''):
 
 @gen.coroutine
 def _send_alive():
-    _, _ = yield _coap_resource('coap://{}/{}'.format(args.server, "alive"),
+    _, _ = yield _coap_resource('{}/{}'.format(COAP_GATEWAY, "alive"),
                                 method=POST,
                                 payload='Alive'.encode('utf-8'))
 
@@ -96,7 +101,7 @@ def _send_temperature():
     payload = ("temperature:{}°C"
                .format(random.randrange(20, 30, 1))
                .encode('utf-8'))
-    _, _ = yield _coap_resource('coap://{}/{}'.format(args.server, "server"),
+    _, _ = yield _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
                                 method=POST,
                                 payload=payload)
 
@@ -106,7 +111,7 @@ def _send_pressure():
     payload = ("pressure:{}hPa"
                .format(random.randrange(990, 1015, 1))
                .encode('utf-8'))
-    _, _ = yield _coap_resource('coap://{}/{}'.format(args.server, "server"),
+    _, _ = yield _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
                                 method=POST,
                                 payload=payload)
 
@@ -126,9 +131,35 @@ def _send_imu():
                                   random.randrange(-500, 500, 1),
                                   random.randrange(-500, 500, 1)]}]
                      )
-    _, _ = yield _coap_resource('coap://{}/{}'.format(args.server, "server"),
+    _, _ = yield _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
                                 method=POST,
                                 payload="imu:{}".format(imu).encode('utf-8'))
+
+
+class BoardResource(resource.Resource):
+    """Test node board ressource."""
+
+    def __init__(self):
+        super(BoardResource, self).__init__()
+        self.value = "test_board".encode('utf-8')
+
+    @asyncio.coroutine
+    def render_get(self, request):
+        response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
+        return response
+
+
+class NameResource(resource.Resource):
+    """Test node name ressource."""
+
+    def __init__(self):
+        super(BoardResource, self).__init__()
+        self.value = "Python Test Node".encode('utf-8')
+
+    @asyncio.coroutine
+    def render_get(self, request):
+        response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
+        return response
 
 
 class LedResource(resource.Resource):
@@ -153,27 +184,8 @@ class LedResource(resource.Resource):
         return aiocoap.Message(code=aiocoap.CHANGED, payload=payload)
 
 
-class BoardResource(resource.Resource):
-    """
-    Example resource which supports GET and PUT methods. It sends large
-    responses, which trigger blockwise transfer.
-    """
-
-    def __init__(self):
-        super(BoardResource, self).__init__()
-        self.value = "test_node".encode('utf-8')
-
-    @asyncio.coroutine
-    def render_get(self, request):
-        response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
-        return response
-
-
 class PressureResource(resource.Resource):
-    """
-    Example resource which supports GET and PUT methods. It sends large
-    responses, which trigger blockwise transfer.
-    """
+    """Test node pressure ressource."""
 
     def __init__(self):
         super(PressureResource, self).__init__()
@@ -186,10 +198,7 @@ class PressureResource(resource.Resource):
 
 
 class TemperatureResource(resource.Resource):
-    """
-    Example resource which supports GET and PUT methods. It sends large
-    responses, which trigger blockwise transfer.
-    """
+    """Test node temperature ressource."""
 
     def __init__(self):
         super(TemperatureResource, self).__init__()
@@ -202,10 +211,7 @@ class TemperatureResource(resource.Resource):
 
 
 class ImuResource(resource.Resource):
-    """
-    Example resource which supports GET and PUT methods. It sends large
-    responses, which trigger blockwise transfer.
-    """
+    """Test node IMU ressource."""
 
     def __init__(self):
         super(ImuResource, self).__init__()
@@ -223,7 +229,7 @@ class ImuResource(resource.Resource):
 
 
 class RobotResource(resource.Resource):
-    """Robot resource."""
+    """Test node Robot ressource."""
 
     def __init__(self):
         super(RobotResource, self).__init__()
@@ -259,6 +265,7 @@ if __name__ == '__main__':
         # Aiocoap server initialization
         root = resource.Site()
         root.add_resource(('board', ), BoardResource())
+        root.add_resource(('name', ), NameResource())
         if args.led:
             root.add_resource(('led', ), LedResource())
         if args.temperature:
