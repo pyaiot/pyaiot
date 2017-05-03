@@ -142,7 +142,7 @@ class BrokerApplication(web.Application):
             logger.debug("new client connected")
             self.clients.append(ws)
         elif message['type'] == "update":
-            logger.debug("new update from client websocket")
+            logger.debug("new message from client websocket")
 
         # Simply forward this message to satellite gateways
         logger.debug("Forwarding message {} to gateways".format(message))

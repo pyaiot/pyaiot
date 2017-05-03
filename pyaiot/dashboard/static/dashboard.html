@@ -419,7 +419,9 @@ function receive_message(msg) {
     switch (msg.type) {
         case 'new':
             console.log("New node", node)
-            vm.nodes.push(new Node(node))
+            if (index == -1) {
+                vm.nodes.push(new Node(node))
+            }
             break
         case 'out':
             if (index != -1) {
