@@ -166,7 +166,6 @@ class CoapController():
         for node, data in self.nodes.items():
             self._on_message_cb(Msg.new_node(node.address, 'coap'))
             for endpoint, value in data.items():
-                yield gen.sleep(0.1)
                 self._on_message_cb(
                     Msg.update_node(node.address, endpoint, value))
 
