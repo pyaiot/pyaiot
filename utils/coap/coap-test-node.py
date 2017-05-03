@@ -153,7 +153,7 @@ class NameResource(resource.Resource):
     """Test node name ressource."""
 
     def __init__(self):
-        super(BoardResource, self).__init__()
+        super(NameResource, self).__init__()
         self.value = "Python Test Node".encode('utf-8')
 
     @asyncio.coroutine

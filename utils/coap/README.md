@@ -1,17 +1,9 @@
-### Start coap server
+### Python test node
 
 ```python
-python coap-server.py
+python coap-test-node.py --help
 ```
 
-### Get CoAP resource
-
-Edit `coap-client-get.py` and change desired endpoint.
-
-```python
-python coap-client-get.py
-```
-
-### Put CoAP resource
+### Using Aiocoap
 
 See [aiocoap examples on doc website](http://aiocoap.readthedocs.org/en/latest/examples.html)
