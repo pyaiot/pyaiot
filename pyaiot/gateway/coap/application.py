@@ -58,6 +58,7 @@ class CoapGatewayApplication(web.Application):
         # Starts CoAP controller
         self._coap_controller = CoapController(
             on_message_cb=self.send_to_broker,
+            port=options.coap_port,
             max_time=options.max_time)
         PeriodicCallback(self._coap_controller.check_dead_nodes, 1000).start()
 

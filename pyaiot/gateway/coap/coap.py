@@ -42,6 +42,10 @@ from pyaiot.common.messaging import Message as Msg
 logger = logging.getLogger("pyaiot.gw.coap")
 
 
+COAP_PORT = 5683
+MAX_TIME = 120
+
+
 def _coap_endpoints(link_header):
     link = link_header.replace(' ', '')
     return link.split(',')
@@ -144,8 +148,9 @@ class CoapServerResource(resource.Resource):
 class CoapController():
     """CoAP controller with CoAP server inside."""
 
-    def __init__(self, on_message_cb, max_time=120):
+    def __init__(self, on_message_cb, port=COAP_PORT, max_time=MAX_TIME):
         self._on_message_cb = on_message_cb
+        self.port = port
         self.max_time = max_time
         self.nodes = {}
         self.setup()
@@ -157,7 +162,8 @@ class CoapController():
                                CoapServerResource(self))
         root_coap.add_resource(('alive', ),
                                CoapAliveResource(self))
-        asyncio.async(Context.create_server_context(root_coap))
+        asyncio.async(Context.create_server_context(root_coap,
+                                                    bind=('::', self.port)))
 
     @gen.coroutine
     def fetch_nodes_cache(self):
