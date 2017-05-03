@@ -168,6 +168,7 @@ class CoapController():
             for endpoint, value in data.items():
                 self._on_message_cb(
                     Msg.update_node(node.address, endpoint, value))
+            yield gen.sleep(1)
 
     @gen.coroutine
     def discover_node(self, node):
