@@ -36,7 +36,6 @@ from tornado import web, gen
 from tornado.websocket import websocket_connect
 
 from pyaiot.common.auth import auth_token
-from pyaiot.common.messaging import Message
 
 from .coap import CoapController
 
@@ -92,7 +91,7 @@ class CoapGatewayApplication(web.Application):
     def send_to_broker(self, message):
         """Send a message to the parent broker."""
         if self.broker is not None:
-            logger.debug("Forwarding message '{}' to parent broker."
+            logger.debug("Sending message '{}' to parent broker."
                          .format(message))
             self.broker.write_message(message)
 
@@ -103,11 +102,9 @@ class CoapGatewayApplication(web.Application):
         message = json.loads(message)
 
         if message['type'] == "new":
-            # Received when a new client connects
-            for node in self._coap_controller.nodes:
-                self.broker.write_message(
-                    Message.new_node(node.address, 'coap'))
-                self._coap_controller.discover_node(node)
+            # Received when a new client connects => fetching the nodes
+            # in controller's cache
+            self._coap_controller.fetch_nodes_cache()
         elif message['type'] == "update":
             # Received when a client update a node
             self._coap_controller.send_data_to_node(message['data'])

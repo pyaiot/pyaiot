@@ -82,6 +82,9 @@ class CoapNode(object):
     def __neq__(self, other):
         return self.address != other.address
 
+    def __hash__(self):
+        return hash(self.address)
+
     def __repr__(self):
         return("Node '{}', Last check: {}, Endpoints: {}"
                .format(self.address, self.check_time, self.endpoints))
@@ -96,6 +99,7 @@ class CoapAliveResource(resource.Resource):
 
     @asyncio.coroutine
     def render_post(self, request):
+        """Triggered when a node post an alive check to the gateway."""
         payload = request.payload.decode('utf8')
         try:
             remote = request.remote[0]
@@ -104,7 +108,7 @@ class CoapAliveResource(resource.Resource):
         logger.debug("CoAP Alive POST received from {}".format(remote))
 
         # Let the controller handle this message
-        self._controller.handle_alive_message(remote)
+        self._controller.handle_coap_alive(remote)
 
         # Kindly reply the message has been processed
         return Message(code=CHANGED,
@@ -120,6 +124,8 @@ class CoapServerResource(resource.Resource):
 
     @asyncio.coroutine
     def render_post(self, request):
+        """Triggered when a node post a new value to the gateway."""
+
         payload = request.payload.decode('utf-8')
         try:
             remote = request.remote[0]
@@ -128,10 +134,9 @@ class CoapServerResource(resource.Resource):
         logger.debug("CoAP POST received from {} with payload: {}"
                      .format(remote, payload))
 
-        if CoapNode(remote) in self._controller.nodes:
+        if CoapNode(remote) in self._controller.nodes.keys():
             path, data = payload.split(":", 1)
-            self._controller.handle_post_message(
-                Msg.update_node(remote, '/' + path, data))
+            self._controller.handle_coap_post(remote, '/' + path, data)
         return Message(code=CHANGED,
                        payload="Received '{}'".format(payload).encode('utf-8'))
 
@@ -142,7 +147,7 @@ class CoapController():
     def __init__(self, on_message_cb, max_time=120):
         self._on_message_cb = on_message_cb
         self.max_time = max_time
-        self.nodes = []
+        self.nodes = {}
         self.setup()
 
     def setup(self):
@@ -153,6 +158,16 @@ class CoapController():
         root_coap.add_resource(('alive', ),
                                CoapAliveResource(self))
         asyncio.async(Context.create_server_context(root_coap))
+
+    @gen.coroutine
+    def fetch_nodes_cache(self):
+        """Send cached nodes information."""
+        logger.debug("Fetching cached information of registered nodes.")
+        for node, data in self.nodes.items():
+            self._on_message_cb(Msg.new_node(node.address, 'coap'))
+            for endpoint, value in data.items():
+                self._on_message_cb(
+                    Msg.update_node(node.address, endpoint, value))
 
     @gen.coroutine
     def discover_node(self, node):
@@ -182,6 +197,7 @@ class CoapController():
                              .format(endpoint, node.address))
                 return
             messages[endpoint] = Msg.update_node(node.address, path, payload)
+            self.nodes[node].update({path: payload})
 
         logger.debug("Sending CoAP node resources: {}".format(endpoints))
         for endpoint in endpoints:
@@ -198,44 +214,48 @@ class CoapController():
         - 'path' corresponds to the CoAP resource on the node
         - 'payload' corresponds to the new payload for the CoAP resource.
         """
-        node = data['node']
+        address = data['node']
         path = data['path']
         payload = data['payload']
         logger.debug("Translating message ('{}') received to CoAP PUT "
                      "request".format(data))
 
-        if CoapNode(node) not in self.nodes:
+        if CoapNode(address) not in self.nodes.keys():
             return
 
         logger.debug("Updating CoAP node '{}' resource '{}'"
-                     .format(node, path))
+                     .format(address, path))
         code, payload = yield _coap_resource(
-            'coap://[{0}]{1}'.format(node, path),
+            'coap://[{0}]{1}'.format(address, path),
             method=PUT,
             payload=payload.encode('ascii'))
 
         return
 
-    def handle_post_message(self, message):
-        """Handle post message received from coap node."""
-        self._on_message_cb(message)
+    def handle_coap_post(self, address, endpoint, value):
+        """Handle CoAP post message sent from coap node."""
+        node = CoapNode(address)
+        if node in self.nodes and endpoint in self.nodes[node]:
+            self.nodes[node][endpoint] = value
+        self._on_message_cb(Msg.update_node(node.address, endpoint, value))
 
-    def handle_alive_message(self, node):
+    def handle_coap_alive(self, node):
         """Handle alive message received from coap node."""
         node = CoapNode(node)
         node.check_time = time.time()
         if node not in self.nodes:
-            self.nodes.append(node)
+            self.nodes.update({node: {}})
             self._on_message_cb(Msg.new_node(node.address, 'coap'))
             self.discover_node(node)
         else:
-            index = self.nodes.index(node)
-            self.nodes[index].check_time = time.time()
+            data = self.nodes.pop(node)
+            self.nodes.update({node: data})
 
     def check_dead_nodes(self):
         """Check and remove nodes that are not alive anymore."""
-        for node in self.nodes:
-            if int(time.time()) > node.check_time + self.max_time:
-                self.nodes.remove(node)
-                logger.debug("Removing inactive node {}".format(node.address))
-                self._on_message_cb(Msg.out_node(node.address))
+        to_remove = [node for node in self.nodes.keys()
+                     if int(time.time()) > node.check_time + self.max_time]
+        for node in to_remove:
+            self.nodes.pop(node)
+            logger.debug("Removing inactive node {}".format(node.address))
+            self._on_message_cb(Msg.out_node(node.address))
