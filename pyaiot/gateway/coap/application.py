@@ -105,7 +105,7 @@ class CoapGatewayApplication(web.Application):
         if message['type'] == "new":
             # Received when a new client connects => fetching the nodes
             # in controller's cache
-            self._coap_controller.fetch_nodes_cache()
+            self._coap_controller.fetch_nodes_cache(message['src'])
         elif message['type'] == "update":
             # Received when a client update a node
             self._coap_controller.send_data_to_node(message['data'])

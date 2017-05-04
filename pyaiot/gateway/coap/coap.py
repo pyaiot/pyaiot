@@ -166,14 +166,14 @@ class CoapController():
                                                     bind=('::', self.port)))
 
     @gen.coroutine
-    def fetch_nodes_cache(self):
+    def fetch_nodes_cache(self, source):
         """Send cached nodes information."""
         logger.debug("Fetching cached information of registered nodes.")
         for node, data in self.nodes.items():
-            self._on_message_cb(Msg.new_node(node.address, 'coap'))
+            self._on_message_cb(Msg.new_node(node.address, 'coap', dst=source))
             for endpoint, value in data.items():
                 self._on_message_cb(
-                    Msg.update_node(node.address, endpoint, value))
+                    Msg.update_node(node.address, endpoint, value, dst=source))
 
     @gen.coroutine
     def discover_node(self, node):
