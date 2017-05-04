@@ -149,6 +149,7 @@ class CoapController():
     """CoAP controller with CoAP server inside."""
 
     def __init__(self, on_message_cb, port=COAP_PORT, max_time=MAX_TIME):
+        # on_message_cb = send_to_broker method in gateway application
         self._on_message_cb = on_message_cb
         self.port = port
         self.max_time = max_time
