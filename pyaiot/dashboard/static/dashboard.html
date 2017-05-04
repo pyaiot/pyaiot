@@ -457,7 +457,7 @@ function receive_message(msg) {
             }
             break
         default:
-            console.log('Unknown command')
+            console.log('Unknown command', msg.type)
             break
     }
     Vue.nextTick(refresh_layout)
