@@ -37,8 +37,11 @@ from random import choice
 from cryptography.fernet import Fernet
 
 DEFAULT_KEY_FILENAME = "{}/.pyaiot/keys".format(os.path.expanduser("~"))
+CREDENTIALS_FILENAME = ("{}/.pyaiot/credentials"
+                        .format(os.path.expanduser("~")))
 
 Keys = namedtuple('Keys', ['private', 'secret'])
+Credentials = namedtuple('Credentials', ['username', 'password'])
 
 
 def generate_secret_key():
@@ -64,7 +67,7 @@ def write_keys_to_file(filename, keys):
 
 
 def check_key_file(filename=DEFAULT_KEY_FILENAME):
-    """Verify that filename exists and is correctly formatted."""
+    """Verify that key filename exists and is correctly formatted."""
     filename = os.path.expanduser(filename)
     if not os.path.isfile(filename):
         raise ValueError("Key file provided doesn't exists: '{}'"
@@ -79,6 +82,25 @@ def check_key_file(filename=DEFAULT_KEY_FILENAME):
 
     return Keys(private=config['keys']['private'],
                 secret=config['keys']['secret'])
+
+
+def check_credentials_file(filename=CREDENTIALS_FILENAME):
+    """Verify that credentials filename exists and is correctly formatted."""
+    filename = os.path.expanduser(filename)
+    if not os.path.isfile(filename):
+        raise ValueError("Credentials file doesn't exists: '{}'"
+                         .format(filename))
+
+    config = configparser.ConfigParser()
+    config.read(filename)
+
+    if (not config.has_option('credentials', 'username') or
+            not config.has_option('credentials', 'password')):
+        raise ValueError("Invalid credentials file provided: '{}'"
+                         .format(filename))
+
+    return Credentials(username=config['credentials']['username'],
+                       password=config['credentials']['password'])
 
 
 def verify_auth_token(token, keys):

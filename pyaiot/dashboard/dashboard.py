@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2017 IoT-Lab Team
 # Contributor(s) : see AUTHORS file
 #
@@ -29,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Web dashboard tornado application module."""
+"""Web dashboard tornado application module"""
 
 import os
 import sys
@@ -37,9 +35,13 @@ import os.path
 import tornado
 import logging
 import asyncio
+import tornado.platform.asyncio
 from tornado import web
 from tornado.options import define, options
-import tornado.platform.asyncio
+
+from pyaiot.common.auth import (check_credentials_file, CREDENTIALS_FILENAME,
+                                Credentials)
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '
@@ -56,7 +58,8 @@ class BaseHandler(web.RequestHandler):
             return None
         username = username.decode()
         password = password.decode()
-        if username != "demo" or password != "demo":
+        if (username != self.application.username or
+                password != self.application.password):
             return None
 
         return username
@@ -78,7 +81,8 @@ class LoginHandler(BaseHandler):
         username = self.get_argument("username")
         password = self.get_argument("password")
 
-        if username == 'demo' and password == 'demo':
+        if (username == self.application.username and
+                password == self.application.password):
             self.set_secure_cookie("username", username)
             self.set_secure_cookie("password", password)
             self.redirect(self.get_argument("next", "/"))
@@ -103,8 +107,10 @@ class DashboardHandler(BaseHandler):
 class IoTDashboardApplication(web.Application):
     """Tornado based web application providing an IoT Dashboard."""
 
-    def __init__(self):
+    def __init__(self, credentials):
         self._nodes = {}
+        self.username = credentials.username
+        self.password = credentials.password
         if options.debug:
             logger.setLevel(logging.DEBUG)
 
@@ -159,11 +165,16 @@ def run(arguments=[]):
         logger.setLevel(logging.DEBUG)
 
     try:
+        credentials = check_credentials_file(CREDENTIALS_FILENAME)
+    except:
+        credentials = Credentials(username="default", password="default")
+
+    try:
         ioloop = asyncio.get_event_loop()
         tornado.platform.asyncio.AsyncIOMainLoop().install()
 
         # Start tornado application
-        app = IoTDashboardApplication()
+        app = IoTDashboardApplication(credentials)
         app.listen(options.port)
         ioloop.run_forever()
     except KeyboardInterrupt:
