@@ -47,8 +47,49 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger("pyaiot.dashboard")
 
 
-class DashboardHandler(web.RequestHandler):
+class BaseHandler(web.RequestHandler):
+
+    def get_current_user(self):
+        username = self.get_secure_cookie("username")
+        password = self.get_secure_cookie("password")
+        if username is None or password is None:
+            return None
+        username = username.decode()
+        password = password.decode()
+        if username != "demo" or password != "demo":
+            return None
+
+        return username
+
+
+class LoginHandler(BaseHandler):
+
+    def _render(self, error=None):
+        self.render("login.html",
+                    error=error,
+                    favicon=options.favicon,
+                    logo_url=options.logo,
+                    title=options.title)
+
+    def get(self):
+        self._render()
+
+    def post(self):
+        username = self.get_argument("username")
+        password = self.get_argument("password")
+
+        if username == 'demo' and password == 'demo':
+            self.set_secure_cookie("username", username)
+            self.set_secure_cookie("password", password)
+            self.redirect(self.get_argument("next", "/"))
+        else:
+            self._render(error="Invalid username or password")
+
+
+class DashboardHandler(BaseHandler):
+
     @tornado.web.asynchronous
+    @tornado.web.authenticated
     def get(self, path=None):
         self.render("dashboard.html",
                     wsserver="{}:{}".format(options.broker_host,
@@ -69,13 +110,15 @@ class IoTDashboardApplication(web.Application):
 
         handlers = [
             (r'/', DashboardHandler),
+            (r"/login", LoginHandler)
         ]
-        settings = {'debug': True,
-                    "cookie_secret": "MY_COOKIE_ID",
-                    "xsrf_cookies": False,
-                    'static_path': options.static_path,
-                    'template_path': options.static_path
-                    }
+        settings = dict(debug=True,
+                        cookie_secret="MY_COOKIE_ID",
+                        xsrf_cookies=True,
+                        static_path=options.static_path,
+                        template_path=options.static_path,
+                        login_url="/login"
+                        )
         super().__init__(handlers, **settings)
         logger.info('Application started, listening on port {0}'
                     .format(options.port))
