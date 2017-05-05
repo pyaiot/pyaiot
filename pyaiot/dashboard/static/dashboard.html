@@ -69,6 +69,8 @@ if (theme == 'dark') {
     document.body.classList.add('dark')
 }
 
+var token = "{{ mtoken }}"
+
 var joystick = initJoystick()
 </script>
 
@@ -385,7 +387,7 @@ var ws = new WebSocket('ws://{{ wsserver }}/ws')
 
 ws.onopen = function() {
     console.log("WebSocket is ready")
-    sendData("new", "client")
+    ws.send(token)
 }
 ws.onmessage = function(event) {
     let msg = JSON.parse(event.data)

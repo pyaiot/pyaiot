@@ -42,7 +42,7 @@ logger = logging.getLogger("pyaiot.broker")
 
 class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
 
-    authentified = False
+    authenticated = False
 
     def check_origin(self, origin):
         """Allow connections from anywhere."""
@@ -56,16 +56,16 @@ class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
 
         # Wait 2 seconds to get the gateway authentication token.
         yield gen.sleep(2)
-        if not self.authentified:
+        if not self.authenticated:
             self.close()
 
     @gen.coroutine
     def on_message(self, raw):
         """Triggered when a message is received from the broker child."""
-        if not self.authentified:
+        if not self.authenticated:
             if verify_auth_token(raw, self.application.keys):
                 logger.info("Gateway websocket authentication verified")
-                self.authentified = True
+                self.authenticated = True
                 self.application.gateways.update({self: []})
             else:
                 logger.info("Gateway websocket authentication failed, "
@@ -85,24 +85,37 @@ class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
 class BrokerWebsocketClientHandler(websocket.WebSocketHandler):
 
     uid = None
+    authenticated = False
 
     def check_origin(self, origin):
         """Allow connections from anywhere."""
         return True
 
+    @gen.coroutine
     def open(self):
         """Discover nodes on each opened connection."""
         self.uid = str(uuid.uuid4())
         self.set_nodelay(True)
         logger.info("New client connection opened '{}'".format(self.uid))
 
+        # Wait 2 seconds to get the gateway authentication token.
+        yield gen.sleep(2)
+        if not self.authenticated:
+            self.close()
+
     @gen.coroutine
     def on_message(self, raw):
         """Triggered when a message is received from the web client."""
-        message = Message.check_ws_message(self, raw)
-        if message is not None:
-            message.update({'src': self.uid})
-            self.application.on_client_message(self, message)
+        if not self.authenticated:
+            if verify_auth_token(raw, self.application.keys, ttl=2):
+                logger.info("Clien websocket authentication verified")
+                self.authenticated = True
+                self.application.send_to_gateways(self, Message.new_client())
+            else:
+                logger.info("Client websocket authentication failed, closing.")
+                self.close()
+        else:
+            self.application.send_to_gateways(self, raw)
 
     def on_close(self):
         """Remove websocket from internal list."""
@@ -146,10 +159,16 @@ class BrokerApplication(web.Application):
                      .format(message, uid))
         self.clients[uid].write_message(message)
 
-    def on_client_message(self, ws, message):
+    def send_to_gateways(self, ws, raw):
         """Handle a message received from a client."""
         logger.debug("Handling message '{}' received from client websocket."
-                     .format(message))
+                     .format(raw))
+        message = Message.check_ws_message(ws.uid, raw)
+        if message is not None:
+            message.update({'src': ws.uid})
+        else:
+            return
+
         if message['type'] == "new":
             logger.info("New client connected: {}".format(ws.uid))
             if ws.uid not in self.clients.keys():
