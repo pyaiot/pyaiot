@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""iot-kit package installation module."""
+"""pyaiot package installation module."""
 
 import os
 from os.path import join as pjoin
