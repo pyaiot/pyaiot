@@ -181,6 +181,10 @@ var joystick = initJoystick()
                                         <th>OS</th>
                                         <td>{{! node.data.os }}</td>
                                     </tr>
+                                    <tr v-if="node.data.version">
+                                        <th>Version</th>
+                                        <td>{{! node.data.version }}</td>
+                                    </tr>
                                     <tr v-if="node.data.board">
                                         <th>Board</th>
                                         <td>{{! node.data.board }}</td>
@@ -246,6 +250,10 @@ var joystick = initJoystick()
                 <div class="panel-body" v-if="node.data.text" v-show="resources.text.visible">
                     <div class="h5 text-muted">Message</div>
                     <div class="h4">{{!node.data.text}}</div>
+                </div>
+                <div class="panel-body" v-if="node.data.version" v-show="resources.version.visible">
+                    <div class="h5 text-muted">Version</div>
+                    <div class="h4">{{!node.data.version}}</div>
                 </div>
                 <div class="panel-body" v-if="node.data.twitter">
                     <div class="h1">{{!node.data.twitter}}</div>
@@ -351,6 +359,7 @@ var data = {
         webcam: Resource("Webcam"),
         buggybot: Resource("BuggyBot"),
         ribot: Resource("RiBot"),
+        version: Resource("Version"),
     },
     nodes: [],
     showMap: initMap == "true",
