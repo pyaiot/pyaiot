@@ -62,6 +62,8 @@ parser.add_argument('--pressure', action="store_true",
                     help="Activate Pressure endpoint.")
 parser.add_argument('--robot', action="store_true",
                     help="Activate Robot endpoint.")
+parser.add_argument('--version', action="store_true",
+                    help="Activate Version endpoint.")
 args = parser.parse_args()
 
 
@@ -136,6 +138,18 @@ def _send_imu():
                                 payload="imu:{}".format(imu).encode('utf-8'))
 
 
+@gen.coroutine
+def _send_version():
+    payload = ("version:{}.{}.{}"
+               .format(random.randrange(1, 9, 1),
+                       random.randrange(1, 9, 1),
+                       random.randrange(1, 9, 1))
+               .encode('utf-8'))
+    _, _ = yield _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                                method=POST,
+                                payload=payload)
+
+
 class BoardResource(resource.Resource):
     """Test node board ressource."""
 
@@ -155,6 +169,19 @@ class NameResource(resource.Resource):
     def __init__(self):
         super(NameResource, self).__init__()
         self.value = "Python Test Node".encode('utf-8')
+
+    @asyncio.coroutine
+    def render_get(self, request):
+        response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
+        return response
+
+
+class VersionResource(resource.Resource):
+    """Test node firmware version ressource."""
+
+    def __init__(self):
+        super(VersionResource, self).__init__()
+        self.value = "1.0.0".encode('utf-8')
 
     @asyncio.coroutine
     def render_get(self, request):
@@ -261,6 +288,8 @@ if __name__ == '__main__':
             PeriodicCallback(_send_pressure, 5000).start()
         if args.imu:
             PeriodicCallback(_send_imu, 200).start()
+        if args.version:
+            PeriodicCallback(_send_version, 2000).start()
 
         # Aiocoap server initialization
         root = resource.Site()
@@ -276,6 +305,8 @@ if __name__ == '__main__':
             root.add_resource(('imu', ), ImuResource())
         if args.robot:
             root.add_resource(('robot', ), RobotResource())
+        if args.version:
+            root.add_resource(('version', ), VersionResource())
         root.add_resource(('.well-known', 'core'),
                           resource.WKCResource(
                               root.get_resources_as_linkheader))
