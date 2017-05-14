@@ -12,27 +12,18 @@ You need an IoT-LAB account to run this script.
 
 #### Requirements
 
-1. Install IoT-LAB cli-tools and ssh-cli-tools packages (you have to be part of
-   the IoT-LAB organisation to access the later one, which is private for the
-   moment):
+1. Install the IoT-LAB ssh-cli-tools package:
 <pre>
-$ git clone git@github.com:iot-lab/ssh-cli-tools.git
-$ cd ssh-cli-tools
-$ pip install -e . --user
-$ cd ..
-$ git clone git@github.com:iot-lab/cli-tools.git
-$ cd cli-tools
-$ pip install -e . --user
-$ cd ..
+$ sudo pip install iotlabsshcli
 </pre>
 2. Play at least once the [RIOT border router tutorial on IoT-LAB
    portal](https://www.iot-lab.info/tutorials/riot-public-ipv66lowpan-network-with-a8-m3-nodes/)
    Important: use the same directories on the Saclay site ssh frontend
 3. Clone this repository:
 <pre>
-$ git clone https://github.com/iot-lab/iot-kit.git
+$ git clone https://github.com/pyaiot/payiot.git
 </pre>
-4. Add the following lines in your `~/.ssh/config` file (replace <login> with
+4. Add the following lines to your `~/.ssh/config` file (replace <login> with
    your IoT-Lab login:
 <pre>
 Host iotlab
