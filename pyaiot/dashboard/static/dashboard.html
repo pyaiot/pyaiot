@@ -627,7 +627,7 @@ function setup_imu_charts(node) {
     var gyr_canva = document.getElementById('imu_gyr' + node)
     gyr_canva.setAttribute('width', gyr_canva.clientWidth)
     gyr_canva.setAttribute('height', gyr_canva.clientHeight)
-    if (acc_canva) {
+    if (gyr_canva) {
         gyr_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'transparent',
                                                        strokeStyle:'#eee',
                                                        borderVisible:false,
