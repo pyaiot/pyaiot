@@ -661,7 +661,7 @@ function update_imu_charts(msg) {
     var currentTime = new Date().getTime()
     var data = JSON.parse(msg.data)
     var acc = data[0].values
-    var gyr = data[2].values
+    var gyr = data[1].values
     var accNorm = Math.sqrt(Math.pow(acc[0], 2) +
                             Math.pow(acc[1], 2) +
                             Math.pow(acc[2], 2))
