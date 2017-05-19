@@ -31,7 +31,7 @@
 
 import os
 from os.path import join as pjoin
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 PACKAGE = 'pyaiot'
@@ -65,7 +65,7 @@ if __name__ == '__main__':
           license='BSD',
           keywords="iot demonstration web coap mqtt",
           platforms='any',
-          packages=['pyaiot'],
+          packages=find_packages(),
           scripts=[pjoin('bin', 'aiot-broker'),
                    pjoin('bin', 'aiot-coap-gateway'),
                    pjoin('bin', 'aiot-ws-gateway'),
