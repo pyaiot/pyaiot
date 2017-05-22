@@ -92,12 +92,11 @@ class CoapGatewayApplication(web.Application):
     def send_to_broker(self, message):
         """Send a message to the parent broker."""
         if self.broker is not None:
-            logger.debug("Sending message '{}' to parent broker."
-                         .format(message))
+            logger.debug("Sending message '{}' to broker.".format(message))
             self.broker.write_message(message)
 
-    def on_broker_message(self, message, callback=None):
-        """Handle a message received from the parent broker websocket."""
+    def on_broker_message(self, message):
+        """Handle a message received from the broker websocket."""
         logger.debug("Handling message '{}' received from broker."
                      .format(message))
         message = json.loads(message)
