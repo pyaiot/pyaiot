@@ -1,4 +1,4 @@
-"""One shot Websocket test client."""
+"""One shot Websocket test client"""
 
 import sys
 import argparse
@@ -26,7 +26,6 @@ def main(args):
         print("Cannot connect to ws://{}:{}".format(args.host, args.port))
         return
 
-    ws.send(json.dumps({'type': 'new', 'data': 'node'}))
     init_node(ws)
     while True:
         try:
@@ -38,6 +37,14 @@ def main(args):
             print(msg)
             if msg == Message.discover_node():
                 init_node(ws)
+            else:
+                msg = json.loads(msg)
+                if msg['payload'] == '1':
+                    ws.send(json.dumps({'type': 'update',
+                                        'data': {'led': '1'}}))
+                else:
+                    ws.send(json.dumps({'type': 'update',
+                                        'data': {'led': '0'}}))
 
 
 if __name__ == '__main__':

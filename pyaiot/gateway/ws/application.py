@@ -50,6 +50,10 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         """Discover nodes on each opened connection."""
         self.set_nodelay(True)
         logger.debug("New node websocket opened")
+        self.application.nodes.update(
+            {self: {'uid': str(uuid.uuid4()), 'data': {}}})
+        self.application.send_to_broker(
+            Message.new_node(self.application.nodes[self]['uid'], 'websocket'))
 
     @gen.coroutine
     def on_message(self, raw):
@@ -111,47 +115,59 @@ class WebsocketGatewayApplication(web.Application):
             yield gen.sleep(3)
 
     def send_to_broker(self, message):
-        """Send a message to the parent broker."""
+        """Send a message to the broker."""
         if self.broker is not None:
-            logger.debug("Forwarding message '{}' to parent broker."
-                         .format(message))
+            logger.debug("Sending message '{}' to broker.".format(message))
             self.broker.write_message(message)
 
     def on_node_message(self, ws, message):
         """Handle a message received from a node websocket."""
-        if message['type'] == "new":
-            logger.debug("new node from websocket")
-            self.nodes.update({ws: str(uuid.uuid4())})
-            self.send_to_broker(
-                Message.new_node(self.nodes[ws], 'websocket'))
-        elif message['type'] == "update":
-            if ws not in self.nodes:
-                logger.debug("Node {} not in registered node".format(ws))
-                return
-            logger.debug("new update from node websocket")
+        if message['type'] == "update":
+            logger.debug("New update message received from node websocket")
             for key, value in message['data'].items():
-                self.send_to_broker(
-                    Message.update_node(self.nodes[ws], '/' + key, value))
+                if key in self.nodes[ws]['data']:
+                    self.nodes[ws]['data'][key] = value
+                else:
+                    self.nodes[ws]['data'].update({key: value})
+                self.send_to_broker(Message.update_node(
+                    self.nodes[ws]['uid'], '/' + key, value))
+        else:
+            logger.debug("Invalid message received from node websocket")
 
     def on_broker_message(self, message):
-        """Handle a message received from the parent broker websocket."""
+        """Handle a message received from the broker websocket."""
         logger.debug("Handling message '{}' received from broker."
                      .format(message))
         message = json.loads(message)
 
         if message['type'] == "new":
-            for node_ws, uid in self.nodes.items():
+            # Received when a new client connects => fetching the nodes
+            # in controller's cache
+            for ws, value in self.nodes.items():
                 self.broker.write_message(
-                    Message.new_node(uid, 'websocket'))
-                node_ws.write_message(Message.discover_node())
+                    Message.new_node(value['uid'], 'websocket'))
+                ws.write_message(Message.discover_node())
         elif message['type'] == "update":
-            node = message['data']['node']
-            for node_ws, uid in self.nodes.items():
-                if uid == node:
-                    node_ws.write_message(message['data'])
+            # Received when a client update a node
+            uid = message['data']['node']
+            for ws, value in self.nodes.items():
+                if value['uid'] == uid:
+                    ws.write_message(message['data'])
+
+    @gen.coroutine
+    def fetch_nodes_cache(self, source):
+        """Send cached nodes information."""
+        logger.debug("Fetching cached information of registered nodes.")
+        for ws, value in self.nodes.items():
+            self.send_to_broker(Message.new_node(
+                value['uid'], 'websocket', dst=source))
+            for endpoint, value in value['data'].items():
+                self.send_to_broker(
+                    Message.update_node(
+                        value['uid'], endpoint, value, dst=source))
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""
         if ws in self.nodes:
-            self.send_to_broker(Message.out_node(self.nodes[ws]))
+            self.send_to_broker(Message.out_node(self.nodes[ws]['uid']))
             self.nodes.pop(ws)
