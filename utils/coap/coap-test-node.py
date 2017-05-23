@@ -70,9 +70,9 @@ args = parser.parse_args()
 COAP_GATEWAY = 'coap://{}:{}'.format(args.gateway_host, args.gateway_port)
 
 
-@gen.coroutine
+@asyncio.coroutine
 def _coap_resource(url, method=GET, payload=b''):
-    protocol = yield from Context.create_client_context()
+    protocol = yield from Context.create_client_context(loop=None)
     request = Message(code=method, payload=payload)
     request.set_request_uri(url)
     try:
@@ -93,9 +93,9 @@ def _coap_resource(url, method=GET, payload=b''):
 
 @gen.coroutine
 def _send_alive():
-    _, _ = yield _coap_resource('{}/{}'.format(COAP_GATEWAY, "alive"),
-                                method=POST,
-                                payload='Alive'.encode('utf-8'))
+    _, _ = yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "alive"),
+                                     method=POST,
+                                     payload='Alive'.encode('utf-8'))
 
 
 @gen.coroutine
@@ -103,9 +103,9 @@ def _send_temperature():
     payload = ("temperature:{}°C"
                .format(random.randrange(20, 30, 1))
                .encode('utf-8'))
-    _, _ = yield _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
-                                method=POST,
-                                payload=payload)
+    _, _ = yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                                     method=POST,
+                                     payload=payload)
 
 
 @gen.coroutine
@@ -113,9 +113,9 @@ def _send_pressure():
     payload = ("pressure:{}hPa"
                .format(random.randrange(990, 1015, 1))
                .encode('utf-8'))
-    _, _ = yield _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
-                                method=POST,
-                                payload=payload)
+    _, _ = yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                                     method=POST,
+                                     payload=payload)
 
 
 @gen.coroutine
@@ -133,9 +133,10 @@ def _send_imu():
                                   random.randrange(-500, 500, 1),
                                   random.randrange(-500, 500, 1)]}]
                      )
-    _, _ = yield _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
-                                method=POST,
-                                payload="imu:{}".format(imu).encode('utf-8'))
+    _, _ = yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                                     method=POST,
+                                     payload="imu:{}"
+                                     .format(imu).encode('utf-8'))
 
 
 @gen.coroutine
@@ -145,9 +146,9 @@ def _send_version():
                        random.randrange(1, 9, 1),
                        random.randrange(1, 9, 1))
                .encode('utf-8'))
-    _, _ = yield _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
-                                method=POST,
-                                payload=payload)
+    _, _ = yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                                     method=POST,
+                                     payload=payload)
 
 
 class BoardResource(resource.Resource):
@@ -206,8 +207,13 @@ class LedResource(resource.Resource):
 
     @asyncio.coroutine
     def render_put(self, request):
-        self.value = request.payload
+        self.value = request.payload.decode()
         payload = ("Updated").encode('utf-8')
+
+        yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                                  method=POST, payload="led:{}"
+                                  .format(self.value).encode())
+
         return aiocoap.Message(code=aiocoap.CHANGED, payload=payload)
 
 

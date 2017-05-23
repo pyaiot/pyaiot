@@ -174,8 +174,8 @@ class BrokerApplication(web.Application):
                      .format(message))
         if message['type'] == "new":
             # Received when notifying clients of a new node available
-            if not message['node'] in self.gateways[ws]:
-                self.gateways[ws].append(message['node'])
+            if not message['uid'] in self.gateways[ws]:
+                self.gateways[ws].append(message['uid'])
 
             if message['dst'] == "all":
                 # Occurs when an unknown new node arrived
@@ -184,12 +184,12 @@ class BrokerApplication(web.Application):
                 # Occurs when a single client has just connected
                 self.send_to_client(message['dst'], json.dumps(message))
         elif (message['type'] == "out" and
-                message['node'] in self.gateways[ws]):
+                message['uid'] in self.gateways[ws]):
             # Node disparition are always broadcasted to clients
-            self.gateways[ws].remove(message['node'])
+            self.gateways[ws].remove(message['uid'])
             self.broadcast(json.dumps(message))
         elif (message['type'] == "update" and
-                message['node'] in self.gateways[ws]):
+                message['uid'] in self.gateways[ws]):
             if message['dst'] == "all":
                 # Occurs when a new update was pushed by a node:
                 # require broadcast
@@ -206,6 +206,6 @@ class BrokerApplication(web.Application):
             self.clients.pop(ws)
         elif ws in self.gateways.keys():
             # Notify clients that the nodes behind the closed gateway are out.
-            for node in self.gateways[ws]:
-                self.broadcast(Message.out_node(node))
+            for node_uid in self.gateways[ws]:
+                self.broadcast(Message.out_node(node_uid))
             self.gateways.pop(ws)

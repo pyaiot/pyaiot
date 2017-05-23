@@ -9,9 +9,9 @@ function initJoystick() {
         interval: 250, // in milliseconds
     }
 
-    joystick.start = function(node, event) {
+    joystick.start = function(node_uid, event) {
         joystick.active = true;
-        joystick.active_node = node;
+        joystick.active_node = node_uid;
         joystick.move(event);
         joystick.send();
         joystick.timer = window.setInterval(joystick.send, joystick.interval);
@@ -19,8 +19,14 @@ function initJoystick() {
 
     joystick.send = function() {
         var payload = `${joystick.dx}:${joystick.dy}:${joystick.dx+joystick.dy}\n`;
-        sendData("update",
-                 {"node": joystick.active_node, path: "/ribot", "payload": payload});
+        sendData({
+            "type": "update",
+            "data": {
+                "uid": joystick.active_node,
+                "path": "/ribot",
+                "payload": payload
+            }
+        });
     }
 
     joystick.move = function(event) {

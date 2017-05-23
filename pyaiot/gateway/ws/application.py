@@ -149,7 +149,7 @@ class WebsocketGatewayApplication(web.Application):
                 ws.write_message(Message.discover_node())
         elif message['type'] == "update":
             # Received when a client update a node
-            uid = message['data']['node']
+            uid = message['data']['uid']
             for ws, value in self.nodes.items():
                 if value['uid'] == uid:
                     ws.write_message(message['data'])

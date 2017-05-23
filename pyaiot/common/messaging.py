@@ -39,20 +39,20 @@ class Message():
     """Utility class for generating and parsing service messages."""
 
     @staticmethod
-    def new_node(node, origin, dst="all"):
+    def new_node(uid, origin, dst="all"):
         """Generate a text message indicating a new node."""
-        return json.dumps({'type': 'new', 'node': node,
+        return json.dumps({'type': 'new', 'uid': uid,
                            'origin': origin, 'dst': dst})
 
     @staticmethod
-    def out_node(node):
+    def out_node(uid):
         """Generate a text message indicating a node to remove."""
-        return json.dumps({'type': 'out', 'node': node})
+        return json.dumps({'type': 'out', 'uid': uid})
 
     @staticmethod
-    def update_node(node, endpoint, data, dst="all"):
+    def update_node(uid, endpoint, data, dst="all"):
         """Generate a text message indicating a node update."""
-        return json.dumps({'type': 'update', 'node': node,
+        return json.dumps({'type': 'update', 'uid': uid,
                            'endpoint': endpoint, 'data': data, 'dst': dst})
 
     @staticmethod

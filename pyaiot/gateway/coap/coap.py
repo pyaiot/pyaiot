@@ -30,6 +30,7 @@
 """CoAP management module."""
 
 import time
+import uuid
 import asyncio
 import logging
 import aiocoap.resource as resource
@@ -170,14 +171,14 @@ class CoapController():
     def fetch_nodes_cache(self, source):
         """Send cached nodes information."""
         logger.debug("Fetching cached information of registered nodes.")
-        for node, data in self.nodes.items():
-            self._on_message_cb(Msg.new_node(node.address, 'coap', dst=source))
-            for endpoint, value in data.items():
+        for _, value in self.nodes.items():
+            self._on_message_cb(Msg.new_node(value['uid'], 'coap', dst=source))
+            for endpoint, data in value['data'].items():
                 self._on_message_cb(
-                    Msg.update_node(node.address, endpoint, value, dst=source))
+                    Msg.update_node(value['uid'], endpoint, data, dst=source))
 
     @gen.coroutine
-    def discover_node(self, node):
+    def discover_node(self, node, uid):
         """Discover resources available on a node."""
         coap_node_url = 'coap://[{}]'.format(node.address)
         if len(node.endpoints) == 0:
@@ -187,7 +188,6 @@ class CoapController():
                                                  method=GET)
             node.endpoints = _coap_endpoints(payload)
 
-        messages = {}
         endpoints = [endpoint
                      for endpoint in node.endpoints
                      if 'well-known/core' not in endpoint]
@@ -203,12 +203,11 @@ class CoapController():
                 logger.debug("Cannot discover ressource {} on node {}"
                              .format(endpoint, node.address))
                 return
-            messages[endpoint] = Msg.update_node(node.address, path, payload)
-            self.nodes[node].update({path: payload})
+            self._on_message_cb(Msg.update_node(uid, path, payload))
+            self.nodes[node]['data'].update({path: payload})
 
-        logger.debug("Sending CoAP node resources: {}".format(endpoints))
-        for endpoint in endpoints:
-            self._on_message_cb(messages[endpoint])
+        logger.debug("CoAP node resources '{}' sent to broker"
+                     .format(endpoints))
 
     @gen.coroutine
     def send_data_to_node(self, data):
@@ -221,39 +220,43 @@ class CoapController():
         - 'path' corresponds to the CoAP resource on the node
         - 'payload' corresponds to the new payload for the CoAP resource.
         """
-        address = data['node']
+        uid = data['uid']
         path = data['path']
         payload = data['payload']
         logger.debug("Translating message ('{}') received to CoAP PUT "
                      "request".format(data))
 
-        if CoapNode(address) not in self.nodes.keys():
-            return
-
-        logger.debug("Updating CoAP node '{}' resource '{}'"
-                     .format(address, path))
-        code, payload = yield _coap_resource(
-            'coap://[{0}]{1}'.format(address, path),
-            method=PUT,
-            payload=payload.encode('ascii'))
+        for node, value in self.nodes.items():
+            if self.nodes[node]['uid'] == uid:
+                address = self.nodes[node]['data']['ip']
+                logger.debug("Updating CoAP node '{}' resource '{}'"
+                             .format(self.nodes[node]['data']['ip'], path))
+                code, payload = yield _coap_resource(
+                    'coap://[{0}]{1}'.format(address, path),
+                    method=PUT,
+                    payload=payload.encode('ascii'))
 
         return
 
     def handle_coap_post(self, address, endpoint, value):
         """Handle CoAP post message sent from coap node."""
         node = CoapNode(address)
-        if node in self.nodes and endpoint in self.nodes[node]:
-            self.nodes[node][endpoint] = value
-        self._on_message_cb(Msg.update_node(node.address, endpoint, value))
+        if node in self.nodes and endpoint in self.nodes[node]['data']:
+            self.nodes[node]['data'][endpoint] = value
+        self._on_message_cb(Msg.update_node(
+            self.nodes[node]['uid'], endpoint, value))
 
-    def handle_coap_alive(self, node):
+    def handle_coap_alive(self, address):
         """Handle alive message received from coap node."""
-        node = CoapNode(node)
+        node = CoapNode(address)
         node.check_time = time.time()
         if node not in self.nodes:
-            self.nodes.update({node: {}})
-            self._on_message_cb(Msg.new_node(node.address, 'coap'))
-            self.discover_node(node)
+            node_uid = str(uuid.uuid4())
+            self.nodes.update({node: {'uid': node_uid,
+                                      'data': {'ip': address}}})
+            self._on_message_cb(Msg.new_node(node_uid, 'coap'))
+            self._on_message_cb(Msg.update_node(node_uid, "/ip", address))
+            self.discover_node(node, node_uid)
         else:
             data = self.nodes.pop(node)
             self.nodes.update({node: data})
@@ -263,6 +266,7 @@ class CoapController():
         to_remove = [node for node in self.nodes.keys()
                      if int(time.time()) > node.check_time + self.max_time]
         for node in to_remove:
+            uid = self.nodes[node]['uid']
             self.nodes.pop(node)
-            logger.debug("Removing inactive node {}".format(node.address))
-            self._on_message_cb(Msg.out_node(node.address))
+            logger.debug("Removing inactive node {}".format(uid))
+            self._on_message_cb(Msg.out_node(uid))

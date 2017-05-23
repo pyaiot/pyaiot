@@ -193,9 +193,9 @@ var joystick = initJoystick()
                                         <th>MCU</th>
                                         <td>{{! node.data.mcu }}</td>
                                     </tr>
-                                    <tr>
+                                    <tr v-if="node.data.ip">
                                         <th>IP</th>
-                                        <td>{{! node.ip }}</td>
+                                        <td>{{! node.data.ip }}</td>
                                     </tr>
                                 </table>
                             </div>
@@ -209,17 +209,17 @@ var joystick = initJoystick()
                 <div class="panel-body has-chart" v-if="node.data.temperature" v-show="resources.temperature.visible">
                     <div class="h5 text-muted">Temperature</div>
                     <div class="h1">{{!node.data.temperature}}</div>
-                    <canvas class="chart" :id="'temp_chart'+node.ip"></canvas>
+                    <canvas class="chart" :id="'temp_chart'+node.uid"></canvas>
                 </div>
                 <div class="panel-body has-chart" v-if="node.data.pressure" v-show="resources.pressure.visible">
                     <div class="h5 text-muted">Pressure</div>
                     <div class="h1">{{!node.data.pressure}}</div>
-                    <canvas class="chart" :id="'pres_chart'+node.ip"></canvas>
+                    <canvas class="chart" :id="'pres_chart'+node.uid"></canvas>
                 </div>
                 <div class="panel-body has-chart" v-if="node.data.humidity" v-show="resources.humidity.visible">
                     <div class="h5 text-muted">Relative humidity</div>
                     <div class="h1">{{!node.data.humidity}}</div>
-                    <canvas class="chart" :id="'hum_chart'+node.ip"></canvas>
+                    <canvas class="chart" :id="'hum_chart'+node.uid"></canvas>
                 </div>
                 <div class="panel-body has-chart" v-if="node.data.illuminance" v-show="resources.illuminance.visible">
                     <div class="h5 text-muted">Illuminance</div>
@@ -230,10 +230,10 @@ var joystick = initJoystick()
                     <!-- <div class="h1">{{!node.data.robot}}</div> -->
                     <svg class="pad" width="370" viewBox="0 0 400 270" xmlns="http://www.w3.org/2000/svg">
                         <text text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" y="211" x="200" fill="firebrick">STOP</text>
-                        <rect height="100" width="100" y="150" x="150" stroke="firebrick" fill="#f00" @click="setRobotDirection(node.ip, 's')"/>
-                        <path d="m100,150l0,100l-75,-50z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.ip, 'l')"/>
-                        <path d="m300,150l0,100l75,-50z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.ip, 'r')"/>
-                        <path d="m150,100l100,0l-50,-75z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.ip, 'u')"/>
+                        <rect height="100" width="100" y="150" x="150" stroke="firebrick" fill="#f00" @click="setRobotDirection(node.uid, 's')"/>
+                        <path d="m100,150l0,100l-75,-50z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.uid, 'l')"/>
+                        <path d="m300,150l0,100l75,-50z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.uid, 'r')"/>
+                        <path d="m150,100l100,0l-50,-75z" stroke="rgb(0,150,136)" fill="rgb(0,150,136)" @click="setRobotDirection(node.uid, 'u')"/>
                     </svg>
                 </div>
                 <div class="panel-body" v-if="node.data.ribot" v-show="resources.ribot.visible">
@@ -242,8 +242,8 @@ var joystick = initJoystick()
                             @touchend="joystick.stop"
                             @mousemove.prevent="joystick.move"
                             @touchmove.prevent="joystick.move"
-                            @mousedown.prevent="joystick.start(node.ip, $event)"
-                            @touchstart.prevent="joystick.start(node.ip, $event)">
+                            @mousedown.prevent="joystick.start(node.uid, $event)"
+                            @touchstart.prevent="joystick.start(node.uid, $event)">
                         <div class="ball"></div>
                     </div>
                 </div>
@@ -263,11 +263,11 @@ var joystick = initJoystick()
                 </div>
                 <div class="panel-body has-chart" v-if="node.data.imu" v-show="resources.imu.visible">
                     <div class="h5 text-muted">Accelerometer</div>
-                    <canvas class="chart" :id="'imu_acc'+node.ip"></canvas>
+                    <canvas class="chart" :id="'imu_acc'+node.uid"></canvas>
                 </div>
                 <div class="panel-body has-chart" v-if="node.data.imu" v-show="resources.imu.visible">
                     <div class="h5 text-muted">Gyroscope</div>
-                    <canvas class="chart" :id="'imu_gyr'+node.ip"></canvas>
+                    <canvas class="chart" :id="'imu_gyr'+node.uid"></canvas>
                 </div>
                 <div class="panel-body" v-if="node.data.imu" v-show="resources.imu.visible">
                     <div id="teapot"></div>
@@ -280,7 +280,7 @@ var joystick = initJoystick()
                 <div class="panel-body" v-if="node.data.led" v-show="resources.led.visible">
                     <div class="togglebutton">
                         <label>
-                            <input class="led-btn" type="checkbox" :data-index="node.ip" :checked="node.data.led === '1'">Toggle led
+                            <input class="led-btn" type="checkbox" :data-index="node.uid" :checked="node.data.led === '1'">Toggle led
                         </label>
                     </div>
                 </div>
@@ -408,8 +408,8 @@ ws.onerror = function(ev){
     console.log("WebSocket error", ev)
 }
 
-function Node(ip, data={}) {
-    this.ip = ip
+function Node(uid, data={}) {
+    this.uid = uid
     this.data = data
     this.visible = true
 
@@ -423,22 +423,22 @@ function Node(ip, data={}) {
 }
 
 function receive_message(msg) {
-    let node = msg.node
-    let index = vm.nodes.map(e => e.ip).indexOf(node)
+    let node_uid = msg.uid
+    let index = vm.nodes.map(e => e.uid).indexOf(node_uid)
     switch (msg.type) {
         case 'new':
-            console.log("New node", node)
+            console.log("New node", node_uid)
             if (index == -1) {
-                vm.nodes.push(new Node(node))
+                vm.nodes.push(new Node(node_uid))
             }
             break
         case 'out':
             if (index != -1) {
-                console.log("Removing node", node)
+                console.log("Removing node", node_uid)
                 vm.nodes.splice(index, 1)
             }
-            remove_node_from_map(node)
-            remove_charts(node)
+            remove_node_from_map(node_uid)
+            remove_charts(node_uid)
             break
         case 'update':
             if (index != -1) {
@@ -451,7 +451,7 @@ function receive_message(msg) {
                     }
                     catch(err) {}
                 }
-                console.log("Updating node", node, "with", endpoint, "data:", data)
+                console.log("Updating node", node_uid, "with", endpoint, "data:", data)
                 Vue.set(vm.nodes[index].data, endpoint, data) // same as vm.nodes[index].data[endpoint] = msg.data, but triggers UI update
 
                 // force material UI refresh
@@ -475,11 +475,11 @@ function receive_message(msg) {
 function update_charts(msg) {
     // imu charts management
     if (msg.endpoint === "/imu") {
-        if (!(msg.node in acc_charts)) {
-            setup_imu_charts(msg.node)
+        if (!(msg.uid in acc_charts)) {
+            setup_imu_charts(msg.uid)
         }
-        if (!(msg.node in teapot_charts)) {
-            setup_teapot_charts(msg.node)
+        if (!(msg.uid in teapot_charts)) {
+            setup_teapot_charts(msg.uid)
         }
 
         update_imu_charts(msg)
@@ -487,8 +487,8 @@ function update_charts(msg) {
 
     // temperature charts management
     if (msg.endpoint === "/temperature") {
-        if (!(msg.node in temp_charts)) {
-            setup_temp_charts(msg.node)
+        if (!(msg.uid in temp_charts)) {
+            setup_temp_charts(msg.uid)
         }
 
         update_temp_charts(msg)
@@ -496,8 +496,8 @@ function update_charts(msg) {
 
     // pressure charts management
     if (msg.endpoint === "/pressure") {
-        if (!(msg.node in pres_charts)) {
-            setup_pres_charts(msg.node)
+        if (!(msg.uid in pres_charts)) {
+            setup_pres_charts(msg.uid)
         }
 
         update_pres_charts(msg)
@@ -505,97 +505,119 @@ function update_charts(msg) {
 
     // humidity charts management
     if (msg.endpoint === "/humidity") {
-        if (!(msg.node in hum_charts)) {
-            setup_hum_charts(msg.node)
+        if (!(msg.uid in hum_charts)) {
+            setup_hum_charts(msg.uid)
         }
 
         update_hum_charts(msg)
     }
 }
 
-function setup_temp_charts(node) {
-    var temp_canva = document.getElementById('temp_chart' + node)
+function setup_temp_charts(node_uid) {
+    var temp_canva = document.getElementById('temp_chart' + node_uid)
     temp_canva.setAttribute('width', temp_canva.clientWidth)
     temp_canva.setAttribute('height', temp_canva.clientHeight)
     if (temp_canva) {
-        temp_charts[node] = [new SmoothieChart({ millisPerPixel:1000,
-                                                 labels:{ fillStyle:'#545454',
-                                                          precision:0},
-                                                 grid:{ strokeStyle: 'transparent',
-                                                        fillStyle:'transparent',
-                                                        borderVisible:false,
-                                                        sharpLines:true },
-                                                 minValue: -15,
-                                                 maxValue: 40}),
-                            new TimeSeries()]
-        temp_charts[node][0].addTimeSeries(temp_charts[node][1],
-                                           { strokeStyle: 'rgba(63, 167, 36, 1)',
-                                             fillStyle: 'rgba(63, 167, 36, 0.2)',
-                                             lineWidth: 1.5 });
-        temp_charts[node][0].streamTo(temp_canva, 500);
+        temp_charts[node_uid] = [
+            new SmoothieChart({ millisPerPixel:1000,
+                                labels: {
+                                    fillStyle:'#545454',
+                                    precision:0
+                                },
+                                grid: {
+                                    strokeStyle: 'transparent',
+                                    fillStyle:'transparent',
+                                    borderVisible:false,
+                                    sharpLines:true
+                                },
+                                minValue: -15,
+                                maxValue: 40
+                            }),
+            new TimeSeries()
+        ]
+        temp_charts[node_uid][0].addTimeSeries(temp_charts[node_uid][1], {
+                strokeStyle: 'rgba(63, 167, 36, 1)',
+                fillStyle: 'rgba(63, 167, 36, 0.2)',
+                lineWidth: 1.5
+            });
+        temp_charts[node_uid][0].streamTo(temp_canva, 500);
     }
 }
 
 function update_temp_charts(msg) {
-    temp_charts[msg.node][1].append(new Date().getTime(), msg.data.slice(0, -2));
+    temp_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -2));
 }
 
-function setup_pres_charts(node) {
-    var pres_canva = document.getElementById('pres_chart' + node)
+function setup_pres_charts(node_uid) {
+    var pres_canva = document.getElementById('pres_chart' + node_uid)
     pres_canva.setAttribute('width', pres_canva.clientWidth)
     pres_canva.setAttribute('height', pres_canva.clientHeight)
     if (pres_canva) {
-        pres_charts[node] = [new SmoothieChart({ millisPerPixel:5000,
-                                                 labels:{ fillStyle:'#545454',
-                                                          precision:0},
-                                                 grid:{ strokeStyle: 'transparent',
-                                                        fillStyle:'transparent',
-                                                        borderVisible:false,
-                                                        sharpLines:true },
-                                                 minValue: 950,
-                                                 maxValue: 1030}),
-                            new TimeSeries()]
-        pres_charts[node][0].addTimeSeries(pres_charts[node][1],
-                                           { strokeStyle: 'rgba(63, 167, 36, 1)',
-                                             fillStyle: 'rgba(63, 167, 36, 0.2)',
-                                             lineWidth: 1.5 });
-        pres_charts[node][0].streamTo(pres_canva, 500);
+        pres_charts[node_uid] = [
+            new SmoothieChart({ millisPerPixel:5000,
+                                labels:{
+                                    fillStyle:'#545454',
+                                    precision:0},
+                                    grid:{
+                                        strokeStyle: 'transparent',
+                                        fillStyle:'transparent',
+                                        borderVisible:false,
+                                        sharpLines:true
+                                    },
+                                    minValue: 950,
+                                    maxValue: 1030
+                                }),
+            new TimeSeries()
+        ]
+        pres_charts[node_uid][0].addTimeSeries(pres_charts[node_uid][1], {
+                strokeStyle: 'rgba(63, 167, 36, 1)',
+                fillStyle: 'rgba(63, 167, 36, 0.2)',
+                lineWidth: 1.5
+            });
+        pres_charts[node_uid][0].streamTo(pres_canva, 500);
     }
 }
 
 function update_pres_charts(msg) {
-    pres_charts[msg.node][1].append(new Date().getTime(), msg.data.slice(0, -3));
+    pres_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -3));
 }
 
-function setup_hum_charts(node) {
-    var hum_canva = document.getElementById('hum_chart' + node)
+function setup_hum_charts(node_uid) {
+    var hum_canva = document.getElementById('hum_chart' + node_uid)
     hum_canva.setAttribute('width', hum_canva.clientWidth)
     hum_canva.setAttribute('height', hum_canva.clientHeight)
     if (hum_canva) {
-        hum_charts[node] = [new SmoothieChart({ millisPerPixel:5000,
-                                                labels:{ fillStyle:'#545454',
-                                                         precision:0},
-                                                grid:{ strokeStyle: 'transparent',
-                                                       fillStyle:'transparent',
-                                                       borderVisible:false,
-                                                       sharpLines:true },
-                                                minValue: 0,
-                                                maxValue: 100}),
-                            new TimeSeries()]
-        hum_charts[node][0].addTimeSeries(hum_charts[node][1],
-                                          { strokeStyle: 'rgba(0, 142, 255, 1)',
-                                            fillStyle: 'rgba(0, 142, 255, 0.2)',
-                                            lineWidth: 1.5 });
-        hum_charts[node][0].streamTo(hum_canva, 500);
+        hum_charts[node_uid] = [
+            new SmoothieChart({
+                millisPerPixel:5000,
+                labels:{
+                    fillStyle:'#545454',
+                    precision:0},
+                    grid:{
+                        strokeStyle: 'transparent',
+                        fillStyle:'transparent',
+                        borderVisible:false,
+                        sharpLines:true },
+                        minValue:0,
+                        maxValue:100
+                    }),
+            new TimeSeries()
+        ]
+        hum_charts[node_uid][0].addTimeSeries(hum_charts[node_uid][1], {
+            strokeStyle: 'rgba(0, 142, 255, 1)',
+            fillStyle: 'rgba(0, 142, 255, 0.2)',
+            lineWidth: 1.5
+        });
+        hum_charts[node_uid][0].streamTo(hum_canva, 500);
     }
 }
 
 function update_hum_charts(msg) {
-    hum_charts[msg.node][1].append(new Date().getTime(), msg.data.slice(0, -3));
+    hum_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -3));
 }
 
-function setup_teapot_charts(node) {
-    teapot_charts[node] = node
+function setup_teapot_charts(node_uid) {
+    teapot_charts[node_uid] = node_uid
     teapot.init()
     teapot.render()
     $('#teapot').addClass('pointer').click(function() {
@@ -604,53 +626,76 @@ function setup_teapot_charts(node) {
     })
 }
 
-function setup_imu_charts(node) {
-    var acc_canva = document.getElementById('imu_acc' + node)
+function setup_imu_charts(node_uid) {
+    var acc_canva = document.getElementById('imu_acc' + node_uid)
     acc_canva.setAttribute('width', acc_canva.clientWidth)
     acc_canva.setAttribute('height', acc_canva.clientHeight)
     if (acc_canva) {
-        acc_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'transparent',
-                                                       strokeStyle:'#eee',
-                                                       borderVisible:false,
-                                                       sharpLines:true },
-                                                labels: { disabled: true },
-                                                minValue: 0,
-                                                maxValue: 5000}),
-                            new TimeSeries()]
-        acc_charts[node][0].addTimeSeries(acc_charts[node][1],
-                                          { strokeStyle: 'rgba(63, 167, 36, 1)',
-                                            fillStyle: 'rgba(63, 167, 36, 0.2)',
-                                            lineWidth: 1.5 });
-        acc_charts[node][0].streamTo(acc_canva, 500);
+        acc_charts[node_uid] = [
+            new SmoothieChart({
+                grid:{
+                    fillStyle:'transparent',
+                    strokeStyle:'#eee',
+                    borderVisible:false,
+                    sharpLines:true
+                },
+                labels: {
+                    disabled: true
+                },
+                minValue: 0,
+                maxValue: 5000
+            }),
+            new TimeSeries()
+        ]
+        acc_charts[node_uid][0].addTimeSeries(acc_charts[node_uid][1], {
+            strokeStyle: 'rgba(63, 167, 36, 1)',
+            fillStyle: 'rgba(63, 167, 36, 0.2)',
+            lineWidth: 1.5
+        });
+        acc_charts[node_uid][0].streamTo(acc_canva, 500);
     }
 
-    var gyr_canva = document.getElementById('imu_gyr' + node)
+    var gyr_canva = document.getElementById('imu_gyr' + node_uid)
     gyr_canva.setAttribute('width', gyr_canva.clientWidth)
     gyr_canva.setAttribute('height', gyr_canva.clientHeight)
     if (gyr_canva) {
-        gyr_charts[node] = [new SmoothieChart({ grid:{ fillStyle:'transparent',
-                                                       strokeStyle:'#eee',
-                                                       borderVisible:false,
-                                                       sharpLines:true },
-                                                labels: {disabled: true},
-                                                minValue: -800,
-                                                maxValue: 800 }),
-                            {'x': new TimeSeries(),
-                             'y': new TimeSeries(),
-                             'z': new TimeSeries()}]
-        gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['x'],
-                                          { strokeStyle: 'rgba(189, 32, 44, 1)',
-                                            fillStyle: 'rgba(189, 32, 44, 0.1)',
-                                            lineWidth: 1.5 });
-        gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['y'],
-                                          { strokeStyle: 'rgba(63, 167, 36, 1)',
-                                            fillStyle: 'rgba(63, 167, 36, 0.1)',
-                                            lineWidth: 1.5 });
-        gyr_charts[node][0].addTimeSeries(gyr_charts[node][1]['z'],
-                                          { strokeStyle: 'rgba(3, 169, 244, 1)',
-                                            fillStyle: 'rgba(3, 169, 244, 0.1)',
-                                            lineWidth: 1.5 });
-        gyr_charts[node][0].streamTo(gyr_canva, 500);
+        gyr_charts[node_uid] = [
+            new SmoothieChart(
+                {
+                    grid:{
+                        fillStyle:'transparent',
+                        strokeStyle:'#eee',
+                        borderVisible:false,
+                        sharpLines:true
+                    },
+                    labels:{
+                        disabled: true
+                    },
+                    minValue: -800,
+                    maxValue: 800
+                }),
+                {
+                    'x': new TimeSeries(),
+                    'y': new TimeSeries(),
+                    'z': new TimeSeries()
+                }
+            ]
+        gyr_charts[node_uid][0].addTimeSeries(gyr_charts[node_uid][1]['x'], {
+            strokeStyle: 'rgba(189, 32, 44, 1)',
+            fillStyle: 'rgba(189, 32, 44, 0.1)',
+            lineWidth: 1.5
+        });
+        gyr_charts[node_uid][0].addTimeSeries(gyr_charts[node_uid][1]['y'], {
+            strokeStyle: 'rgba(63, 167, 36, 1)',
+            fillStyle: 'rgba(63, 167, 36, 0.1)',
+            lineWidth: 1.5
+        });
+        gyr_charts[node_uid][0].addTimeSeries(gyr_charts[node_uid][1]['z'], {
+            strokeStyle: 'rgba(3, 169, 244, 1)',
+            fillStyle: 'rgba(3, 169, 244, 0.1)',
+            lineWidth: 1.5
+        });
+        gyr_charts[node_uid][0].streamTo(gyr_canva, 500);
     }
 }
 
@@ -665,10 +710,10 @@ function update_imu_charts(msg) {
     var accNorm = Math.sqrt(Math.pow(acc[0], 2) +
                             Math.pow(acc[1], 2) +
                             Math.pow(acc[2], 2))
-    acc_charts[msg.node][1].append(currentTime, accNorm);
-    gyr_charts[msg.node][1]['x'].append(currentTime, gyr[0]);
-    gyr_charts[msg.node][1]['y'].append(currentTime, gyr[1]);
-    gyr_charts[msg.node][1]['z'].append(currentTime, gyr[2]);
+    acc_charts[msg.uid][1].append(currentTime, accNorm);
+    gyr_charts[msg.uid][1]['x'].append(currentTime, gyr[0]);
+    gyr_charts[msg.uid][1]['y'].append(currentTime, gyr[1]);
+    gyr_charts[msg.uid][1]['z'].append(currentTime, gyr[2]);
     // angle[0] = angle[0] + gyr[0] * (currentTime - lastTime) / 1000
     // angle[1] = angle[1] + gyr[1] * (currentTime - lastTime) / 1000
     // angle[2] = angle[2] + gyr[2] * (currentTime - lastTime) / 1000
@@ -688,21 +733,21 @@ function update_imu_charts(msg) {
     // console.info(acc, xAcc, yAcc, zAcc)
 }
 
-function remove_charts(node) {
-    if (node in acc_charts) {
-        delete acc_charts[node]
+function remove_charts(node_uid) {
+    if (node_uid in acc_charts) {
+        delete acc_charts[node_uid]
     }
-    if (node in gyr_charts) {
-        delete gyr_charts[node]
+    if (node_uid in gyr_charts) {
+        delete gyr_charts[node_uid]
     }
-    if (node in temp_charts) {
-        delete temp_charts[node]
+    if (node_uid in temp_charts) {
+        delete temp_charts[node_uid]
     }
-    if (node in pres_charts) {
-        delete pres_charts[node]
+    if (node_uid in pres_charts) {
+        delete pres_charts[node_uid]
     }
-    if (node in hum_charts) {
-        delete hum_charts[node]
+    if (node_uid in hum_charts) {
+        delete hum_charts[node_uid]
     }
 }
 
@@ -721,19 +766,19 @@ function sendData(type, data) {
 }
 
 $(document).on('change', '.led-btn', function() {
-    var node = this.dataset.index
+    var node_uid = this.dataset.index
     var payload = "0"
     if($(this).is(':checked')) {
         payload = "1"
     }
 
     sendData("update",
-             {"node": node, "path": "/led", "payload": payload})
+             {"uid": node_uid, "path": "/led", "payload": payload})
 })
 
-function setRobotDirection(node, direction) {
+function setRobotDirection(node_uid, direction) {
     sendData("update",
-             {"node": node, "path": "/robot", "payload": direction})
+             {"uid": node_uid, "path": "/robot", "payload": direction})
 }
 
 $('#selectTheme').change(function () {
@@ -799,24 +844,24 @@ function add_node_to_map(node) {
         maxWidth: 250
     });
 
-    map_markers[node.ip] = new google.maps.Marker({
+    map_markers[node.uid] = new google.maps.Marker({
         position: node.data.position,
         map: map,
-        title: node.ip
+        title: node.data.name
     });
 
-    map_markers[node.ip].addListener('click', function() {
-        nodeWindow.open(map, map_markers[node.ip]);
+    map_markers[node.uid].addListener('click', function() {
+        nodeWindow.open(map, map_markers[node.uid]);
     });
 
-    map_bounds.extend(map_markers[node.ip].position);
+    map_bounds.extend(map_markers[node.uid].position);
     map.fitBounds(map_bounds);
 }
 
-function remove_node_from_map(node) {
-    if (node in map_markers) {
-        map_markers[node].setMap(null);
-        delete map_markers[node]
+function remove_node_from_map(node_uid) {
+    if (node_uid in map_markers) {
+        map_markers[node_uid].setMap(null);
+        delete map_markers[node_uid]
     }
 }
 </script>
