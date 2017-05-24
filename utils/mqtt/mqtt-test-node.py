@@ -113,8 +113,8 @@ def publish(mqtt_client, topic, value):
 def publish_continuous(mqtt_client, topic, value, delay=0):
     while True:
         data = json.dumps({'value': value()})
-        yield from mqtt_client.publish(topic, data.encode(), qos=QOS_1)
-        logger.debug("Published '{}' to topic '{}'".format(value(), topic))
+        yield from mqtt_client.publish(topic, data.encode('utf-8'), qos=QOS_1)
+        logger.debug("Published '{}' to topic '{}'".format(data, topic))
         if delay == 0:
             break
         yield from asyncio.sleep(delay)

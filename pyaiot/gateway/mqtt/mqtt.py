@@ -83,7 +83,7 @@ class MQTTController():
         self.max_time = max_time
         self.nodes = {}
         self.mqtt_client = MQTTClient()
-        asyncio.ensure_future(self.start())
+        asyncio.get_event_loop().create_task(self.start())
 
     @asyncio.coroutine
     def start(self):
@@ -106,13 +106,14 @@ class MQTTController():
                 break
             packet = message.publish_packet
             topic_name = packet.variable_header.topic_name
-            data = json.loads(packet.payload.data.decode())
+            data = json.loads(packet.payload.data.decode('utf-8'))
             logger.debug("Received message from node: {} => {}"
                          .format(topic_name, data))
             if topic_name.endswith("/check"):
-                asyncio.ensure_future(self.handle_node_check(data))
+                asyncio.get_event_loop().create_task(
+                    self.handle_node_check(data))
             elif topic_name.endswith("/resources"):
-                asyncio.ensure_future(
+                asyncio.get_event_loop().create_task(
                     self.handle_node_resources(topic_name, data))
             else:
                 self.handle_node_update(topic_name, data)
@@ -230,7 +231,8 @@ class MQTTController():
         to_remove = [node for node in self.nodes.keys()
                      if int(time.time()) > node.check_time + self.max_time]
         for node in to_remove:
-            asyncio.ensure_future(self._disconnect_from_node(node))
+            asyncio.get_event_loop().create_task(
+                self._disconnect_from_node(node))
             for resource in node.resources:
                 pass
             uid = self.nodes[node]['uid']
