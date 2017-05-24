@@ -17,6 +17,7 @@ deploy: install-dev setup-core-services
 
 install-dev:
 	wget -q -O - https://bootstrap.pypa.io/get-pip.py | sudo python3
+	sudo pip3 install setuptools
 	sudo apt-get install libyaml-dev libffi-dev libssl-dev npm -y
 	sudo pip3 install .
 	make setup-dashboard-npm
