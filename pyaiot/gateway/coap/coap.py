@@ -213,10 +213,10 @@ class CoapController():
     def send_data_to_node(self, data):
         """Forward received message data to the destination node.
 
-        The message should be JSON and contain 'node', 'path' and 'payload'
+        The message should be JSON and contain 'uid', 'path' and 'payload'
         keys.
 
-        - 'node' corresponds to the node address (generally IPv6)
+        - 'uid' corresponds to the node uid (uuid)
         - 'path' corresponds to the CoAP resource on the node
         - 'payload' corresponds to the new payload for the CoAP resource.
         """
@@ -235,8 +235,7 @@ class CoapController():
                     'coap://[{0}]{1}'.format(address, path),
                     method=PUT,
                     payload=payload.encode('ascii'))
-
-        return
+                break
 
     def handle_coap_post(self, address, endpoint, value):
         """Handle CoAP post message sent from coap node."""
