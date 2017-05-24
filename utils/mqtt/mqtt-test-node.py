@@ -49,8 +49,8 @@ __NODE_RESOURCES__ = {'name': {'delay': 0,
 def send_check(mqtt_client):
     while True:
         check_data = json.dumps({'id': __NODE_ID__})
-        asyncio.ensure_future(publish(mqtt_client, 'node/check',
-                                      check_data.encode()))
+        asyncio.create_task(publish(mqtt_client, 'node/check',
+                                    check_data.encode()))
         yield from asyncio.sleep(__DELAY_CHECK)
 
 
@@ -65,7 +65,7 @@ def start_client():
                                        .format(__NODE_ID__), QOS_1)])
     yield from mqtt_client.subscribe([('gateway/{}/led/set'
                                        .format(__NODE_ID__), QOS_1)])
-    asyncio.ensure_future(send_check(mqtt_client))
+    asyncio.create_task(send_check(mqtt_client))
     while True:
         try:
             logger.debug("Waiting for incoming MQTT messages from gateway")
@@ -86,19 +86,19 @@ def start_client():
             if data == "resources":
                 topic = 'node/{}/resources'.format(__NODE_ID__)
                 value = json.dumps(list(__NODE_RESOURCES__.keys())).encode()
-                asyncio.ensure_future(publish(mqtt_client, topic, value))
+                asyncio.create_task(publish(mqtt_client, topic, value))
             else:
                 for resource in __NODE_RESOURCES__:
                     topic = 'node/{}/{}'.format(__NODE_ID__, resource)
                     value = __NODE_RESOURCES__[resource]['value']
                     delay = __NODE_RESOURCES__[resource]['delay']
-                    asyncio.ensure_future(
+                    asyncio.create_task(
                         publish_continuous(mqtt_client, topic, value, delay))
         elif topic_name.endswith("/led/set"):
             __LED_VALUE__ = data
             topic = 'node/{}/led'.format(__NODE_ID__)
             data = json.dumps({'value': data})
-            asyncio.ensure_future(publish(mqtt_client, topic, data.encode()))
+            asyncio.create_task(publish(mqtt_client, topic, data.encode()))
         else:
             logger.debug("Topic not supported: {}".format(topic_name))
 
