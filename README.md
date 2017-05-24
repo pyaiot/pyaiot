@@ -3,9 +3,11 @@
 Pyaiot provides a set of services to interact and transport data from IoT nodes
 with regular web protocols (HTTP) and technologies. Pyaiot relies on Python
 asyncio core module and on other more specific asyncio based packages such as
-Tornado and Aiocoap.
-Pyaiot tries to only use standard protocols and common practices to connect the
-IoT nodes to the web: CoAP, HTTP, etc
+[Tornado](http://www.tornadoweb.org/en/stable/),
+[aiocoap](http://aiocoap.readthedocs.io/en/latest/) or
+[HBMQTT](http://hbmqtt.readthedocs.io/en/latest/index.html).
+Pyaiot tries to only use standard protocols to connect the IoT nodes to the
+web: CoAP, MQTT, HTTP, etc
 
 ### The nodes
 
@@ -54,9 +56,11 @@ The Dashboard is a web page with some embbeded javascript that displays the
 list of available nodes and their status. It also allows to interact with the
 nodes (LED control, Robot control, etc)
 
-2 examples of gateways are provided by pyaiot:
+3 examples of gateways are provided by pyaiot:
 * A CoAP gateway that manages a list of alive sensor nodes by running it's own
 CoAP server
+* A MQTT gateway that manages a list of alive sensor nodes by subscribing and
+publishing messages to a MQTT broker.
 * A Websocket gateway dedicated to nodes: each node is connected via a
 websocket
 
@@ -79,10 +83,44 @@ If a sensor node has not sent this notification within 120s (default,
 but this is configurable), the gateway automatically removes it from the list
 of alived nodes and notifies the broker.
 
+#### The MQTT gateway
+
+MQTT do things differently from CoAP: the nodes and the gateway have to publish
+or subscribe to topics to exchange information.
+
+A resource discovery mechanism is also required for the gateway to determine
+the list of available resources on a node. In Pyaiot, the gateway and the nodes
+are used as clients of the same MQTT broker.
+
+Since the nodes are contrained, we decided to use the
+[mosquitto.rsmb broker](https://github.com/eclipse/mosquitto.rsmb). Some
+documentation and a sample systemd service file is provided in the
+[pyaiot/gateway/mqtt](pyaiot/gateway/mqtt directory).
+
+With the MQTT gateway, each node is identified by a \<node_id\> and this
+identifier is used to build the topics specific to a given node.
+
+Topics the nodes publish to/the gateway subscribes to are:
+* `node/check` with payload `{'id': <node_id>}`. Once started, each node
+  publishes periodically (every 30s) on this topic.
+* `node/<node_id>/resources` with payload `[<resource 1>, <resource 1>]`. This
+comes as a reply to the gateway request for resources available on a given node.
+* `node/<node_id>/<resource>` with payload `{'value': <resource_value>}`.
+Depending on the type of resource, a node can publish periodically or not or on
+demand on this topic.
+
+Topics the nodes subscribe to/the gateway publishes to are:
+* `gateway/<node_id>/discover` with 2 possible payloads:
+  * `resources`: then the node publish on `node/<node_id>/resources`
+  * `values`: then, for each resource, the node publish on
+    `node/<node_id>/<resource>`
+* `gateway/<node_id>/<resource>/set` with a payload depending on the resource:
+  update the value of the resource on the node (LED toggle, text, etc)
+
 #### The websocket gateway
 
-The behavior with a websocket gateway is similar to a CoAP gateway except that
-the node doesn't have to send notifications periodically: the node is lost
+The behavior with a websocket gateway is similar to the CoAP gateway except
+that the node doesn't have to send notifications periodically: the node is lost
 when the connection is closed.
 
 #### Security
