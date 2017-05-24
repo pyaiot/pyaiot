@@ -1,0 +1,13 @@
+[Unit]
+Description=Mosquitto RSMB MQTT broker service
+Wants=sshd.service
+After=network.target sshd.service
+
+[Service]
+User=pi
+ExecStart=/opt/mqtt/mosquitto.rsmb/rsmb/src/broker_mqtts \
+              /opt/mqtt/mosquitto.rsmb/config.conf
+
+[Install]
+WantedBy=multi-user.target
+Alias=mosquitto.rsmb.service
