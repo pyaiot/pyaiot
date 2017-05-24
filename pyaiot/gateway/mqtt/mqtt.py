@@ -199,7 +199,6 @@ class MQTTController():
                     Msg.update_node(value['uid'], '/' + resource, data,
                                     dst=source))
 
-    @gen.coroutine
     def send_data_to_node(self, data):
         """Forward received message data to the destination node.
 
@@ -221,9 +220,9 @@ class MQTTController():
                 node_id = node.node_id
                 logger.debug("Updating MQTT node '{}' resource '{}'"
                              .format(node_id, path))
-                yield from self.mqtt_client.publish(
+                asyncio.get_event_loop().create_task(self.mqtt_client.publish(
                     'gateway/{}{}/set'.format(node_id, path),
-                    payload.encode(), qos=QOS_1)
+                    payload.encode(), qos=QOS_1))
                 break
 
     def check_dead_nodes(self):
