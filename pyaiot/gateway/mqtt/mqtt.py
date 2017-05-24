@@ -221,9 +221,9 @@ class MQTTController():
                 node_id = node.node_id
                 logger.debug("Updating MQTT node '{}' resource '{}'"
                              .format(node_id, path))
-                yield self.mqtt_client.publish('gateway/{}{}/set'
-                                               .format(node_id, path),
-                                               payload.encode(), qos=QOS_1)
+                yield from self.mqtt_client.publish(
+                    'gateway/{}{}/set'.format(node_id, path),
+                    payload.encode(), qos=QOS_1)
                 break
 
     def check_dead_nodes(self):
