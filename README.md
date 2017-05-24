@@ -95,7 +95,7 @@ are used as clients of the same MQTT broker.
 Since the nodes are contrained, we decided to use the
 [mosquitto.rsmb broker](https://github.com/eclipse/mosquitto.rsmb). Some
 documentation and a sample systemd service file is provided in the
-[pyaiot/gateway/mqtt](pyaiot/gateway/mqtt directory).
+[pyaiot/gateway/mqtt directory](./pyaiot/gateway/mqtt).
 
 With the MQTT gateway, each node is identified by a \<node_id\> and this
 identifier is used to build the topics specific to a given node.
