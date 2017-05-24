@@ -68,6 +68,7 @@ if __name__ == '__main__':
           packages=find_packages(),
           scripts=[pjoin('bin', 'aiot-broker'),
                    pjoin('bin', 'aiot-coap-gateway'),
+                   pjoin('bin', 'aiot-mqtt-gateway'),
                    pjoin('bin', 'aiot-ws-gateway'),
                    pjoin('bin', 'aiot-dashboard'),
                    pjoin('bin', 'aiot-generate-keys')],
