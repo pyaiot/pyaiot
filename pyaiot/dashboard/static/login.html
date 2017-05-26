@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if favicon %}<link rel="icon" href="{{ favicon }}">{% end %}
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>{{ title }}</title>
+
+    <!-- Material Design fonts -->
+    <link rel="stylesheet" type="text/css"
+          href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700">
+    <link rel="stylesheet" type="text/css"
+          href="//fonts.googleapis.com/icon?family=Material+Icons">
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" type="text/css"
+          href="{{ static_url('node_modules/bootstrap/dist/css/bootstrap.min.css') }}">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" type="text/css"
+          href="{{ static_url('node_modules/font-awesome/css/font-awesome.min.css') }}">
+
+    <!-- Bootstrap Material Design -->
+    <link rel="stylesheet" type="text/css"
+          href="{{ static_url('node_modules/bootstrap-material-design/dist/css/bootstrap-material-design.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ static_url('node_modules/bootstrap-material-design/dist/css/ripples.min.css') }}">
+
+    <!-- Javascript modules -->
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/jquery/dist/jquery.min.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/bootstrap/dist/js/bootstrap.min.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/bootstrap-material-design/dist/js/material.min.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/bootstrap-material-design/dist/js/ripples.min.js') }}"></script>
+
+    <!-- IoT-Kit dashboard css -->
+    <link rel="stylesheet" type="text/css" href="{{ static_url('css/dashboard.css') }}">
+</head>
+
+<body style="background-color: #333;">
+    <div class="container-fluid">
+        <div class="login">
+            <form action="/login" method="post">
+                <div class="form-group">
+                    <label class="sr-only" for="username">Username</label>
+                    <input type="name" class="form-control" name="username" id="username" placeholder="Username">
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="password">Password</label>
+                    <input type="password" class="form-control" name="password" id="password" placeholder="Password">
+                </div>
+                {% module xsrf_form_html() %}
+                <button type="submit" class="btn btn-primary">Sign in</button>
+                {% if error %}
+                <br/><span style="color: red">Error: {{ error }}</span><p>
+                {% end %}
+            </form>
+        </div>
+    </div>
+</body>
+</html>

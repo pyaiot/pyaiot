@@ -61,6 +61,11 @@ class Message():
         return json.dumps({'request': 'discover'})
 
     @staticmethod
+    def new_client():
+        """Generate a text message indicating a new client."""
+        return json.dumps({'type': 'new', 'data': 'client'})
+
+    @staticmethod
     def check_ws_message(ws, raw):
         """Verify a received message is correctly formatted."""
         reason = None

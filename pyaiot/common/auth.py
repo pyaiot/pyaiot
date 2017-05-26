@@ -27,18 +27,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Pyaiot messaging utility module."""
+"""Pyaiot messaging utility module"""
 
 import os.path
 import string
 import configparser
 from collections import namedtuple
 from random import choice
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 DEFAULT_KEY_FILENAME = "{}/.pyaiot/keys".format(os.path.expanduser("~"))
+CREDENTIALS_FILENAME = ("{}/.pyaiot/credentials"
+                        .format(os.path.expanduser("~")))
 
 Keys = namedtuple('Keys', ['private', 'secret'])
+Credentials = namedtuple('Credentials', ['username', 'password'])
 
 
 def generate_secret_key():
@@ -64,7 +67,7 @@ def write_keys_to_file(filename, keys):
 
 
 def check_key_file(filename=DEFAULT_KEY_FILENAME):
-    """Verify that filename exists and is correctly formatted."""
+    """Verify that key filename exists and is correctly formatted."""
     filename = os.path.expanduser(filename)
     if not os.path.isfile(filename):
         raise ValueError("Key file provided doesn't exists: '{}'"
@@ -81,10 +84,33 @@ def check_key_file(filename=DEFAULT_KEY_FILENAME):
                 secret=config['keys']['secret'])
 
 
-def verify_auth_token(token, keys):
+def check_credentials_file(filename=CREDENTIALS_FILENAME):
+    """Verify that credentials filename exists and is correctly formatted."""
+    filename = os.path.expanduser(filename)
+    if not os.path.isfile(filename):
+        raise ValueError("Credentials file doesn't exists: '{}'"
+                         .format(filename))
+
+    config = configparser.ConfigParser()
+    config.read(filename)
+
+    if (not config.has_option('credentials', 'username') or
+            not config.has_option('credentials', 'password')):
+        raise ValueError("Invalid credentials file provided: '{}'"
+                         .format(filename))
+
+    return Credentials(username=config['credentials']['username'],
+                       password=config['credentials']['password'])
+
+
+def verify_auth_token(token, keys, ttl=None):
     """Verify the token is valid."""
-    return (Fernet(keys.private.encode()).decrypt(token.encode()) ==
-            keys.secret.encode())
+    try:
+        secret = Fernet(keys.private.encode()).decrypt(token.encode(), ttl=ttl)
+    except InvalidToken:
+        return False
+
+    return secret == keys.secret.encode()
 
 
 def auth_token(keys):
