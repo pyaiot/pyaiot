@@ -46,14 +46,19 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         """Allow connections from anywhere."""
         return True
 
+    @gen.coroutine
     def open(self):
         """Discover nodes on each opened connection."""
         self.set_nodelay(True)
         logger.debug("New node websocket opened")
         self.application.nodes.update(
-            {self: {'uid': str(uuid.uuid4()), 'data': {}}})
+            {self: {'uid': str(uuid.uuid4()),
+                    'data': {'protocol': 'websocket'}}})
+        node_uid = self.application.nodes[self]['uid']
+        self.application.send_to_broker(Message.new_node(node_uid))
+        yield self.write_message(Message.discover_node())
         self.application.send_to_broker(
-            Message.new_node(self.application.nodes[self]['uid'], 'websocket'))
+            Message.update_node(node_uid, 'protocol', 'websocket'))
 
     @gen.coroutine
     def on_message(self, raw):
@@ -130,10 +135,11 @@ class WebsocketGatewayApplication(web.Application):
                 else:
                     self.nodes[ws]['data'].update({key: value})
                 self.send_to_broker(Message.update_node(
-                    self.nodes[ws]['uid'], '/' + key, value))
+                    self.nodes[ws]['uid'], key, value))
         else:
             logger.debug("Invalid message received from node websocket")
 
+    @gen.coroutine
     def on_broker_message(self, message):
         """Handle a message received from the broker websocket."""
         logger.debug("Handling message '{}' received from broker."
@@ -144,9 +150,7 @@ class WebsocketGatewayApplication(web.Application):
             # Received when a new client connects => fetching the nodes
             # in controller's cache
             for ws, value in self.nodes.items():
-                self.broker.write_message(
-                    Message.new_node(value['uid'], 'websocket'))
-                ws.write_message(Message.discover_node())
+                yield self.fetch_nodes_cache(message['src'])
         elif message['type'] == "update":
             # Received when a client update a node
             uid = message['data']['uid']
@@ -158,13 +162,13 @@ class WebsocketGatewayApplication(web.Application):
     def fetch_nodes_cache(self, source):
         """Send cached nodes information."""
         logger.debug("Fetching cached information of registered nodes.")
-        for ws, value in self.nodes.items():
+        for ws, node in self.nodes.items():
             self.send_to_broker(Message.new_node(
-                value['uid'], 'websocket', dst=source))
-            for endpoint, value in value['data'].items():
+                node['uid'], dst=source))
+            for endpoint, value in node['data'].items():
                 self.send_to_broker(
                     Message.update_node(
-                        value['uid'], endpoint, value, dst=source))
+                        node['uid'], endpoint, value, dst=source))
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""

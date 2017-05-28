@@ -139,9 +139,11 @@ class MQTTController():
             yield from self.mqtt_client.subscribe([(resources_topic, QOS_1)])
             logger.debug("Subscribed to topic: {}".format(resources_topic))
             node_uid = str(uuid.uuid4())
-            self.nodes.update({node: {'uid': node_uid, 'data': {}}})
+            self.nodes.update({node: {'uid': node_uid,
+                                      'data': {'protocol': 'mqtt'}}})
             logger.debug("Available nodes: {}".format(self.nodes))
-            self._on_message_cb(Msg.new_node(node_uid, 'mqtt'))
+            self._on_message_cb(Msg.new_node(node_uid))
+            self._on_message_cb(Msg.update_node(node_uid, "protocol", 'mqtt'))
             discover_topic = 'gateway/{}/discover'.format(node_id)
             yield from self.mqtt_client.publish(discover_topic, b"resources",
                                                 qos=QOS_1)
@@ -185,7 +187,7 @@ class MQTTController():
 
         # Send update to broker
         self._on_message_cb(Msg.update_node(
-            self.nodes[node]['uid'], '/' + resource, value))
+            self.nodes[node]['uid'], resource, value))
 
     @gen.coroutine
     def fetch_nodes_cache(self, source):
@@ -193,10 +195,10 @@ class MQTTController():
         logger.debug("Fetching cached information of registered nodes '{}'."
                      .format(self.nodes))
         for _, value in self.nodes.items():
-            self._on_message_cb(Msg.new_node(value['uid'], 'mqtt', dst=source))
+            self._on_message_cb(Msg.new_node(value['uid'], dst=source))
             for resource, data in value['data'].items():
                 self._on_message_cb(
-                    Msg.update_node(value['uid'], '/' + resource, data,
+                    Msg.update_node(value['uid'], resource, data,
                                     dst=source))
 
     def send_data_to_node(self, data):
@@ -210,7 +212,7 @@ class MQTTController():
         - 'payload' corresponds to the new payload for the MQTT resource.
         """
         uid = data['uid']
-        path = data['path']
+        endpoint = data['endpoint']
         payload = data['payload']
         logger.debug("Translating message ('{}') received to MQTT publish "
                      "request".format(data))
@@ -219,9 +221,9 @@ class MQTTController():
             if self.nodes[node]['uid'] == uid:
                 node_id = node.node_id
                 logger.debug("Updating MQTT node '{}' resource '{}'"
-                             .format(node_id, path))
+                             .format(node_id, endpoint))
                 asyncio.get_event_loop().create_task(self.mqtt_client.publish(
-                    'gateway/{}{}/set'.format(node_id, path),
+                    'gateway/{}/{}/set'.format(node_id, endpoint),
                     payload.encode(), qos=QOS_1))
                 break
 

@@ -23,7 +23,7 @@ function initJoystick() {
             "type": "update",
             "data": {
                 "uid": joystick.active_node,
-                "path": "/ribot",
+                "endpoint": "ribot",
                 "payload": payload
             }
         });

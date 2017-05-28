@@ -39,26 +39,32 @@ class Message():
     """Utility class for generating and parsing service messages."""
 
     @staticmethod
-    def new_node(uid, origin, dst="all"):
+    def serialize(message):
+        return json.dumps(message, ensure_ascii=False)
+
+    @staticmethod
+    def new_node(uid, dst="all"):
         """Generate a text message indicating a new node."""
-        return json.dumps({'type': 'new', 'uid': uid,
-                           'origin': origin, 'dst': dst})
+        return Message.serialize({'type': 'new', 'uid': uid, 'dst': dst})
 
     @staticmethod
     def out_node(uid):
         """Generate a text message indicating a node to remove."""
-        return json.dumps({'type': 'out', 'uid': uid})
+        return Message.serialize({'type': 'out', 'uid': uid})
 
     @staticmethod
     def update_node(uid, endpoint, data, dst="all"):
         """Generate a text message indicating a node update."""
-        return json.dumps({'type': 'update', 'uid': uid,
-                           'endpoint': endpoint, 'data': data, 'dst': dst})
+        return Message.serialize({'type': 'update',
+                                  'uid': uid,
+                                  'endpoint': endpoint,
+                                  'data': data,
+                                  'dst': dst})
 
     @staticmethod
     def discover_node():
         """Generate a text message for websocket node discovery."""
-        return json.dumps({'request': 'discover'})
+        return Message.serialize({'request': 'discover'})
 
     @staticmethod
     def check_ws_message(ws, raw):

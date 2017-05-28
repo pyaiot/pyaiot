@@ -197,6 +197,10 @@ var joystick = initJoystick()
                                         <th>IP</th>
                                         <td>{{! node.data.ip }}</td>
                                     </tr>
+                                    <tr v-if="node.data.protocol">
+                                        <th>Procotol</th>
+                                        <td>{{! node.data.protocol }}</td>
+                                    </tr>
                                 </table>
                             </div>
                         </div>
@@ -474,7 +478,7 @@ function receive_message(msg) {
 
 function update_charts(msg) {
     // imu charts management
-    if (msg.endpoint === "/imu") {
+    if (msg.endpoint === "imu") {
         if (!(msg.uid in acc_charts)) {
             setup_imu_charts(msg.uid)
         }
@@ -486,7 +490,7 @@ function update_charts(msg) {
     }
 
     // temperature charts management
-    if (msg.endpoint === "/temperature") {
+    if (msg.endpoint === "temperature") {
         if (!(msg.uid in temp_charts)) {
             setup_temp_charts(msg.uid)
         }
@@ -495,7 +499,7 @@ function update_charts(msg) {
     }
 
     // pressure charts management
-    if (msg.endpoint === "/pressure") {
+    if (msg.endpoint === "pressure") {
         if (!(msg.uid in pres_charts)) {
             setup_pres_charts(msg.uid)
         }
@@ -504,7 +508,7 @@ function update_charts(msg) {
     }
 
     // humidity charts management
-    if (msg.endpoint === "/humidity") {
+    if (msg.endpoint === "humidity") {
         if (!(msg.uid in hum_charts)) {
             setup_hum_charts(msg.uid)
         }
@@ -773,12 +777,12 @@ $(document).on('change', '.led-btn', function() {
     }
 
     sendData("update",
-             {"uid": node_uid, "path": "/led", "payload": payload})
+             {"uid": node_uid, "endpoint": "led", "payload": payload})
 })
 
 function setRobotDirection(node_uid, direction) {
     sendData("update",
-             {"uid": node_uid, "path": "/robot", "payload": direction})
+             {"uid": node_uid, "endpoint": "robot", "payload": direction})
 }
 
 $('#selectTheme').change(function () {

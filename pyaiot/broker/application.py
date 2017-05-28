@@ -160,7 +160,7 @@ class BrokerApplication(web.Application):
         # Simply forward this message to satellite gateways
         logger.debug("Forwarding message {} to gateways".format(message))
         for gw in self.gateways:
-            gw.write_message(json.dumps(message))
+            gw.write_message(Message.serialize(message))
 
     @gen.coroutine
     def on_gateway_message(self, ws, message):
@@ -179,26 +179,28 @@ class BrokerApplication(web.Application):
 
             if message['dst'] == "all":
                 # Occurs when an unknown new node arrived
-                self.broadcast(json.dumps(message))
+                self.broadcast(Message.serialize(message))
             elif message['dst'] in self.clients.keys():
                 # Occurs when a single client has just connected
-                self.send_to_client(message['dst'], json.dumps(message))
+                self.send_to_client(
+                    message['dst'], Message.serialize(message))
         elif (message['type'] == "out" and
                 message['uid'] in self.gateways[ws]):
             # Node disparition are always broadcasted to clients
             self.gateways[ws].remove(message['uid'])
-            self.broadcast(json.dumps(message))
+            self.broadcast(Message.serialize(message))
         elif (message['type'] == "update" and
                 message['uid'] in self.gateways[ws]):
             if message['dst'] == "all":
                 # Occurs when a new update was pushed by a node:
                 # require broadcast
-                self.broadcast(json.dumps(message))
+                self.broadcast(Message.serialize(message))
             elif message['dst'] in self.clients.keys():
                 # Occurs when a new client has just connected:
                 # Only the cached information of a node are pushed to this
                 # specific client
-                self.send_to_client(message['dst'], json.dumps(message))
+                self.send_to_client(
+                    message['dst'], Message.serialize(message))
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""

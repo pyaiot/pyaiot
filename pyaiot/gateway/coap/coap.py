@@ -141,7 +141,7 @@ class CoapServerResource(resource.Resource):
 
         if CoapNode(remote) in self._controller.nodes.keys():
             path, data = payload.split(":", 1)
-            self._controller.handle_coap_post(remote, '/' + path, data)
+            self._controller.handle_coap_post(remote, path, data)
         return Message(code=CHANGED,
                        payload="Received '{}'".format(payload).encode('utf-8'))
 
@@ -171,11 +171,11 @@ class CoapController():
     def fetch_nodes_cache(self, source):
         """Send cached nodes information."""
         logger.debug("Fetching cached information of registered nodes.")
-        for _, value in self.nodes.items():
-            self._on_message_cb(Msg.new_node(value['uid'], 'coap', dst=source))
-            for endpoint, data in value['data'].items():
-                self._on_message_cb(
-                    Msg.update_node(value['uid'], endpoint, data, dst=source))
+        for _, node in self.nodes.items():
+            self._on_message_cb(Msg.new_node(node['uid'], dst=source))
+            for endpoint, value in node['data'].items():
+                yield self._on_message_cb(
+                    Msg.update_node(node['uid'], endpoint, value, dst=source))
 
     @gen.coroutine
     def discover_node(self, node, uid):
@@ -203,6 +203,9 @@ class CoapController():
                 logger.debug("Cannot discover ressource {} on node {}"
                              .format(endpoint, node.address))
                 return
+
+            # Remove '/' from path
+            path = path[1:]
             self._on_message_cb(Msg.update_node(uid, path, payload))
             self.nodes[node]['data'].update({path: payload})
 
@@ -221,7 +224,7 @@ class CoapController():
         - 'payload' corresponds to the new payload for the CoAP resource.
         """
         uid = data['uid']
-        path = data['path']
+        endpoint = data['endpoint']
         payload = data['payload']
         logger.debug("Translating message ('{}') received to CoAP PUT "
                      "request".format(data))
@@ -230,9 +233,9 @@ class CoapController():
             if self.nodes[node]['uid'] == uid:
                 address = self.nodes[node]['data']['ip']
                 logger.debug("Updating CoAP node '{}' resource '{}'"
-                             .format(self.nodes[node]['data']['ip'], path))
+                             .format(self.nodes[node]['data']['ip'], endpoint))
                 code, payload = yield _coap_resource(
-                    'coap://[{0}]{1}'.format(address, path),
+                    'coap://[{0}]/{1}'.format(address, endpoint),
                     method=PUT,
                     payload=payload.encode('ascii'))
                 break
@@ -252,9 +255,11 @@ class CoapController():
         if node not in self.nodes:
             node_uid = str(uuid.uuid4())
             self.nodes.update({node: {'uid': node_uid,
-                                      'data': {'ip': address}}})
-            self._on_message_cb(Msg.new_node(node_uid, 'coap'))
-            self._on_message_cb(Msg.update_node(node_uid, "/ip", address))
+                                      'data': {'ip': address,
+                                               'protocol': 'coap'}}})
+            self._on_message_cb(Msg.new_node(node_uid))
+            self._on_message_cb(Msg.update_node(node_uid, "ip", address))
+            self._on_message_cb(Msg.update_node(node_uid, "protocol", 'coap'))
             self.discover_node(node, node_uid)
         else:
             data = self.nodes.pop(node)

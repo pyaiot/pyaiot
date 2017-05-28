@@ -39,7 +39,7 @@ __NODE_RESOURCES__ = {'name': {'delay': 0,
                                                         20, 30, 1)))},
                       'pressure': {'delay': 10,
                                    'value': (lambda x=None:
-                                             '{}°hPa'
+                                             '{}hPa'
                                              .format(random.randrange(
                                                      990, 1015, 1)))}
                       }
@@ -50,8 +50,18 @@ def send_check(mqtt_client):
     while True:
         check_data = json.dumps({'id': __NODE_ID__})
         asyncio.get_event_loop().create_task(publish(
-            mqtt_client, 'node/check', check_data.encode()))
+            mqtt_client, 'node/check', check_data))
         yield from asyncio.sleep(__DELAY_CHECK)
+
+
+@asyncio.coroutine
+def send_values(mqtt_client):
+    for resource in __NODE_RESOURCES__:
+        topic = 'node/{}/{}'.format(__NODE_ID__, resource)
+        delay = __NODE_RESOURCES__[resource]['delay']
+        value = __NODE_RESOURCES__[resource]['value']
+        asyncio.get_event_loop().create_task(
+            publish_continuous(mqtt_client, topic, value, delay))
 
 
 @asyncio.coroutine
@@ -66,6 +76,7 @@ def start_client():
     yield from mqtt_client.subscribe([('gateway/{}/led/set'
                                        .format(__NODE_ID__), QOS_1)])
     asyncio.get_event_loop().create_task(send_check(mqtt_client))
+    asyncio.get_event_loop().create_task(send_values(mqtt_client))
     while True:
         try:
             logger.debug("Waiting for incoming MQTT messages from gateway")
@@ -92,13 +103,13 @@ def start_client():
                 for resource in __NODE_RESOURCES__:
                     topic = 'node/{}/{}'.format(__NODE_ID__, resource)
                     value = __NODE_RESOURCES__[resource]['value']
-                    delay = __NODE_RESOURCES__[resource]['delay']
+                    msg = json.dumps({'value': value()})
                     asyncio.get_event_loop().create_task(
-                        publish_continuous(mqtt_client, topic, value, delay))
+                        publish(mqtt_client, topic, msg))
         elif topic_name.endswith("/led/set"):
             __LED_VALUE__ = data
             topic = 'node/{}/led'.format(__NODE_ID__)
-            data = json.dumps({'value': data})
+            data = json.dumps({'value': data}, ensure_ascii=False)
             asyncio.get_event_loop().create_task(
                 publish(mqtt_client, topic, data.encode()))
         else:
@@ -107,14 +118,16 @@ def start_client():
 
 @asyncio.coroutine
 def publish(mqtt_client, topic, value):
+    if hasattr(value, 'encode'):
+        value = value.encode()
     yield from mqtt_client.publish(topic, value, qos=QOS_1)
-    logger.debug("Published '{}' to topic '{}'".format(value, topic))
+    logger.debug("Published '{}' to topic '{}'".format(value.decode(), topic))
 
 
 @asyncio.coroutine
 def publish_continuous(mqtt_client, topic, value, delay=0):
     while True:
-        data = json.dumps({'value': value()})
+        data = json.dumps({'value': value()}, ensure_ascii=False)
         yield from mqtt_client.publish(topic, data.encode('utf-8'), qos=QOS_1)
         logger.debug("Published '{}' to topic '{}'".format(data, topic))
         if delay == 0:
