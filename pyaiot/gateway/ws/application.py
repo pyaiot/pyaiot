@@ -63,9 +63,12 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
     @gen.coroutine
     def on_message(self, raw):
         """Triggered when a message is received from the web client."""
-        message = Message.check_ws_message(self, raw)
+        message, reason = Message.check_message(raw)
         if message is not None:
             self.application.on_node_message(self, message)
+        else:
+            logger.debug("Invalid message, closing websocket")
+            self.close(code=1003, reason="{}.".format(reason))
 
     def on_close(self):
         """Remove websocket from internal list."""

@@ -67,7 +67,7 @@ class Message():
         return Message.serialize({'request': 'discover'})
 
     @staticmethod
-    def check_ws_message(ws, raw):
+    def check_message(raw):
         """Verify a received message is correctly formatted."""
         reason = None
         try:
@@ -75,20 +75,21 @@ class Message():
         except TypeError as e:
             logger.warning(e)
             reason = "Invalid message '{}'.".format(raw)
+            message = None
         except json.JSONDecodeError:
             reason = ("Invalid message received "
                       "'{}'. Only JSON format is supported.".format(raw))
+            message = None
 
-        if 'type' not in message and 'data' not in message:
-            reason = "Invalid message '{}'.".format(message)
-
-        if (message['type'] != 'new' and message['type'] != 'update' and
-                message['type'] != 'out'):
-            reason = "Invalid message type '{}'.".format(message['type'])
+        if message is not None:
+            if 'type' not in message and 'data' not in message:
+                reason = "Invalid message '{}'.".format(message)
+            elif (message['type'] != 'new' and message['type'] != 'update' and
+                    message['type'] != 'out'):
+                reason = "Invalid message type '{}'.".format(message['type'])
 
         if reason is not None:
             logger.warning(reason)
-            ws.close(code=1003, reason="{}.".format(reason))
             message = None
 
-        return message
+        return message, reason

@@ -23,4 +23,7 @@ parts/
 
 node_modules/
 
+.cache
+.coverage
+
 *.log
