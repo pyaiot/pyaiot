@@ -82,7 +82,9 @@ class Message():
             message = None
 
         if message is not None:
-            if 'type' not in message and 'data' not in message:
+            if not hasattr(message, '__iter__'):
+                reason = "Invalid message '{}'.".format(message)
+            elif 'type' not in message and 'data' not in message:
                 reason = "Invalid message '{}'.".format(message)
             elif (message['type'] != 'new' and message['type'] != 'update' and
                     message['type'] != 'out'):
