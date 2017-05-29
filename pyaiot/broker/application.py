@@ -29,7 +29,6 @@
 
 """Broker tornado application module."""
 
-import json
 import uuid
 import logging
 from tornado import gen, web, websocket
