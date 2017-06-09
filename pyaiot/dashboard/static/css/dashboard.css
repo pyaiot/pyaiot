@@ -159,7 +159,7 @@ svg.pad path:hover, svg.pad rect:hover {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-image: url({{ static_url( 'assets/joystick.svg' ) }});
+    background-image: url(../assets/joystick.svg);
 }
 .joystick .ball {
     /*border: 1px solid black;*/
