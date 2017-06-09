@@ -51,7 +51,7 @@ def get_version(package):
     with open(os.path.join(package, '__init__.py')) as init_fd:
         for line in init_fd:
             if line.startswith('__version__'):
-                return eval(line.split('=')[-1])  # pylint:disable=eval-used
+                return eval(line.split('=')[-1])
 
 if __name__ == '__main__':
 
