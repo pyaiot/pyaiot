@@ -19,7 +19,7 @@ function initJoystick() {
 
     joystick.send = function() {
         var payload = `${joystick.dx}:${joystick.dy}:${joystick.dx+joystick.dy}\n`;
-        sendData({
+        sendData("update", {
                 "uid": joystick.active_node,
                 "endpoint": "ribot",
                 "payload": payload
