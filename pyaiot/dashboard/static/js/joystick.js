@@ -6,24 +6,41 @@ function initJoystick() {
         },
         active: false,
         timer: null,
-        interval: 250, // in milliseconds
+        stopTimer: null,
+        interval: 1000, // in milliseconds
     }
 
     joystick.start = function(node_uid, event) {
+        console.log('START');
         joystick.active = true;
         joystick.active_node = node_uid;
         joystick.move(event);
+        window.clearTimeout(joystick.stopTimer);
         joystick.send();
         joystick.timer = window.setInterval(joystick.send, joystick.interval);
+        
     }
 
     joystick.send = function() {
-        var payload = `${joystick.dx}:${joystick.dy}:${joystick.dx+joystick.dy}\n`;
-        sendData("update", {
+        if (joystick.active) {
+            console.log('SEND');
+            var payload = `${joystick.dx}:${joystick.dy}:${joystick.dx+joystick.dy}\n`;
+            sendData("update", {
                 "uid": joystick.active_node,
                 "endpoint": "ribot",
                 "payload": payload
             });
+        }
+    }
+
+    joystick.sendStop = function() {
+        console.log('STOP');
+        var payload = `0:0:0\n`;
+        sendData("update", {
+            "uid": joystick.active_node,
+            "endpoint": "ribot",
+            "payload": payload
+        });
     }
 
     joystick.move = function(event) {
@@ -55,13 +72,15 @@ function initJoystick() {
     }
 
     joystick.stop = function() {
-        if (joystick.active) {
+        // if (joystick.active) {
             joystick.active = false;
+            window.clearInterval(joystick.timer);
+            console.log('STOP');
             joystick.dx = joystick.dy = 0;
             $('.ball').css('transform', `translate(0,0)`);
-            window.clearInterval(joystick.timer);
-            joystick.send()
-        }
+            joystick.sendStop();
+            joystick.stopTimer = window.setTimeout(joystick.sendStop, 100);
+        // }
     }
 
     return joystick

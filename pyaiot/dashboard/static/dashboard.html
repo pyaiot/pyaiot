@@ -455,7 +455,7 @@ function receive_message(msg) {
                     }
                     catch(err) {}
                 }
-                console.log("Updating node", node_uid, "with", endpoint, "data:", data)
+                // console.log("Updating node", node_uid, "with", endpoint, "data:", data)
                 Vue.set(vm.nodes[index].data, endpoint, data) // same as vm.nodes[index].data[endpoint] = msg.data, but triggers UI update
 
                 // force material UI refresh
