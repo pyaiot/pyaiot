@@ -51,6 +51,7 @@ class CoapGatewayApplication(web.Application):
         if options.debug:
             logger.setLevel(logging.DEBUG)
 
+        self.broker = None
         self.keys = keys
         handlers = []
         settings = {'debug': True}
@@ -89,6 +90,7 @@ class CoapGatewayApplication(web.Application):
 
             yield gen.sleep(3)
 
+    @gen.coroutine
     def send_to_broker(self, message):
         """Send a message to the parent broker."""
         if self.broker is not None:
