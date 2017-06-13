@@ -30,8 +30,11 @@
 """Broker application module."""
 
 import sys
-import tornado
+import time
 import logging
+import signal
+from functools import partial
+import tornado
 from tornado.options import define, options
 import tornado.platform.asyncio
 
@@ -57,6 +60,20 @@ def parse_command_line():
     options.parse_command_line()
 
 
+def sig_handler(server, sig, frame):
+    """Triggered when a signal is received from system."""
+    _ioloop = tornado.ioloop.IOLoop.instance()
+
+    def shutdown():
+        """Force server and ioloop shutdown."""
+        logging.info('Shuting down server')
+        server.stop()
+        _ioloop.stop()
+
+    logging.warning('Caught signal: %s', sig)
+    _ioloop.add_callback_from_signal(shutdown)
+
+
 def run(arguments=[]):
     """Start a broker instance."""
     if arguments != []:
@@ -73,17 +90,16 @@ def run(arguments=[]):
         logger.error(e)
         return
 
-    try:
-        # Application ioloop initialization
-        if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
-            tornado.platform.asyncio.AsyncIOMainLoop().install()
+    _ioloop = tornado.ioloop.IOLoop.current()
+    app = BrokerApplication(keys, options=options)
+    _server = app.listen(options.port)
 
-        app = BrokerApplication(keys, options=options)
-        app.listen(options.port)
-        tornado.ioloop.IOLoop.instance().start()
-    except KeyboardInterrupt:
-        logger.debug("Stopping application")
-        tornado.ioloop.IOLoop.instance().stop()
+    signal.signal(signal.SIGTERM, partial(sig_handler, _server))
+    signal.signal(signal.SIGINT, partial(sig_handler, _server))
+
+    _ioloop.start()
+    logger.debug("Application stopped")
+
 
 if __name__ == '__main__':
     run()
