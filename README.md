@@ -1,4 +1,4 @@
-## A *Python for IoT* package connecting nodes to a web dashboard
+## Pyaiot, connecting nodes to the web
 
 Pyaiot provides a set of services to interact and transport data from IoT nodes
 with regular web protocols (HTTP) and technologies. Pyaiot relies on Python
