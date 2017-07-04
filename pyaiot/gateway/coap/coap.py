@@ -240,6 +240,7 @@ class CoapController():
                     method=PUT,
                     payload=payload.encode('ascii'))
                 if code == Code.CHANGED:
+                    self.nodes[node]['data'][endpoint] = payload
                     yield self._on_message_cb(
                         Msg.update_node(uid, endpoint, payload))
                 break
