@@ -46,7 +46,7 @@ logger = logging.getLogger("pyaiot.gw.coap")
 
 COAP_PORT = 5683
 MAX_TIME = 120
-
+PROTOCOL = "CoAP"
 
 def _coap_endpoints(link_header):
     link = link_header.replace(' ', '')
@@ -261,10 +261,11 @@ class CoapController():
             node_uid = str(uuid.uuid4())
             self.nodes.update({node: {'uid': node_uid,
                                       'data': {'ip': address,
-                                               'protocol': 'coap'}}})
+                                               'protocol': PROTOCOL'}}})
             self._on_message_cb(Msg.new_node(node_uid))
             self._on_message_cb(Msg.update_node(node_uid, "ip", address))
-            self._on_message_cb(Msg.update_node(node_uid, "protocol", 'coap'))
+            self._on_message_cb(Msg.update_node(node_uid,
+                                                "protocol", PROTOCOL))
             self.discover_node(node, node_uid)
         else:
             data = self.nodes.pop(node)

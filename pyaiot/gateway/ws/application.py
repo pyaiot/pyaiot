@@ -40,6 +40,8 @@ from pyaiot.common.messaging import Message
 
 logger = logging.getLogger("pyaiot.gw.ws")
 
+PROTOCOL = "WebSocket"
+
 
 class WebsocketNodeHandler(websocket.WebSocketHandler):
     def check_origin(self, origin):
@@ -53,12 +55,12 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         logger.debug("New node websocket opened")
         self.application.nodes.update(
             {self: {'uid': str(uuid.uuid4()),
-                    'data': {'protocol': 'websocket'}}})
+                    'data': {'protocol': PROTOCOL}}})
         node_uid = self.application.nodes[self]['uid']
         self.application.send_to_broker(Message.new_node(node_uid))
         yield self.write_message(Message.discover_node())
         self.application.send_to_broker(
-            Message.update_node(node_uid, 'protocol', 'websocket'))
+            Message.update_node(node_uid, 'protocol', PROTOCOL))
 
     @gen.coroutine
     def on_message(self, raw):

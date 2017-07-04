@@ -49,7 +49,7 @@ logger = logging.getLogger("pyaiot.gw.mqtt")
 MQTT_HOST = 'localhost'
 MQTT_PORT = 1886
 MAX_TIME = 120
-
+PROTOCOL = MQTT
 
 class MQTTNode(object):
     """Object defining a MQTT node."""
@@ -140,10 +140,10 @@ class MQTTController():
             logger.debug("Subscribed to topic: {}".format(resources_topic))
             node_uid = str(uuid.uuid4())
             self.nodes.update({node: {'uid': node_uid,
-                                      'data': {'protocol': 'mqtt'}}})
+                                      'data': {'protocol': PROTOCOL}}})
             logger.debug("Available nodes: {}".format(self.nodes))
             self._on_message_cb(Msg.new_node(node_uid))
-            self._on_message_cb(Msg.update_node(node_uid, "protocol", 'mqtt'))
+            self._on_message_cb(Msg.update_node(node_uid, "protocol", PROTOCOL))
             discover_topic = 'gateway/{}/discover'.format(node_id)
             yield from self.mqtt_client.publish(discover_topic, b"resources",
                                                 qos=QOS_1)
