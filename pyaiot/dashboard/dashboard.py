@@ -32,14 +32,14 @@
 """Web dashboard tornado application module."""
 
 import os
-import sys
 import os.path
+import sys
 import tornado
 import logging
-import asyncio
 from tornado import web
 from tornado.options import define, options
-import tornado.platform.asyncio
+
+from pyaiot.common.helpers import start_application
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '
@@ -83,25 +83,34 @@ class IoTDashboardApplication(web.Application):
 
 def parse_command_line():
     """Parse command line arguments for IoT broker application."""
-    define("static-path",
-           default=os.path.join(os.path.dirname(__file__), "static"),
-           help="Static files path (containing npm package.json file)")
-    define("port", default=8080,
-           help="Web application HTTP port")
-    define("broker_port", default=8000,
-           help="Broker port")
-    define("broker_host", default="localhost",
-           help="Broker hostname")
-    define("camera_url", default=None,
-           help="Default camera url")
-    define("title", default="IoT Dashboard",
-           help="Dashboard title")
-    define("logo", default=None,
-           help="URL for a logo in the dashboard navbar")
-    define("favicon", default=None,
-           help="Favicon url for your dashboard site")
-    define("debug", default=False,
-           help="Enable debug mode.")
+    if not hasattr(options, "static-path"):
+        define("static-path",
+               default=os.path.join(os.path.dirname(__file__), "static"),
+               help="Static files path (containing npm package.json file)")
+    if not hasattr(options, "port"):
+        define("port", default=8080,
+               help="Web application HTTP port")
+    if not hasattr(options, "broker-port"):
+        define("broker_port", default=8000,
+               help="Broker port")
+    if not hasattr(options, "broker-host"):
+        define("broker_host", default="localhost",
+               help="Broker hostname")
+    if not hasattr(options, "camera_url"):
+        define("camera_url", default=None,
+               help="Default camera url")
+    if not hasattr(options, "title"):
+        define("title", default="IoT Dashboard",
+               help="Dashboard title")
+    if not hasattr(options, "logo"):
+        define("logo", default=None,
+               help="URL for a logo in the dashboard navbar")
+    if not hasattr(options, "favicon"):
+        define("favicon", default=None,
+               help="Favicon url for your dashboard site")
+    if not hasattr(options, "debug"):
+        define("debug", default=False,
+               help="Enable debug mode.")
     options.parse_command_line()
 
 
@@ -115,17 +124,7 @@ def run(arguments=[]):
     if options.debug:
         logger.setLevel(logging.DEBUG)
 
-    try:
-        ioloop = asyncio.get_event_loop()
-        tornado.platform.asyncio.AsyncIOMainLoop().install()
-
-        # Start tornado application
-        app = IoTDashboardApplication()
-        app.listen(options.port)
-        ioloop.run_forever()
-    except KeyboardInterrupt:
-        print("Exiting")
-        ioloop.stop()
+    start_application(IoTDashboardApplication(), port=options.port)
 
 
 if __name__ == '__main__':

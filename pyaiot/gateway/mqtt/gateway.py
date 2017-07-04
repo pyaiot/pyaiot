@@ -35,6 +35,7 @@ import tornado.platform.asyncio
 from tornado.options import define, options
 
 from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
+from pyaiot.common.helpers import start_application
 
 from .application import MQTTGatewayApplication
 from .mqtt import MAX_TIME, MQTT_PORT, MQTT_HOST
@@ -82,18 +83,13 @@ def run(arguments=[]):
         logger.error(e)
         return
 
-    try:
-        # Application ioloop initialization
-        if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
-            tornado.platform.asyncio.AsyncIOMainLoop().install()
+    # Application ioloop initialization
+    if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
+        tornado.platform.asyncio.AsyncIOMainLoop().install()
 
-        # Initialize the gateway application
-        app = MQTTGatewayApplication(keys, options=options)
-        tornado.ioloop.IOLoop.instance().start()
-    except KeyboardInterrupt:
-        app.terminate()
-        logger.debug("Stopping application")
-        tornado.ioloop.IOLoop.instance().stop()
+    start_application(MQTTGatewayApplication(keys, options=options),
+                      close_client=True)
+
 
 if __name__ == '__main__':
     run()

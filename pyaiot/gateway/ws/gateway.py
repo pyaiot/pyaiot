@@ -31,10 +31,10 @@
 
 import sys
 import logging
-from tornado import ioloop
 from tornado.options import define, options
 
 from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
+from pyaiot.common.helpers import start_application
 
 from .application import WebsocketGatewayApplication
 
@@ -77,14 +77,10 @@ def run(arguments=[]):
         logger.error(e)
         return
 
-    try:
-        # Initialize the websocket gateway application
-        app = WebsocketGatewayApplication(keys, options=options)
-        app.listen(options.gateway_port)
-        ioloop.IOLoop.instance().start()
-    except KeyboardInterrupt:
-        logger.debug("Stopping application")
-        ioloop.IOLoop.instance().stop()
+    start_application(WebsocketGatewayApplication(keys, options=options),
+                      port=options.gateway_port,
+                      close_client=True)
+
 
 if __name__ == '__main__':
     run()

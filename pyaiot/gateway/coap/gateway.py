@@ -35,6 +35,7 @@ import tornado.platform.asyncio
 from tornado.options import define, options
 
 from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
+from pyaiot.common.helpers import start_application
 
 from .coap import MAX_TIME, COAP_PORT
 from .application import CoapGatewayApplication
@@ -81,17 +82,12 @@ def run(arguments=[]):
         logger.error(e)
         return
 
-    try:
-        # Application ioloop initialization
-        if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
-            tornado.platform.asyncio.AsyncIOMainLoop().install()
+    if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
+        tornado.platform.asyncio.AsyncIOMainLoop().install()
 
-        # Initialize the gateway application
-        CoapGatewayApplication(keys, options=options)
-        tornado.ioloop.IOLoop.instance().start()
-    except KeyboardInterrupt:
-        logger.debug("Stopping application")
-        tornado.ioloop.IOLoop.instance().stop()
+    start_application(CoapGatewayApplication(keys, options=options),
+                      port=options.coap_port, close_client=True)
+
 
 if __name__ == '__main__':
     run()

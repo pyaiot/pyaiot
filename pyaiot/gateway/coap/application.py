@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Broker tornado application module."""
+"""CoAP gateway tornado application module."""
 
 import json
 import logging
@@ -69,6 +69,10 @@ class CoapGatewayApplication(web.Application):
 
         super().__init__(handlers, **settings)
         logger.info('CoAP gateway application started')
+
+    def close_client(self):
+        """Close client websocket"""
+        self.broker.close()
 
     @gen.coroutine
     def create_broker_connection(self, url):

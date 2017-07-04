@@ -102,6 +102,10 @@ class WebsocketGatewayApplication(web.Application):
         logger.info('Application started, listening on port {}'
                     .format(options.gateway_port))
 
+    def close_client(self):
+        """Close client websocket"""
+        self.broker.close()
+
     @gen.coroutine
     def create_broker_connection(self, url):
         """Create an asynchronous connection to the broker."""

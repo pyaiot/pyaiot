@@ -30,15 +30,11 @@
 """Broker application module."""
 
 import sys
-import time
 import logging
-import signal
-from functools import partial
-import tornado
 from tornado.options import define, options
-import tornado.platform.asyncio
 
 from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
+from pyaiot.common.helpers import start_application
 
 from .application import BrokerApplication
 
@@ -60,20 +56,6 @@ def parse_command_line():
     options.parse_command_line()
 
 
-def sig_handler(server, sig, frame):
-    """Triggered when a signal is received from system."""
-    _ioloop = tornado.ioloop.IOLoop.instance()
-
-    def shutdown():
-        """Force server and ioloop shutdown."""
-        logging.info('Shuting down server')
-        server.stop()
-        _ioloop.stop()
-
-    logging.warning('Caught signal: %s', sig)
-    _ioloop.add_callback_from_signal(shutdown)
-
-
 def run(arguments=[]):
     """Start a broker instance."""
     if arguments != []:
@@ -86,19 +68,12 @@ def run(arguments=[]):
 
     try:
         keys = check_key_file(options.key_file)
-    except ValueError as e:
-        logger.error(e)
+    except ValueError as exc:
+        logger.error(exc)
         return
 
-    _ioloop = tornado.ioloop.IOLoop.current()
-    app = BrokerApplication(keys, options=options)
-    _server = app.listen(options.port)
-
-    signal.signal(signal.SIGTERM, partial(sig_handler, _server))
-    signal.signal(signal.SIGINT, partial(sig_handler, _server))
-
-    _ioloop.start()
-    logger.debug("Application stopped")
+    start_application(BrokerApplication(keys, options=options),
+                      port=options.port)
 
 
 if __name__ == '__main__':
