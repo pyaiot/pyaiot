@@ -49,7 +49,7 @@ logger = logging.getLogger("pyaiot.gw.mqtt")
 MQTT_HOST = 'localhost'
 MQTT_PORT = 1886
 MAX_TIME = 120
-PROTOCOL = MQTT
+PROTOCOL = "MQTT"
 
 class MQTTNode(object):
     """Object defining a MQTT node."""
