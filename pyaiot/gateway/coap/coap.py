@@ -37,6 +37,7 @@ import aiocoap.resource as resource
 
 from tornado import gen
 from aiocoap import Context, Message, GET, PUT, CHANGED
+from aiocoap.numbers.codes import Code
 
 from pyaiot.common.messaging import Message as Msg
 
@@ -234,10 +235,13 @@ class CoapController():
                 address = self.nodes[node]['data']['ip']
                 logger.debug("Updating CoAP node '{}' resource '{}'"
                              .format(self.nodes[node]['data']['ip'], endpoint))
-                code, payload = yield _coap_resource(
+                code, p = yield _coap_resource(
                     'coap://[{0}]/{1}'.format(address, endpoint),
                     method=PUT,
                     payload=payload.encode('ascii'))
+                if code == Code.CHANGED:
+                    yield self._on_message_cb(
+                        Msg.update_node(uid, endpoint, payload))
                 break
 
     def handle_coap_post(self, address, endpoint, value):
