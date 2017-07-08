@@ -14,13 +14,18 @@ web: CoAP, MQTT, HTTP, etc
 Pyaiot main objective is to provide high level services for communicating
 with **constrained** nodes.
 Those nodes are generally microcontroller based and not able to run Linux.
-Thus, we need a specific OS to run on those kind of nodes. For this, we choose
-[RIOT](https://riot-os.org) because it provides an hardware independent layer
-along with the standard network stacks required to communicate with the nodes
-from a network.
+Thus, we need a specific OS to run on those kind of nodes. For this, we
+initially chose [RIOT](https://riot-os.org) because it provides an hardware
+independent layer along with the standard network stacks required to
+communicate with the nodes from a network.
 
 The source code of RIOT firmwares running on the nodes is available on
 [another repository on GitHub](https://github.com/pyaiot/riot-firmwares).
+
+Other nodes with communication capabilities can also be used. In this
+repository, we also provide a [Micropython script](utils/pycom) that can be
+used on [Pycom nodes](https://www.pycom.io/).
+This script only works with the [mqtt gateway service](pyaiot/gateway/mqtt).
 
 ### Available Demos
 
