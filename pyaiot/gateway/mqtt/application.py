@@ -61,6 +61,7 @@ class MQTTGatewayApplication(web.Application):
             port=options.mqtt_port,
             max_time=options.max_time)
         PeriodicCallback(self._mqtt_controller.check_dead_nodes, 1000).start()
+        PeriodicCallback(self._mqtt_controller.request_alive, 30000).start()
 
         # Create connection to broker
         self.create_broker_connection(

@@ -227,6 +227,12 @@ class MQTTController():
                     payload.encode(), qos=QOS_1))
                 break
 
+    def request_alive(self):
+        """Publish a request to trigger a check publish from nodes."""
+        logger.debug("Request check message from all MQTT nodes")
+        asyncio.get_event_loop().create_task(
+            self.mqtt_client.publish('gateway/check', b'', qos=QOS_1))
+
     def check_dead_nodes(self):
         """Check and remove nodes that are not alive anymore."""
         to_remove = [node for node in self.nodes.keys()
