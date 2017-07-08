@@ -11,55 +11,55 @@ logging.basicConfig(format='%(asctime)s - %(name)14s - '
                            '%(levelname)5s - %(message)s')
 logger = logging.getLogger("mqtt_test_node")
 
-__MQTT_URL__ = 'mqtt://localhost:1886/'
-__NODE_ID__ = 'mqtt_test_node'
-__LED_VALUE__ = '0'
-__DELAY_CHECK = 30  # seconds
+MQTT_URL = 'mqtt://localhost:1886/'
+NODE_ID = 'mqtt_test_node'
+LED_VALUE = '0'
+DELAY_CHECK = 30  # seconds
 
 
 def pressure_value():
     return '{}°hPa'.format(random.randrange(990, 1015, 1))
 
 
-__NODE_RESOURCES__ = {'name': {'delay': 0,
-                               'value': lambda x=None: "MQTT test node"},
-                      'os': {'delay': 0,
-                             'value': lambda x=None: "riot"},
-                      'ip': {'delay': 0,
-                             'value': (lambda x=None:
-                                       socket.gethostbyname(
-                                        socket.gethostname()))},
-                      'board': {'delay': 0, 'value': lambda x=None: "HP"},
-                      'led': {'delay': 0,
-                              'value': lambda x=None: __LED_VALUE__},
-                      'temperature': {'delay': 5,
-                                      'value': (lambda x=None:
-                                                '{}°C'
-                                                .format(random.randrange(
-                                                        20, 30, 1)))},
-                      'pressure': {'delay': 10,
-                                   'value': (lambda x=None:
-                                             '{}hPa'
-                                             .format(random.randrange(
-                                                     990, 1015, 1)))}
-                      }
+NODE_RESOURCES = {'name': {'delay': 0,
+                           'value': lambda x=None: "MQTT test node"},
+                  'os': {'delay': 0,
+                         'value': lambda x=None: "riot"},
+                  'ip': {'delay': 0,
+                         'value': (lambda x=None:
+                                   socket.gethostbyname(
+                                    socket.gethostname()))},
+                  'board': {'delay': 0, 'value': lambda x=None: "HP"},
+                  'led': {'delay': 0,
+                          'value': lambda x=None: LED_VALUE},
+                  'temperature': {'delay': 5,
+                                  'value': (lambda x=None:
+                                            '{}°C'
+                                            .format(random.randrange(
+                                                    20, 30, 1)))},
+                  'pressure': {'delay': 10,
+                               'value': (lambda x=None:
+                                         '{}hPa'
+                                         .format(random.randrange(
+                                                 990, 1015, 1)))}
+                  }
 
 
 @asyncio.coroutine
 def send_check(mqtt_client):
     while True:
-        check_data = json.dumps({'id': __NODE_ID__})
+        check_data = json.dumps({'id': NODE_ID})
         asyncio.get_event_loop().create_task(publish(
             mqtt_client, 'node/check', check_data))
-        yield from asyncio.sleep(__DELAY_CHECK)
+        yield from asyncio.sleep(DELAY_CHECK)
 
 
 @asyncio.coroutine
 def send_values(mqtt_client):
-    for resource in __NODE_RESOURCES__:
-        topic = 'node/{}/{}'.format(__NODE_ID__, resource)
-        delay = __NODE_RESOURCES__[resource]['delay']
-        value = __NODE_RESOURCES__[resource]['value']
+    for resource in NODE_RESOURCES:
+        topic = 'node/{}/{}'.format(NODE_ID, resource)
+        delay = NODE_RESOURCES[resource]['delay']
+        value = NODE_RESOURCES[resource]['value']
         asyncio.get_event_loop().create_task(
             publish_continuous(mqtt_client, topic, value, delay))
 
@@ -69,12 +69,12 @@ def start_client():
     """Connect to MQTT broker and subscribe to node ceck ressource."""
     global __LED_VALUE__
     mqtt_client = MQTTClient()
-    yield from mqtt_client.connect(__MQTT_URL__)
+    yield from mqtt_client.connect(MQTT_URL)
     # Subscribe to 'gateway/check' with QOS=1
     yield from mqtt_client.subscribe([('gateway/{}/discover'
-                                       .format(__NODE_ID__), QOS_1)])
+                                       .format(NODE_ID), QOS_1)])
     yield from mqtt_client.subscribe([('gateway/{}/led/set'
-                                       .format(__NODE_ID__), QOS_1)])
+                                       .format(NODE_ID), QOS_1)])
     asyncio.get_event_loop().create_task(send_check(mqtt_client))
     asyncio.get_event_loop().create_task(send_values(mqtt_client))
     while True:
@@ -95,20 +95,20 @@ def start_client():
                      .format(topic_name, data))
         if topic_name.endswith("/discover"):
             if data == "resources":
-                topic = 'node/{}/resources'.format(__NODE_ID__)
-                value = json.dumps(list(__NODE_RESOURCES__.keys())).encode()
+                topic = 'node/{}/resources'.format(NODE_ID)
+                value = json.dumps(list(NODE_RESOURCES.keys())).encode()
                 asyncio.get_event_loop().create_task(
                     publish(mqtt_client, topic, value))
             else:
-                for resource in __NODE_RESOURCES__:
-                    topic = 'node/{}/{}'.format(__NODE_ID__, resource)
-                    value = __NODE_RESOURCES__[resource]['value']
+                for resource in NODE_RESOURCES:
+                    topic = 'node/{}/{}'.format(NODE_ID, resource)
+                    value = NODE_RESOURCES[resource]['value']
                     msg = json.dumps({'value': value()})
                     asyncio.get_event_loop().create_task(
                         publish(mqtt_client, topic, msg))
         elif topic_name.endswith("/led/set"):
-            __LED_VALUE__ = data
-            topic = 'node/{}/led'.format(__NODE_ID__)
+            LED_VALUE = data
+            topic = 'node/{}/led'.format(NODE_ID)
             data = json.dumps({'value': data}, ensure_ascii=False)
             asyncio.get_event_loop().create_task(
                 publish(mqtt_client, topic, data.encode()))
