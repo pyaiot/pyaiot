@@ -9,8 +9,8 @@ import pycom
 def settimeout(duration):
     pass
 
-WIFI_PASS = "alexandre"
-WIFI_SSID = "toto"
+WIFI_PASS = ""
+WIFI_SSID = ""
 
 wlan = WLAN(mode=WLAN.STA)
 wlan.antenna(WLAN.EXT_ANT)
