@@ -95,7 +95,7 @@ class MQTTController():
         yield from self.mqtt_client.subscribe([('node/check', QOS_1)])
         while True:
             try:
-                logger.debug("Waiting for incoming MQTT messages from nodes")
+                logger.debug("Waiting for MQTT messages published by nodes")
                 # Blocked here until a message is received
                 message = yield from self.mqtt_client.deliver_message()
             except ClientException as ce:
@@ -106,7 +106,11 @@ class MQTTController():
                 break
             packet = message.publish_packet
             topic_name = packet.variable_header.topic_name
-            data = json.loads(packet.payload.data.decode('utf-8'))
+            try:
+                data = json.loads(packet.payload.data.decode('utf-8'))
+            except:
+                # Skip data if not valid
+                continue
             logger.debug("Received message from node: {} => {}"
                          .format(topic_name, data))
             if topic_name.endswith("/check"):
