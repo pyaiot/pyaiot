@@ -53,6 +53,11 @@ class Message():
         return Message.serialize({'type': 'out', 'uid': uid})
 
     @staticmethod
+    def reset_node(uid):
+        """Generate a text message indicating a node reset."""
+        return Message.serialize({'type': 'reset', 'uid': uid})
+
+    @staticmethod
     def update_node(uid, endpoint, data, dst="all"):
         """Generate a text message indicating a node update."""
         return Message.serialize({'type': 'update',

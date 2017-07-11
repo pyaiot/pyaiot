@@ -30,6 +30,12 @@ def test_out_node():
     assert serialized == Message.serialize({'type': 'out', 'uid': '1234'})
 
 
+def test_reset_node():
+    serialized = Message.reset_node('1234')
+
+    assert serialized == Message.serialize({'type': 'reset', 'uid': '1234'})
+
+
 def test_discover_node():
     serialized = Message.discover_node()
 

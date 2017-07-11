@@ -60,9 +60,9 @@ def _coap_resource(url, method=GET, payload=b''):
     request.set_request_uri(url)
     try:
         response = yield from protocol.request(request).response
-    except Exception as e:
+    except Exception as exc:
         code = "Failed to fetch resource"
-        payload = '{0}'.format(e)
+        payload = '{0}'.format(exc)
     else:
         code = response.code
         payload = response.payload.decode('utf-8')
@@ -114,7 +114,7 @@ class CoapAliveResource(resource.Resource):
         logger.debug("CoAP Alive POST received from {}".format(remote))
 
         # Let the controller handle this message
-        self._controller.handle_coap_alive(remote)
+        self._controller.handle_coap_check(remote, reset=(payload == 'reset'))
 
         # Kindly reply the message has been processed
         return Message(code=CHANGED,
@@ -165,8 +165,8 @@ class CoapController():
                                CoapServerResource(self))
         root_coap.add_resource(('alive', ),
                                CoapAliveResource(self))
-        asyncio.async(Context.create_server_context(root_coap,
-                                                    bind=('::', self.port)))
+        asyncio.async(
+            Context.create_server_context(root_coap, bind=('::', self.port)))
 
     @gen.coroutine
     def fetch_nodes_cache(self, source):
@@ -184,9 +184,9 @@ class CoapController():
         coap_node_url = 'coap://[{}]'.format(node.address)
         if len(node.endpoints) == 0:
             logger.debug("Discovering CoAP node {}".format(node.address))
-            code, payload = yield _coap_resource('{0}/.well-known/core'
-                                                 .format(coap_node_url),
-                                                 method=GET)
+            _, payload = yield _coap_resource('{0}/.well-known/core'
+                                              .format(coap_node_url),
+                                              method=GET)
             node.endpoints = _coap_endpoints(payload)
 
         endpoints = [endpoint
@@ -230,7 +230,7 @@ class CoapController():
         logger.debug("Translating message ('{}') received to CoAP PUT "
                      "request".format(data))
 
-        for node, value in self.nodes.items():
+        for node, _ in self.nodes.items():
             if self.nodes[node]['uid'] == uid:
                 address = self.nodes[node]['data']['ip']
                 logger.debug("Updating CoAP node '{}' resource '{}'"
@@ -253,11 +253,13 @@ class CoapController():
         self._on_message_cb(Msg.update_node(
             self.nodes[node]['uid'], endpoint, value))
 
-    def handle_coap_alive(self, address):
-        """Handle alive message received from coap node."""
+    def handle_coap_check(self, address, reset=False):
+        """Handle check message received from coap node."""
         node = CoapNode(address)
         node.check_time = time.time()
         if node not in self.nodes:
+            # This is a totally new node: create uid, initialized cached node
+            # send 'new' node notification, 'update' notification.
             node_uid = str(uuid.uuid4())
             self.nodes.update({node: {'uid': node_uid,
                                       'data': {'ip': address,
@@ -267,7 +269,19 @@ class CoapController():
             self._on_message_cb(Msg.update_node(node_uid,
                                                 "protocol", PROTOCOL))
             self.discover_node(node, node_uid)
+        elif reset:
+            # The data of the node need to be reset without removing it. This
+            # is particularly the case after a reboot of the node or a
+            # firmware update of the node that triggered the reboot.
+            node_uid = self.nodes[node]['uid']
+            self.nodes[node]['data'] = {}
+            self.nodes[node]['data'].update({'ip': address,
+                                             'protocol': PROTOCOL})
+            self._on_message_cb(Msg.reset_node(node_uid))
+            self.discover_node(node, node_uid)
         else:
+            # The node simply sent a check message to notify that it's still
+            # online.
             data = self.nodes.pop(node)
             self.nodes.update({node: data})
 

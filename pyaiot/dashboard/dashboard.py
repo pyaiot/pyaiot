@@ -34,8 +34,8 @@
 import os
 import os.path
 import sys
-import tornado
 import logging
+import tornado
 from tornado import web
 from tornado.options import define, options
 

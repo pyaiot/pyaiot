@@ -445,6 +445,16 @@ function receive_message(msg) {
             remove_node_from_map(node_uid)
             remove_charts(node_uid)
             break
+        case 'reset':
+            if (index != -1) {
+                console.log("Resetting node", node_uid)
+                for (var key in vm.nodes[index].data) {
+                    Vue.delete(vm.nodes[index].data, key)
+                }
+            }
+            remove_node_from_map(node_uid)
+            remove_charts(node_uid)
+            break
         case 'update':
             if (index != -1) {
                 let endpoint = msg.endpoint.replace(/^\//g, '') // remove leading slash
