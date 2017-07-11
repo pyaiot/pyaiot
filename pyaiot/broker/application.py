@@ -194,7 +194,7 @@ class BrokerApplication(web.Application):
             # Node disparition are always broadcasted to clients
             self.gateways[ws].remove(message['uid'])
             self.broadcast(Message.serialize(message))
-        elif (message['type'] == "update" and
+        elif (message['type'] in  ("reset", "update") and
               message['uid'] in self.gateways[ws]):
             if message['dst'] == "all":
                 # Occurs when a new update was pushed by a node:
