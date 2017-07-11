@@ -182,6 +182,10 @@ var joystick = initJoystick()
                                         <th>OS</th>
                                         <td>{{! node.data.os }}</td>
                                     </tr>
+                                    <tr v-if="node.data.appid">
+                                        <th>Application ID</th>
+                                        <td>{{! node.data.appid }}</td>
+                                    </tr>
                                     <tr v-if="node.data.version">
                                         <th>Version</th>
                                         <td>{{! node.data.version }}</td>
