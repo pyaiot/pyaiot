@@ -248,7 +248,7 @@ class MQTTController():
                 pass
             uid = self.nodes[node]['uid']
             self.nodes.pop(node)
-            logger.debug("Removing inactive node {}".format(uid))
+            logger.info("Removing inactive node {}".format(uid))
             logger.debug("Available nodes {}".format(self.nodes))
             self._on_message_cb(Msg.out_node(uid))
 

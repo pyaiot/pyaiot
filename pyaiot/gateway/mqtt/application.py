@@ -72,6 +72,7 @@ class MQTTGatewayApplication(web.Application):
 
     def close_client(self):
         """Close client websocket"""
+        logger.warning("MQTT controller: closing connection with broker.")
         self.broker.close()
 
     @gen.coroutine
@@ -81,16 +82,16 @@ class MQTTGatewayApplication(web.Application):
             try:
                 self.broker = yield websocket_connect(url)
             except ConnectionRefusedError:
-                logger.debug("Cannot connect, retrying in 3s")
+                logger.warning("Cannot connect, retrying in 3s")
             else:
-                logger.debug("Connected to broker, sending auth token")
+                logger.info("Connected to broker, sending auth token")
                 self.broker.write_message(auth_token(self.keys))
                 yield gen.sleep(1)
                 self._mqtt_controller.fetch_nodes_cache('all')
                 while True:
                     message = yield self.broker.read_message()
                     if message is None:
-                        logger.debug("Connection with broker lost.")
+                        logger.warning("Connection with broker lost.")
                         break
                     self.on_broker_message(message)
 
