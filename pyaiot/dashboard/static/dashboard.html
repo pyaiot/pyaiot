@@ -446,8 +446,8 @@ function receive_message(msg) {
             remove_charts(node_uid)
             break
         case 'reset':
+            console.log("Resetting node", index, node_uid)
             if (index != -1) {
-                console.log("Resetting node", node_uid)
                 for (var key in vm.nodes[index].data) {
                     Vue.delete(vm.nodes[index].data, key)
                 }
