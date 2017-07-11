@@ -73,7 +73,7 @@ def test_check_message_bad_type():
     assert "Invalid message type" in reason
 
 
-@mark.parametrize('msg_type', ["new", "out", "update"])
+@mark.parametrize('msg_type', ["new", "out", "update", "reset"])
 def test_check_message_valid(msg_type):
     to_test = json.dumps({"type": msg_type, "data": "test"})
     message, reason = Message.check_message(to_test)

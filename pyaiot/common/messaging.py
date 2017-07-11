@@ -92,7 +92,7 @@ class Message():
             elif 'type' not in message and 'data' not in message:
                 reason = "Invalid message '{}'.".format(message)
             elif (message['type'] != 'new' and message['type'] != 'update' and
-                  message['type'] != 'out'):
+                  message['type'] != 'out' and message['type'] != 'reset'):
                 reason = "Invalid message type '{}'.".format(message['type'])
 
         if reason is not None:
