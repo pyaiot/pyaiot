@@ -85,6 +85,8 @@ class MQTTGatewayApplication(web.Application):
             else:
                 logger.debug("Connected to broker, sending auth token")
                 self.broker.write_message(auth_token(self.keys))
+                yield gen.sleep(1)
+                self._mqtt_controller.fetch_nodes_cache('all')
                 while True:
                     message = yield self.broker.read_message()
                     if message is None:
