@@ -40,7 +40,7 @@ var teapot = (function() {
 
     function init() {
 
-        container = document.getElementById( 'teapot' );
+        var container = document.getElementById( 'teapot' );
 
         canvasWidth = container.clientWidth;
         canvasHeight = container.clientHeight;
@@ -241,8 +241,9 @@ var teapot = (function() {
         h.add( effectController, "nonblinn" ).name( "original scale" ).onChange( render );
 
         // shading
-        h = gui.add( effectController, "newShading", [ "wireframe", "flat", "smooth", "glossy", "textured", "reflective" ] ).name( "Shading" ).onChange( render );
-
+        gui.add( effectController, "newShading", [ "wireframe", "flat", "smooth", "glossy", "textured", "reflective" ] )
+            .name( "Shading" )
+            .onChange( render );
     }
 
 
