@@ -479,7 +479,7 @@ THREE.TeapotBufferGeometry = function ( size, segments, bottom, lid, body, fitLi
     var tcoord;
 
     var sstep, tstep;
-    var vertPerRow; //, eps;
+    var vertPerRow, eps;
 
     var s, t, sval, tval, p, dsval, dtval;
 
@@ -530,7 +530,7 @@ THREE.TeapotBufferGeometry = function ( size, segments, bottom, lid, body, fitLi
 
     vertPerRow = segments + 1;
 
-    //eps = 0.0000001;
+    eps = 0.0000001;
 
     var surfCount = 0;
 
