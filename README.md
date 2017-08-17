@@ -11,15 +11,15 @@ web: CoAP, MQTT, HTTP, etc
 
 ### The nodes
 
-Pyaiot main objective is to provide high level services for communicating
+Pyaiot main goal is to provide high level services for communicating
 with **constrained** nodes.
-Those nodes are generally microcontroller based and not able to run Linux.
+Those nodes are generally microcontrollers and thus not able to run Linux.
 Thus, we need a specific OS to run on those kind of nodes. For this, we
 initially chose [RIOT](https://riot-os.org) because it provides an hardware
 independent layer along with the standard network stacks required to
 communicate with the nodes from a network.
 
-The source code of RIOT firmwares running on the nodes is available on
+The source code of RIOT firmwares running on the nodes is available in
 [another repository on GitHub](https://github.com/pyaiot/riot-firmwares).
 
 Other nodes with communication capabilities can also be used. In this
@@ -212,7 +212,7 @@ Here are the installation steps:
 
 You can also update the `Environment` option in the services definition files
 **after** deployment. The services files are located in `/lib/systemd/system.
-Note that you'all have to reload the systemd daemon services and restart
+Note that you'll have to reload the systemd daemon services and restart
 services:
 ```
     $ sudo systemctl daemon-reload
@@ -274,7 +274,8 @@ When the web page is loaded, thanks to its embedded javascript, it directly
 connects to the broker websocket server and starts to communicate with the
 nodes.
 
-Of course you can set the environment variables at your needs:
+Of course the default environment variables can be changed in order to fit your
+needs:
 `BROKER_PORT`, `BROKER_HOST`, `DASHBOARD_PORT`, `DASHBOARD_TITLE`,
 `DASHBOARD_LOGO`, `DASHBOARD_FAVICON`, `CAMERA_URL`.
 
