@@ -45,6 +45,7 @@ logger = logging.getLogger("pyaiot.gw.coap")
 
 
 COAP_PORT = 5683
+COAPS_PORT = 5684
 MAX_TIME = 120
 PROTOCOL = "CoAP"
 
@@ -150,12 +151,13 @@ class CoapServerResource(resource.Resource):
 class CoapController():
     """CoAP controller with CoAP server inside."""
 
-    def __init__(self, on_message_cb, port=COAP_PORT, max_time=MAX_TIME):
+    def __init__(self, on_message_cb, port=COAP_PORT, max_time=MAX_TIME, dtls_enabled=False):
         # on_message_cb = send_to_broker method in gateway application
         self._on_message_cb = on_message_cb
         self.port = port
         self.max_time = max_time
         self.nodes = {}
+        self._is_secure = dtls_enabled
         self.setup()
 
     def setup(self):
@@ -166,7 +168,8 @@ class CoapController():
         root_coap.add_resource(('alive', ),
                                CoapAliveResource(self))
         asyncio.async(
-            Context.create_server_context(root_coap, bind=('::', self.port)))
+            Context.create_server_context(root_coap, bind=('::', self.port),
+                                          secure=self._is_secure ))
 
     @gen.coroutine
     def fetch_nodes_cache(self, source):

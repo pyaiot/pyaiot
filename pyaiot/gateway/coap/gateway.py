@@ -37,7 +37,7 @@ from tornado.options import define, options
 from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
 from pyaiot.common.helpers import start_application
 
-from .coap import MAX_TIME, COAP_PORT
+from .coap import MAX_TIME, COAP_PORT, COAPS_PORT
 from .application import CoapGatewayApplication
 
 logging.basicConfig(level=logging.DEBUG,
@@ -62,6 +62,8 @@ def parse_command_line():
                help="Secret and private keys filename.")
     if not hasattr(options, "debug"):
         define("debug", default=False, help="Enable debug mode.")
+    if not hasattr(options, "use-coaps"):
+        define("use-coaps", default=False, help="Enable CoAP Secure.")
     options.parse_command_line()
 
 
@@ -71,6 +73,10 @@ def run(arguments=[]):
         sys.argv[1:] = arguments
 
     parse_command_line()
+
+    #  Use CoAPs default port except if a custom CoAP port is set.
+    if options.use_coaps and options.coap_port is COAP_PORT:
+        options.coap_port = COAPS_PORT
 
     if options.debug:
         logger.setLevel(logging.DEBUG)
