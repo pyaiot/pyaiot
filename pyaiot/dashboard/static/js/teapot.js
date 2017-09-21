@@ -1,5 +1,5 @@
 
-var teapot = (function() {
+var Teapot = function(elem) {
 
     ////////////////////////////////////////////////////////////////////////////////
     // Utah/Newell Teapot demo
@@ -40,7 +40,7 @@ var teapot = (function() {
 
     function init() {
 
-        var container = document.getElementById( 'teapot' );
+        var container = document.getElementById( elem );
 
         canvasWidth = container.clientWidth;
         canvasHeight = container.clientHeight;
@@ -377,4 +377,4 @@ var teapot = (function() {
         setAngle: setAngle
     }
 
-}());
+}

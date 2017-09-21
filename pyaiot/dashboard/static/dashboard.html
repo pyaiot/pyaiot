@@ -281,7 +281,7 @@ var joystick = initJoystick()
                     <canvas class="chart" :id="'imu_gyr'+node.uid"></canvas>
                 </div>
                 <div class="panel-body" v-if="node.data.imu" v-show="resources.imu.visible">
-                    <div id="teapot"></div>
+                    <div class="teapot" :id="'teapot_'+node.uid"></div>
                 </div>
                 <div class="panel-body" :id="'led'+index" v-if="['0','1'].includes(node.data.led)" v-show="resources.led.visible">
                     <div class="h5 text-muted">LED</div>
@@ -638,12 +638,12 @@ function update_hum_charts(msg) {
 }
 
 function setup_teapot_charts(node_uid) {
-    teapot_charts[node_uid] = node_uid
-    teapot.init()
-    teapot.render()
-    $('#teapot').addClass('pointer').click(function() {
+    teapot_charts[node_uid] = new Teapot('teapot_' + node_uid)
+    teapot_charts[node_uid].init()
+    teapot_charts[node_uid].render()
+    $('#teapot_' + node_uid).addClass('pointer').click(function() {
         angle = [0, 0, 0]
-        teapot.setAngle(angle)
+        teapot_charts[node_uid].setAngle(angle)
     })
 }
 
@@ -749,7 +749,7 @@ function update_imu_charts(msg) {
     // angle[2] = 0.98 * angle[2] + 0.02 * zAcc * 75 / 90
 
     lastTime = currentTime
-    teapot.setAngle(angle.map(a => a * Math.PI / 150))
+    teapot_charts[msg.uid].setAngle(angle.map(a => a * Math.PI / 150))
     // console.info(angle)
     // console.info(acc, xAcc, yAcc, zAcc)
 }
@@ -769,6 +769,9 @@ function remove_charts(node_uid) {
     }
     if (node_uid in hum_charts) {
         delete hum_charts[node_uid]
+    }
+    if (node_uid in teapot_charts) {
+        delete teapot_charts[node_uid]
     }
 }
 
