@@ -98,7 +98,7 @@ img {
     z-index: -1;
     /*background-color: #333;*/
 }
-#teapot {
+.teapot {
     height: 277px;
     width: 100%;
 }
