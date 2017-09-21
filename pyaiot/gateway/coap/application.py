@@ -57,12 +57,22 @@ class CoapGatewayApplication(web.Application):
         settings = {'debug': True}
 
         # Starts CoAP controller
-        self._coap_controller = CoapController(
-            on_message_cb=self.send_to_broker,
-            port=options.coap_port,
-            max_time=options.max_time,
-            dtls_enabled=options.use_coaps)
-        PeriodicCallback(self._coap_controller.check_dead_nodes, 1000).start()
+        self._coap_controllers = [
+            CoapController(on_message_cb=self.send_to_broker,
+                           port=options.coap_port,
+                           max_time=options.max_time)
+        ]
+
+        if options.use_coaps:
+            self._coap_controllers.append(
+                CoapController(on_message_cb=self.send_to_broker,
+                               port=options.coaps_port,
+                               max_time=options.max_time,
+                               dtls_enabled=options.use_coaps)
+            )
+
+        for controller in self._coap_controllers:
+            PeriodicCallback(controller.check_dead_nodes, 1000).start()
 
         # NOTE: Starts a second CoAP (Secure) controller?
 
@@ -90,7 +100,8 @@ class CoapGatewayApplication(web.Application):
                 logger.info("Connected to broker, sending auth token")
                 self.broker.write_message(auth_token(self.keys))
                 yield gen.sleep(1)
-                self._coap_controller.fetch_nodes_cache('all')
+                for controller in self._coap_controllers:
+                    controller.fetch_nodes_cache('all')
                 while True:
                     message = yield self.broker.read_message()
                     if message is None:
@@ -116,7 +127,9 @@ class CoapGatewayApplication(web.Application):
         if message['type'] == "new":
             # Received when a new client connects => fetching the nodes
             # in controller's cache
-            self._coap_controller.fetch_nodes_cache(message['src'])
+            for controller in self._coap_controllers:
+                controller.fetch_nodes_cache(message['src'])
         elif message['type'] == "update":
             # Received when a client update a node
-            self._coap_controller.send_data_to_node(message['data'])
+            for controller in self._coap_controllers:
+                controller.send_data_to_node(message['data'])

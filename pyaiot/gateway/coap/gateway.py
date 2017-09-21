@@ -53,7 +53,11 @@ def parse_command_line():
     if not hasattr(options, "broker_port"):
         define("broker_port", default=8000, help="Broker port")
     if not hasattr(options, "coap-port"):
-        define("coap-port", default=COAP_PORT, help="Gateway CoAP server port")
+        define("coap-port", default=COAP_PORT,
+               help="Gateway CoAP server port")
+    if not hasattr(options, "coaps-port"):
+        define("coaps-port", default=COAPS_PORT,
+               help="Gateway CoAP server secure port")
     if not hasattr(options, "max_time"):
         define("max_time", default=MAX_TIME,
                help="Maximum retention time (in s) for CoAP dead nodes")
@@ -73,10 +77,6 @@ def run(arguments=[]):
         sys.argv[1:] = arguments
 
     parse_command_line()
-
-    #  Use CoAPs default port except if a custom CoAP port is set.
-    if options.use_coaps and options.coap_port is COAP_PORT:
-        options.coap_port = COAPS_PORT
 
     if options.debug:
         logger.setLevel(logging.DEBUG)
