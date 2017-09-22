@@ -68,7 +68,8 @@ def _coap_resource(url, method=GET, payload=b''):
         code = response.code
         payload = response.payload.decode('utf-8')
     finally:
-        yield from protocol.shutdown()
+        if protocol is not None:
+            yield from protocol.shutdown()
 
     logger.debug('Code: {0} - Payload: {1}'.format(code, payload))
 
