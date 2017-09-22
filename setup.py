@@ -75,7 +75,7 @@ if __name__ == '__main__':
                    pjoin('bin', 'aiot-generate-keys')],
           install_requires=[
             'tornado>=4.4.2',
-            'aiocoap>=0.2',
+            'aiocoap>=0.3',
             'hbmqtt>=0.8',
             'cryptography>=1.7.2'
           ],
