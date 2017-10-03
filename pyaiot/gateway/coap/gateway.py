@@ -48,6 +48,8 @@ logger = logging.getLogger("pyaiot.gw.coap")
 
 def parse_command_line():
     """Parse command line arguments for CoAP gateway application."""
+    if not hasattr(options, "config"):
+        define("config", default='config.py', help="Config file")
     if not hasattr(options, "broker_host"):
         define("broker_host", default="localhost", help="Broker host")
     if not hasattr(options, "broker_port"):
@@ -63,6 +65,10 @@ def parse_command_line():
     if not hasattr(options, "debug"):
         define("debug", default=False, help="Enable debug mode.")
     options.parse_command_line()
+    if options.config:
+        options.parse_config_file(options.config)
+    # Parse the command line a second time to override config file options
+    options.parse_command_line()
 
 
 def run(arguments=[]):
@@ -70,7 +76,14 @@ def run(arguments=[]):
     if arguments != []:
         sys.argv[1:] = arguments
 
-    parse_command_line()
+    try:
+        parse_command_line()
+    except SyntaxError as e:
+        logger.critical("Invalid config file: {}".format(e))
+        return
+    except FileNotFoundError as e:
+        logger.error("Config file not found: {}".format(e))
+        return
 
     if options.debug:
         logger.setLevel(logging.DEBUG)
@@ -78,8 +91,8 @@ def run(arguments=[]):
 
     try:
         keys = check_key_file(options.key_file)
-    except ValueError as e:
-        logger.error(e)
+    except SyntaxError as e:
+        logger.error("Invalid config file: {}".format(e))
         return
 
     if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():

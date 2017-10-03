@@ -136,7 +136,7 @@ class BrokerApplication(web.Application):
 
         super().__init__(handlers, **settings)
         logger.info('Application started, listening on port {}'
-                    .format(options.port))
+                    .format(options.broker_port))
 
     def broadcast(self, message):
         """Broadcast message to all clients."""

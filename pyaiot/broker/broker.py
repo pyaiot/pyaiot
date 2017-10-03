@@ -46,13 +46,19 @@ logger = logging.getLogger("pyaiot.broker")
 
 def parse_command_line():
     """Parse command line arguments for IoT broker application."""
+    if not hasattr(options, "config"):
+        define("config", default=None, help="Config file")
     if not hasattr(options, "port"):
-        define("port", default=8000, help="Broker websocket port")
+        define("broker_port", default=8000, help="Broker websocket port")
     if not hasattr(options, "debug"):
         define("debug", default=False, help="Enable debug mode.")
     if not hasattr(options, "key_file"):
         define("key_file", default=DEFAULT_KEY_FILENAME,
                help="Secret and private keys filename.")
+    options.parse_command_line()
+    if options.config:
+        options.parse_config_file(options.config)
+    # Parse the command line a second time to override config file options
     options.parse_command_line()
 
 
@@ -61,7 +67,14 @@ def run(arguments=[]):
     if arguments != []:
         sys.argv[1:] = arguments
 
-    parse_command_line()
+    try:
+        parse_command_line()
+    except SyntaxError as e:
+        logger.error("Invalid config file: {}".format(e))
+        return
+    except FileNotFoundError as e:
+        logger.error("Config file not found: {}".format(e))
+        return
 
     if options.debug:
         logger.setLevel(logging.DEBUG)
@@ -73,7 +86,7 @@ def run(arguments=[]):
         return
 
     start_application(BrokerApplication(keys, options=options),
-                      port=options.port)
+                      port=options.broker_port)
 
 
 if __name__ == '__main__':

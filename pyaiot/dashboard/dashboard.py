@@ -79,17 +79,19 @@ class IoTDashboardApplication(web.Application):
                     }
         super().__init__(handlers, **settings)
         logger.info('Application started, listening on port {0}'
-                    .format(options.port))
+                    .format(options.web_port))
 
 
 def parse_command_line():
     """Parse command line arguments for IoT broker application."""
+    if not hasattr(options, "config"):
+        define("config", default='config.py', help="Config file")
     if not hasattr(options, "static_path"):
         define("static_path",
                default=os.path.join(os.path.dirname(__file__), "static"),
                help="Static files path (containing npm package.json file)")
     if not hasattr(options, "port"):
-        define("port", default=8080,
+        define("web_port", default=8080,
                help="Web application HTTP port")
     if not hasattr(options, "broker_port"):
         define("broker_port", default=8000,
@@ -116,19 +118,28 @@ def parse_command_line():
         define("debug", default=False,
                help="Enable debug mode.")
     options.parse_command_line()
-
+    if options.config:
+        options.parse_config_file(options.config)
+    # Parse the command line a second time to override config file options
+    options.parse_command_line()
 
 def run(arguments=[]):
     """Start an instance of a dashboard."""
     if arguments != []:
         sys.argv[1:] = arguments
-
-    parse_command_line()
+    try:
+        parse_command_line()
+    except SyntaxError as e:
+        logger.error("Invalid config file: {}".format(e))
+        return
+    except FileNotFoundError as e:
+        logger.error("Config file not found: {}".format(e))
+        return
 
     if options.debug:
         logger.setLevel(logging.DEBUG)
 
-    start_application(IoTDashboardApplication(), port=options.port)
+    start_application(IoTDashboardApplication(), port=options.web_port)
 
 
 if __name__ == '__main__':
