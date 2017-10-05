@@ -84,17 +84,17 @@ class IoTDashboardApplication(web.Application):
 
 def parse_command_line():
     """Parse command line arguments for IoT broker application."""
-    if not hasattr(options, "static-path"):
-        define("static-path",
+    if not hasattr(options, "static_path"):
+        define("static_path",
                default=os.path.join(os.path.dirname(__file__), "static"),
                help="Static files path (containing npm package.json file)")
     if not hasattr(options, "port"):
         define("port", default=8080,
                help="Web application HTTP port")
-    if not hasattr(options, "broker-port"):
+    if not hasattr(options, "broker_port"):
         define("broker_port", default=8000,
                help="Broker port")
-    if not hasattr(options, "broker-host"):
+    if not hasattr(options, "broker_host"):
         define("broker_host", default="localhost",
                help="Broker hostname")
     if not hasattr(options, "broker_ssl"):
