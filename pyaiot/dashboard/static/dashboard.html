@@ -401,7 +401,7 @@ update_live_camera_content(vm.camUrl, vm.showCam)
 // initialize bootstrap material design
 $.material.init()
 
-var ws = new WebSocket('ws://{{ wsserver }}/ws')
+var ws = new WebSocket('{{ wsproto }}://{{ wsserver }}/ws')
 
 ws.onopen = function() {
     console.log("WebSocket is ready")
