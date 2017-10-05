@@ -45,6 +45,7 @@ logger = logging.getLogger("pyaiot.gw.coap")
 
 
 COAP_PORT = 5683
+COAPS_PORT = 5684
 MAX_TIME = 120
 PROTOCOL = "CoAP"
 
@@ -67,7 +68,8 @@ def _coap_resource(url, method=GET, payload=b''):
         code = response.code
         payload = response.payload.decode('utf-8')
     finally:
-        yield from protocol.shutdown()
+        if protocol is not None:
+            yield from protocol.shutdown()
 
     logger.debug('Code: {0} - Payload: {1}'.format(code, payload))
 
@@ -150,12 +152,14 @@ class CoapServerResource(resource.Resource):
 class CoapController():
     """CoAP controller with CoAP server inside."""
 
-    def __init__(self, on_message_cb, port=COAP_PORT, max_time=MAX_TIME):
+    def __init__(self, on_message_cb, port=COAP_PORT, max_time=MAX_TIME,
+                 dtls_enabled=False):
         # on_message_cb = send_to_broker method in gateway application
         self._on_message_cb = on_message_cb
         self.port = port
         self.max_time = max_time
         self.nodes = {}
+        self._is_secure = dtls_enabled
         self.setup()
 
     def setup(self):
@@ -166,7 +170,8 @@ class CoapController():
         root_coap.add_resource(('alive', ),
                                CoapAliveResource(self))
         asyncio.async(
-            Context.create_server_context(root_coap, bind=('::', self.port)))
+            Context.create_server_context(root_coap, bind=('::', self.port),
+                                          secure=self._is_secure ))
 
     @gen.coroutine
     def fetch_nodes_cache(self, source):
@@ -257,17 +262,20 @@ class CoapController():
         """Handle check message received from coap node."""
         node = CoapNode(address)
         node.check_time = time.time()
+        protocol = PROTOCOL
+        if self._is_secure:
+            protocol += "s"
         if node not in self.nodes:
             # This is a totally new node: create uid, initialized cached node
             # send 'new' node notification, 'update' notification.
             node_uid = str(uuid.uuid4())
             self.nodes.update({node: {'uid': node_uid,
                                       'data': {'ip': address,
-                                               'protocol': PROTOCOL}}})
+                                               'protocol': protocol}}})
             self._on_message_cb(Msg.new_node(node_uid))
             self._on_message_cb(Msg.update_node(node_uid, "ip", address))
             self._on_message_cb(Msg.update_node(node_uid,
-                                                "protocol", PROTOCOL))
+                                                "protocol", protocol))
             self.discover_node(node, node_uid)
         elif reset:
             # The data of the node need to be reset without removing it. This
@@ -276,7 +284,7 @@ class CoapController():
             node_uid = self.nodes[node]['uid']
             self.nodes[node]['data'] = {}
             self.nodes[node]['data'].update({'ip': address,
-                                             'protocol': PROTOCOL})
+                                             'protocol': protocol})
             self._on_message_cb(Msg.reset_node(node_uid))
             self.discover_node(node, node_uid)
         else:

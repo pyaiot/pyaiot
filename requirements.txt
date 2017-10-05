@@ -1,0 +1,4 @@
+
+# NOTE: The official aiocoap repository does not support DTLS for
+#       the server side.
+-e git+https://github.com/rfuentess/aiocoap.git@tinydtls_server_v1#egg=aiocoap
