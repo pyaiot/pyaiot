@@ -51,6 +51,7 @@ class DashboardHandler(web.RequestHandler):
     @tornado.web.asynchronous
     def get(self, path=None):
         self.render("dashboard.html",
+                    wsproto="wss" if options.broker_ssl else "ws",
                     wsserver="{}:{}".format(options.broker_host,
                                             options.broker_port),
                     camera_url=options.camera_url,
@@ -96,6 +97,9 @@ def parse_command_line():
     if not hasattr(options, "broker-host"):
         define("broker_host", default="localhost",
                help="Broker hostname")
+    if not hasattr(options, "broker_ssl"):
+        define("broker_ssl", type=bool, default=False,
+               help="Supply the broker websocket with ssl")
     if not hasattr(options, "camera_url"):
         define("camera_url", default=None,
                help="Default camera url")
