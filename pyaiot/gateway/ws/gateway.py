@@ -53,8 +53,8 @@ def parse_command_line():
     if not hasattr(options, "gateway_port"):
         define("gateway_port", default=8001,
                help="Node gateway websocket port")
-    if not hasattr(options, "key-file"):
-        define("key-file", default=DEFAULT_KEY_FILENAME,
+    if not hasattr(options, "key_file"):
+        define("key_file", default=DEFAULT_KEY_FILENAME,
                help="Secret and private keys filename.")
     if not hasattr(options, "debug"):
         define("debug", default=False, help="Enable debug mode.")
