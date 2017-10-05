@@ -52,15 +52,15 @@ def parse_command_line():
         define("broker_host", default="localhost", help="Pyaiot broker host")
     if not hasattr(options, "broker_port"):
         define("broker_port", default=8000, help="Pyaiot broker port")
-    if not hasattr(options, "mqtt-host"):
-        define("mqtt-host", default=MQTT_HOST, help="Gateway MQTT broker host")
-    if not hasattr(options, "mqtt-port"):
-        define("mqtt-port", default=MQTT_PORT, help="Gateway MQTT broker port")
+    if not hasattr(options, "mqtt_host"):
+        define("mqtt_host", default=MQTT_HOST, help="Gateway MQTT broker host")
+    if not hasattr(options, "mqtt_port"):
+        define("mqtt_port", default=MQTT_PORT, help="Gateway MQTT broker port")
     if not hasattr(options, "max_time"):
         define("max_time", default=MAX_TIME,
                help="Maximum retention time (in s) for CoAP dead nodes")
-    if not hasattr(options, "key-file"):
-        define("key-file", default=DEFAULT_KEY_FILENAME,
+    if not hasattr(options, "key_file"):
+        define("key_file", default=DEFAULT_KEY_FILENAME,
                help="Secret and private keys filename.")
     if not hasattr(options, "debug"):
         define("debug", default=False, help="Enable debug mode.")
