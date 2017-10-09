@@ -15,7 +15,7 @@ Environment='STATIC_PATH=' \
 
 ExecStart=/usr/local/bin/aiot-dashboard \
         --static-path=${STATIC_PATH} \
-        --port=${HTTP_PORT} \
+        --web-port=${HTTP_PORT} \
         --broker-port=${BROKER_PORT} \
         --broker-host=${BROKER_HOST} \
         "--title=${APP_TITLE}" \
