@@ -58,7 +58,7 @@ def parse_command_line():
         define("mqtt_port", default=MQTT_PORT, help="Gateway MQTT broker port")
     if not hasattr(options, "max_time"):
         define("max_time", default=MAX_TIME,
-               help="Maximum retention time (in s) for CoAP dead nodes")
+               help="Maximum retention time (in s) for MQTT dead nodes")
     if not hasattr(options, "key_file"):
         define("key_file", default=DEFAULT_KEY_FILENAME,
                help="Secret and private keys filename.")
