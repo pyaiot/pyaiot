@@ -77,19 +77,22 @@ def run(arguments=[]):
     """Start the CoAP gateway instance."""
     if arguments != []:
         sys.argv[1:] = arguments
-
-    parse_command_line()
+    try:
+        parse_command_line()
+    except SyntaxError as e:
+        logger.error("Invalid config file: {}".format(e))
+        return
+    except FileNotFoundError as e:
+        logger.error("Config file not found: {}".format(e))
+        return
 
     if options.debug:
         logger.setLevel(logging.DEBUG)
 
     try:
         keys = check_key_file(options.key_file)
-    except SyntaxError as e:
-        logger.error("Invalid config file: {}".format(e))
-        return
-    except FileNotFoundError as e:
-        logger.error("Config file not found: {}".format(e))
+    except ValueError as e:
+        logger.error(e)
         return
 
     # Application ioloop initialization

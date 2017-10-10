@@ -91,8 +91,8 @@ def run(arguments=[]):
 
     try:
         keys = check_key_file(options.key_file)
-    except SyntaxError as e:
-        logger.error("Invalid config file: {}".format(e))
+    except ValueError as e:
+        logger.error(e)
         return
 
     if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
