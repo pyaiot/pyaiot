@@ -49,12 +49,19 @@
             src="{{ static_url('node_modules/vue/dist/vue.min.js') }}"></script>
     <script type="text/javascript"
             src="{{ static_url('node_modules/three/build/three.min.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/codemirror/lib/codemirror.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ static_url('node_modules/codemirror/mode/javascript/javascript.js') }}"></script>
+
+    <!-- CodeMirror stylesheet -->
+    <link rel="stylesheet" href="{{ static_url('node_modules/codemirror/lib/codemirror.css') }}">
 
     <script src="{{ static_url('js/TeapotBufferGeometry.js') }}"></script>
     <script src="{{ static_url('js/joystick.js') }}"></script>
     <script src="{{ static_url('js/helpers.js') }}"></script>
 
-    <!-- IoT-Kit dashboard css -->
+    <!-- Pyaiot dashboard css -->
     <link rel="stylesheet" type="text/css" href="{{ static_url('css/dashboard.css') }}">
 </head>
 
@@ -295,6 +302,15 @@ var joystick = initJoystick()
                         </label>
                     </div>
                 </div>
+                <div class="panel-body" style="padding: 0" v-if="node.data.js" v-show="resources.js.visible">
+                    <textarea :id="'scriptarea_'+node.uid"></textarea>
+                </div>
+                <div class="panel-body">
+                    <button @click="sendJS(node.uid)" class="btn btn-primary pull-right" style="margin: 0">
+                        <i class="fa fa-paper-plane fa-lg" aria-hidden="true" style="margin-right: 5px"></i>
+                        Send
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -352,6 +368,8 @@ var pres_charts = {}
 var hum_charts = {}
 var teapot_charts = {}
 
+var js_scripts = {}
+
 function Resource(name, visible=true) {
     return {name: name, visible: visible}
 }
@@ -371,6 +389,7 @@ var data = {
         buggybot: Resource("BuggyBot"),
         ribot: Resource("RiBot"),
         version: Resource("Version"),
+        js: Resource("Javascript"),
     },
     nodes: [],
     showMap: initMap == "true",
@@ -386,6 +405,12 @@ var vm = new Vue({
             return url
             .replace(/^https?:\/\//, '')
             .replace(/\/$/, '')
+        },
+        sendJS: function (id) {
+            var payload = js_scripts[id].getValue()
+            console.log(id, payload)
+            sendData("update",
+                     {"uid": id, "endpoint": "js", "payload": payload})
         }
     }
 });
@@ -531,6 +556,15 @@ function update_charts(msg) {
         }
 
         update_hum_charts(msg)
+    }
+
+    // humidity charts management
+    if (msg.endpoint === "js") {
+        if (!(msg.uid in hum_charts)) {
+            setup_javascript(msg.uid)
+        }
+
+        update_javascript(msg)
     }
 }
 
@@ -888,6 +922,26 @@ function remove_node_from_map(node_uid) {
         delete map_markers[node_uid]
     }
 }
+
+function setup_javascript(node_uid) {
+    var scriptarea = document.getElementById('scriptarea_' + node_uid)
+    if (scriptarea) {
+        js_scripts[node_uid] = CodeMirror.fromTextArea(
+            document.getElementById('scriptarea_' + node_uid),
+            {
+                value: "/* Write your javascript code here */",
+                mode:  "javascript",
+                readonly: false,
+                lineNumbers: true,
+                handleMouseEvents: true,
+            })
+    }
+}
+
+function update_javascript(msg) {
+    js_scripts[msg.uid].setValue(msg.data);
+}
+
 </script>
 <!-- Dropdown.js -->
 <script src="https://cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.js"></script>
