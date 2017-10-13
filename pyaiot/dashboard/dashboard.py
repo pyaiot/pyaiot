@@ -90,7 +90,7 @@ def parse_command_line():
         define("static_path",
                default=os.path.join(os.path.dirname(__file__), "static"),
                help="Static files path (containing npm package.json file)")
-    if not hasattr(options, "port"):
+    if not hasattr(options, "web_port"):
         define("web_port", default=8080,
                help="Web application HTTP port")
     if not hasattr(options, "broker_port"):
