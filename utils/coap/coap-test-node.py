@@ -62,6 +62,8 @@ parser.add_argument('--pressure', action="store_true",
                     help="Activate Pressure endpoint.")
 parser.add_argument('--robot', action="store_true",
                     help="Activate Robot endpoint.")
+parser.add_argument('--js', action="store_true",
+                    help="Activate Javascript endpoint.")
 parser.add_argument('--version', action="store_true",
                     help="Activate Version endpoint.")
 args = parser.parse_args()
@@ -282,6 +284,44 @@ class RobotResource(resource.Resource):
         return response
 
 
+class JavascriptResource(resource.Resource):
+    """Test node Javascript ressource."""
+
+    def __init__(self):
+        super(JavascriptResource, self).__init__()
+        self.script = """
+this.ledorange = saul.get_by_name("led");
+
+value = 0;
+count = 10;
+
+this.blink = function () {
+    if (count > 0) {
+        value = (value + 1) % 2;
+        this.ledorange.write(value);
+        t = timer.setTimeout(this.blink, 1000000);
+        count = count -1;
+    }
+}
+
+this.blink();
+        """.encode("utf-8")
+
+    @asyncio.coroutine
+    def render_get(self, request):
+        response = aiocoap.Message(code=aiocoap.CONTENT,
+                                   payload=self.script)
+        return response
+
+    @asyncio.coroutine
+    def render_put(self, request):
+        self.script = request.payload
+        print("New script:\n '{}'".format(self.script))
+        payload = ("Updated").encode('utf-8')
+        response = aiocoap.Message(code=aiocoap.CONTENT, payload=payload)
+        return response
+
+
 if __name__ == '__main__':
     try:
         # Tornado ioloop initialization
@@ -311,6 +351,8 @@ if __name__ == '__main__':
             root.add_resource(('imu', ), ImuResource())
         if args.robot:
             root.add_resource(('robot', ), RobotResource())
+        if args.js:
+            root.add_resource(('js', ), JavascriptResource())
         if args.version:
             root.add_resource(('version', ), VersionResource())
         root.add_resource(('.well-known', 'core'),
