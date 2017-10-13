@@ -67,7 +67,7 @@ setup-dashboard-service: setup-dashboard-npm aiot-dashboard.service
 
 .PHONY: run-broker
 run-broker:
-	aiot-broker --port=${BROKER_PORT} --debug
+	aiot-broker --broker-port=${BROKER_PORT} --debug
 
 .PHONY: run-coap-gateway
 run-coap-gateway:
@@ -83,7 +83,7 @@ run-ws-gateway:
 .PHONY: run-dashboard
 run-dashboard:
 	aiot-dashboard --static-path=${STATIC_PATH}                   \
-		--port=${DASHBOARD_PORT}                                  \
+		--web-port=${DASHBOARD_PORT}                                  \
 		--broker-port=${BROKER_PORT} --broker-host=${BROKER_HOST} \
 		--camera-url=${CAMERA_URL} --title=${DASHBOARD_TITLE}     \
 		--logo=${DASHBOARD_LOGO} --favicon=${DASHBOARD_FAVICON}   \
