@@ -85,7 +85,7 @@ class IoTDashboardApplication(web.Application):
 def parse_command_line():
     """Parse command line arguments for IoT broker application."""
     if not hasattr(options, "config"):
-        define("config", default='config.py', help="Config file")
+        define("config", default=None, help="Config file")
     if not hasattr(options, "static_path"):
         define("static_path",
                default=os.path.join(os.path.dirname(__file__), "static"),

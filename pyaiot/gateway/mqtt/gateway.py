@@ -49,7 +49,7 @@ logger = logging.getLogger("pyaiot.gw.mqtt")
 def parse_command_line():
     """Parse command line arguments for CoAP gateway application."""
     if not hasattr(options, "config"):
-        define("config", default='config.py', help="Config file")
+        define("config", default=None, help="Config file")
     if not hasattr(options, "broker_host"):
         define("broker_host", default="localhost", help="Pyaiot broker host")
     if not hasattr(options, "broker_port"):
