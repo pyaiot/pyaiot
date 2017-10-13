@@ -305,7 +305,7 @@ var joystick = initJoystick()
                 <div class="panel-body" style="padding: 0" v-if="node.data.js" v-show="resources.js.visible">
                     <textarea :id="'scriptarea_'+node.uid"></textarea>
                 </div>
-                <div class="panel-body">
+                <div class="panel-body" v-if="node.data.js" v-show="resources.js.visible">
                     <button @click="sendJS(node.uid)" class="btn btn-primary pull-right" style="margin: 0">
                         <i class="fa fa-paper-plane fa-lg" aria-hidden="true" style="margin-right: 5px"></i>
                         Send
