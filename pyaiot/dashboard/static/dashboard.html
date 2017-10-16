@@ -558,9 +558,9 @@ function update_charts(msg) {
         update_hum_charts(msg)
     }
 
-    // humidity charts management
+    // javascript editor management
     if (msg.endpoint === "js") {
-        if (!(msg.uid in hum_charts)) {
+        if (!(msg.uid in js_scripts)) {
             setup_javascript(msg.uid)
         }
 
