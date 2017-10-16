@@ -808,6 +808,8 @@ function remove_charts(node_uid) {
         delete teapot_charts[node_uid]
     }
     if (node_uid in js_scripts) {
+        js_scripts[node_uid].setOption("mode", "text/x-csrc");
+        js_scripts[node_uid].getWrapperElement().parentNode.removeChild(js_scripts[node_uid].getWrapperElement());
         delete js_scripts[node_uid]
     }
 }
