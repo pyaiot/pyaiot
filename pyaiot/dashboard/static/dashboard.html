@@ -807,6 +807,9 @@ function remove_charts(node_uid) {
     if (node_uid in teapot_charts) {
         delete teapot_charts[node_uid]
     }
+    if (node_uid in js_scripts) {
+        delete js_scripts[node_uid]
+    }
 }
 
 function refresh_layout() {
