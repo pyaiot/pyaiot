@@ -27,81 +27,95 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""MQTT gateway application module."""
+"""Broker tornado application module."""
 
-import sys
+import json
 import logging
-import tornado.platform.asyncio
-from tornado.options import define, options
+from tornado.ioloop import PeriodicCallback
+from tornado import web, gen
+from tornado.websocket import websocket_connect
 
-from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
-from pyaiot.common.helpers import start_application
+from pyaiot.common.auth import auth_token
 
-from .application import MQTTGatewayApplication
-from .mqtt import MAX_TIME, MQTT_PORT, MQTT_HOST
+from .mqtt import MQTTController
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)14s - '
-                           '%(levelname)5s - %(message)s')
 logger = logging.getLogger("pyaiot.gw.mqtt")
 
 
-def parse_command_line():
-    """Parse command line arguments for CoAP gateway application."""
-    if not hasattr(options, "config"):
-        define("config", default=None, help="Config file")
-    if not hasattr(options, "broker_host"):
-        define("broker_host", default="localhost", help="Pyaiot broker host")
-    if not hasattr(options, "broker_port"):
-        define("broker_port", default=8000, help="Pyaiot broker port")
-    if not hasattr(options, "mqtt_host"):
-        define("mqtt_host", default=MQTT_HOST, help="Gateway MQTT broker host")
-    if not hasattr(options, "mqtt_port"):
-        define("mqtt_port", default=MQTT_PORT, help="Gateway MQTT broker port")
-    if not hasattr(options, "max_time"):
-        define("max_time", default=MAX_TIME,
-               help="Maximum retention time (in s) for MQTT dead nodes")
-    if not hasattr(options, "key_file"):
-        define("key_file", default=DEFAULT_KEY_FILENAME,
-               help="Secret and private keys filename.")
-    if not hasattr(options, "debug"):
-        define("debug", default=False, help="Enable debug mode.")
-    options.parse_command_line()
-    if options.config:
-        options.parse_config_file(options.config)
-    # Parse the command line a second time to override config file options
-    options.parse_command_line()
+class MQTTGateway(web.Application):
+    """Gateway application for MQTT nodes on a network."""
 
+    def __init__(self, keys, options=None):
+        assert options
 
-def run(arguments=[]):
-    """Start the CoAP gateway instance."""
-    if arguments != []:
-        sys.argv[1:] = arguments
-    try:
-        parse_command_line()
-    except SyntaxError as e:
-        logger.error("Invalid config file: {}".format(e))
-        return
-    except FileNotFoundError as e:
-        logger.error("Config file not found: {}".format(e))
-        return
+        if options.debug:
+            logger.setLevel(logging.DEBUG)
 
-    if options.debug:
-        logger.setLevel(logging.DEBUG)
+        self.keys = keys
+        handlers = []
+        settings = {'debug': True}
 
-    try:
-        keys = check_key_file(options.key_file)
-    except ValueError as e:
-        logger.error(e)
-        return
+        # Starts MQTT controller
+        self._mqtt_controller = MQTTController(
+            on_message_cb=self.send_to_broker,
+            port=options.mqtt_port,
+            max_time=options.max_time)
+        PeriodicCallback(self._mqtt_controller.check_dead_nodes, 1000).start()
+        PeriodicCallback(self._mqtt_controller.request_alive, 30000).start()
 
-    # Application ioloop initialization
-    if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
-        tornado.platform.asyncio.AsyncIOMainLoop().install()
+        # Create connection to broker
+        self.create_broker_connection(
+            "ws://{}:{}/gw".format(options.broker_host, options.broker_port))
 
-    start_application(MQTTGatewayApplication(keys, options=options),
-                      close_client=True)
+        super().__init__(handlers, **settings)
+        logger.info('MQTT gateway application started')
 
+    def close_client(self):
+        """Close client websocket"""
+        logger.warning("MQTT controller: closing connection with broker.")
+        self.broker.close()
 
-if __name__ == '__main__':
-    run()
+    @gen.coroutine
+    def create_broker_connection(self, url):
+        """Create an asynchronous connection to the broker."""
+        while True:
+            try:
+                self.broker = yield websocket_connect(url)
+            except ConnectionRefusedError:
+                logger.warning("Cannot connect, retrying in 3s")
+            else:
+                logger.info("Connected to broker, sending auth token")
+                self.broker.write_message(auth_token(self.keys))
+                yield gen.sleep(1)
+                self._mqtt_controller.fetch_nodes_cache('all')
+                while True:
+                    message = yield self.broker.read_message()
+                    if message is None:
+                        logger.warning("Connection with broker lost.")
+                        break
+                    self.on_broker_message(message)
+
+            yield gen.sleep(3)
+
+    def send_to_broker(self, message):
+        """Send a message to the parent broker."""
+        if self.broker is not None:
+            logger.debug("Sending message '{}' to broker.".format(message))
+            self.broker.write_message(message)
+
+    def on_broker_message(self, message):
+        """Handle a message received from the broker websocket."""
+        logger.debug("Handling message '{}' received from broker."
+                     .format(message))
+        message = json.loads(message)
+
+        if message['type'] == "new":
+            # Received when a new client connects => fetching the nodes
+            # in controller's cache
+            self._mqtt_controller.fetch_nodes_cache(message['src'])
+        elif message['type'] == "update":
+            # Received when a client update a node
+            self._mqtt_controller.send_data_to_node(message['data'])
+
+    def terminate(self):
+        self._mqtt_controller.close()
