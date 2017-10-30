@@ -37,6 +37,7 @@ from tornado.websocket import websocket_connect
 
 from pyaiot.common.auth import auth_token
 from pyaiot.common.messaging import Message
+from pyaiot.gateway.common import GatewayBase
 
 logger = logging.getLogger("pyaiot.gw.ws")
 
@@ -78,13 +79,10 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         self.application.remove_ws(self)
 
 
-class WebsocketGateway(web.Application):
+class WebsocketGateway(GatewayBase):
     """Gateway application for websocket nodes on a network."""
 
     def __init__(self, keys, options=None):
-        assert options
-
-        self.keys = keys
         self.nodes = {}
 
         if options.debug:
@@ -93,46 +91,15 @@ class WebsocketGateway(web.Application):
         handlers = [
             (r"/node", WebsocketNodeHandler),
         ]
-        settings = {'debug': True}
 
-        super().__init__(handlers, **settings)
+        super().__init__(keys, options)
 
-        # Create connection to broker
-        self.create_broker_connection(
-            "ws://{}:{}/gw".format(options.broker_host, options.broker_port))
-
-        logger.info('Application started, listening on port {}'
+        logger.info('WS gateway started, listening on port {}'
                     .format(options.gateway_port))
 
-    def close_client(self):
-        """Close client websocket"""
-        self.broker.close()
-
-    @gen.coroutine
-    def create_broker_connection(self, url):
-        """Create an asynchronous connection to the broker."""
-        while True:
-            try:
-                self.broker = yield websocket_connect(url)
-            except ConnectionRefusedError:
-                logger.debug("Cannot connect, retrying in 3s")
-            else:
-                logger.debug("Connected to broker, sending auth token")
-                self.broker.write_message(auth_token(self.keys))
-                while True:
-                    message = yield self.broker.read_message()
-                    if message is None:
-                        logger.debug("Connection with broker lost.")
-                        break
-                    self.on_broker_message(message)
-
-            yield gen.sleep(3)
-
-    def send_to_broker(self, message):
-        """Send a message to the broker."""
-        if self.broker is not None:
-            logger.debug("Sending message '{}' to broker.".format(message))
-            self.broker.write_message(message)
+    def setup_nodes_controller(self):
+        """Instantiate and configure a websocket nodes controller."""
+        return self
 
     def on_node_message(self, ws, message):
         """Handle a message received from a node websocket."""
@@ -149,25 +116,6 @@ class WebsocketGateway(web.Application):
             logger.debug("Invalid message received from node websocket")
 
     @gen.coroutine
-    def on_broker_message(self, message):
-        """Handle a message received from the broker websocket."""
-        logger.debug("Handling message '{}' received from broker."
-                     .format(message))
-        message = json.loads(message)
-
-        if message['type'] == "new":
-            # Received when a new client connects => fetching the nodes
-            # in controller's cache
-            for ws, value in self.nodes.items():
-                yield self.fetch_nodes_cache(message['src'])
-        elif message['type'] == "update":
-            # Received when a client update a node
-            uid = message['data']['uid']
-            for ws, value in self.nodes.items():
-                if value['uid'] == uid:
-                    ws.write_message(message['data'])
-
-    @gen.coroutine
     def fetch_nodes_cache(self, source):
         """Send cached nodes information."""
         logger.debug("Fetching cached information of registered nodes.")
@@ -178,6 +126,13 @@ class WebsocketGateway(web.Application):
                 self.send_to_broker(
                     Message.update_node(
                         node['uid'], endpoint, value, dst=source))
+
+    @gen.coroutine
+    def send_data_to_node(self, data):
+        uid = data['uid']
+        for ws, value in self.nodes.items():
+            if value['uid'] == uid:
+                ws.write_message(data)
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""
