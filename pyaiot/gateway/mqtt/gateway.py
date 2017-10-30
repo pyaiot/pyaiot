@@ -27,95 +27,34 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Broker tornado application module."""
+"""MQTT gateway module."""
 
-import json
 import logging
 from tornado.ioloop import PeriodicCallback
-from tornado import web, gen
-from tornado.websocket import websocket_connect
 
 from pyaiot.common.auth import auth_token
+from pyaiot.gateway.common import GatewayBase
 
-from .mqtt import MQTTController
+from .mqtt import MQTTNodesController
 
 logger = logging.getLogger("pyaiot.gw.mqtt")
 
 
-class MQTTGateway(web.Application):
+class MQTTGateway(GatewayBase):
     """Gateway application for MQTT nodes on a network."""
 
     def __init__(self, keys, options=None):
-        assert options
-
-        if options.debug:
-            logger.setLevel(logging.DEBUG)
-
-        self.keys = keys
-        handlers = []
-        settings = {'debug': True}
-
-        # Starts MQTT controller
-        self._mqtt_controller = MQTTController(
-            on_message_cb=self.send_to_broker,
-            port=options.mqtt_port,
-            max_time=options.max_time)
-        PeriodicCallback(self._mqtt_controller.check_dead_nodes, 1000).start()
-        PeriodicCallback(self._mqtt_controller.request_alive, 30000).start()
-
-        # Create connection to broker
-        self.create_broker_connection(
-            "ws://{}:{}/gw".format(options.broker_host, options.broker_port))
-
-        super().__init__(handlers, **settings)
+        self.options = options
+        super().__init__(keys, options)
         logger.info('MQTT gateway application started')
 
-    def close_client(self):
-        """Close client websocket"""
-        logger.warning("MQTT controller: closing connection with broker.")
-        self.broker.close()
+    def setup_nodes_controller(self):
+        """Instantiate and configure an MQTT nodes controller."""
+        nodes_controller = MQTTNodesController(
+            on_message_cb=self.send_to_broker,
+            port=self.options.mqtt_port,
+            max_time=self.options.max_time)
+        PeriodicCallback(nodes_controller.check_dead_nodes, 1000).start()
+        PeriodicCallback(nodes_controller.request_alive, 30000).start()
 
-    @gen.coroutine
-    def create_broker_connection(self, url):
-        """Create an asynchronous connection to the broker."""
-        while True:
-            try:
-                self.broker = yield websocket_connect(url)
-            except ConnectionRefusedError:
-                logger.warning("Cannot connect, retrying in 3s")
-            else:
-                logger.info("Connected to broker, sending auth token")
-                self.broker.write_message(auth_token(self.keys))
-                yield gen.sleep(1)
-                self._mqtt_controller.fetch_nodes_cache('all')
-                while True:
-                    message = yield self.broker.read_message()
-                    if message is None:
-                        logger.warning("Connection with broker lost.")
-                        break
-                    self.on_broker_message(message)
-
-            yield gen.sleep(3)
-
-    def send_to_broker(self, message):
-        """Send a message to the parent broker."""
-        if self.broker is not None:
-            logger.debug("Sending message '{}' to broker.".format(message))
-            self.broker.write_message(message)
-
-    def on_broker_message(self, message):
-        """Handle a message received from the broker websocket."""
-        logger.debug("Handling message '{}' received from broker."
-                     .format(message))
-        message = json.loads(message)
-
-        if message['type'] == "new":
-            # Received when a new client connects => fetching the nodes
-            # in controller's cache
-            self._mqtt_controller.fetch_nodes_cache(message['src'])
-        elif message['type'] == "update":
-            # Received when a client update a node
-            self._mqtt_controller.send_data_to_node(message['data'])
-
-    def terminate(self):
-        self._mqtt_controller.close()
+        return nodes_controller

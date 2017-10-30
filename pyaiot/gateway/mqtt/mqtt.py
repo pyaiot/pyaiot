@@ -73,7 +73,7 @@ class MQTTNode(object):
                .format(self.node_id, self.check_time, self.resources))
 
 
-class MQTTController():
+class MQTTNodesController():
     """MQTT controller with MQTT client inside."""
 
     def __init__(self, on_message_cb, port=MQTT_PORT, max_time=MAX_TIME):
