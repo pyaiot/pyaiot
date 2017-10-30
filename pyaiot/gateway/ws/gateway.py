@@ -27,73 +27,160 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Broker application module."""
+"""Broker tornado application module."""
 
-import sys
+import json
 import logging
-from tornado.options import define, options
+import uuid
+from tornado import gen, web, websocket
+from tornado.websocket import websocket_connect
 
-from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
-from pyaiot.common.helpers import start_application
+from pyaiot.common.auth import auth_token
+from pyaiot.common.messaging import Message
 
-from .application import WebsocketGatewayApplication
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)14s - '
-                           '%(levelname)5s - %(message)s')
 logger = logging.getLogger("pyaiot.gw.ws")
 
-
-def parse_command_line():
-    """Parse command line arguments for websocket gateway application."""
-    if not hasattr(options, "config"):
-        define("config", default=None, help="Config file")
-    if not hasattr(options, "broker_host"):
-        define("broker_host", default="localhost", help="Broker host")
-    if not hasattr(options, "broker_port"):
-        define("broker_port", default=8000, help="Broker port")
-    if not hasattr(options, "gateway_port"):
-        define("gateway_port", default=8001,
-               help="Node gateway websocket port")
-    if not hasattr(options, "key_file"):
-        define("key_file", default=DEFAULT_KEY_FILENAME,
-               help="Secret and private keys filename.")
-    if not hasattr(options, "debug"):
-        define("debug", default=False, help="Enable debug mode.")
-    options.parse_command_line()
-    if options.config:
-        options.parse_config_file(options.config)
-    # Parse the command line a second time to override config file options
-    options.parse_command_line()
+PROTOCOL = "WebSocket"
 
 
-def run(arguments=[]):
-    """Start the websocket gateway instance."""
-    if arguments != []:
-        sys.argv[1:] = arguments
+class WebsocketNodeHandler(websocket.WebSocketHandler):
+    def check_origin(self, origin):
+        """Allow connections from anywhere."""
+        return True
 
-    try:
-        parse_command_line()
-    except SyntaxError as e:
-        logger.error("Invalid config file: {}".format(e))
-        return
-    except FileNotFoundError as e:
-        logger.error("Config file not found: {}".format(e))
-        return
+    @gen.coroutine
+    def open(self):
+        """Discover nodes on each opened connection."""
+        self.set_nodelay(True)
+        logger.debug("New node websocket opened")
+        self.application.nodes.update(
+            {self: {'uid': str(uuid.uuid4()),
+                    'data': {'protocol': PROTOCOL}}})
+        node_uid = self.application.nodes[self]['uid']
+        self.application.send_to_broker(Message.new_node(node_uid))
+        yield self.write_message(Message.discover_node())
+        self.application.send_to_broker(
+            Message.update_node(node_uid, 'protocol', PROTOCOL))
 
-    if options.debug:
-        logger.setLevel(logging.DEBUG)
+    @gen.coroutine
+    def on_message(self, raw):
+        """Triggered when a message is received from the web client."""
+        message, reason = Message.check_message(raw)
+        if message is not None:
+            self.application.on_node_message(self, message)
+        else:
+            logger.debug("Invalid message, closing websocket")
+            self.close(code=1003, reason="{}.".format(reason))
 
-    try:
-        keys = check_key_file(options.key_file)
-    except ValueError as e:
-        logger.error(e)
-        return
-
-    start_application(WebsocketGatewayApplication(keys, options=options),
-                      port=options.gateway_port,
-                      close_client=True)
+    def on_close(self):
+        """Remove websocket from internal list."""
+        logger.debug("Node websocket closed")
+        self.application.remove_ws(self)
 
 
-if __name__ == '__main__':
-    run()
+class WebsocketGateway(web.Application):
+    """Gateway application for websocket nodes on a network."""
+
+    def __init__(self, keys, options=None):
+        assert options
+
+        self.keys = keys
+        self.nodes = {}
+
+        if options.debug:
+            logger.setLevel(logging.DEBUG)
+
+        handlers = [
+            (r"/node", WebsocketNodeHandler),
+        ]
+        settings = {'debug': True}
+
+        super().__init__(handlers, **settings)
+
+        # Create connection to broker
+        self.create_broker_connection(
+            "ws://{}:{}/gw".format(options.broker_host, options.broker_port))
+
+        logger.info('Application started, listening on port {}'
+                    .format(options.gateway_port))
+
+    def close_client(self):
+        """Close client websocket"""
+        self.broker.close()
+
+    @gen.coroutine
+    def create_broker_connection(self, url):
+        """Create an asynchronous connection to the broker."""
+        while True:
+            try:
+                self.broker = yield websocket_connect(url)
+            except ConnectionRefusedError:
+                logger.debug("Cannot connect, retrying in 3s")
+            else:
+                logger.debug("Connected to broker, sending auth token")
+                self.broker.write_message(auth_token(self.keys))
+                while True:
+                    message = yield self.broker.read_message()
+                    if message is None:
+                        logger.debug("Connection with broker lost.")
+                        break
+                    self.on_broker_message(message)
+
+            yield gen.sleep(3)
+
+    def send_to_broker(self, message):
+        """Send a message to the broker."""
+        if self.broker is not None:
+            logger.debug("Sending message '{}' to broker.".format(message))
+            self.broker.write_message(message)
+
+    def on_node_message(self, ws, message):
+        """Handle a message received from a node websocket."""
+        if message['type'] == "update":
+            logger.debug("New update message received from node websocket")
+            for key, value in message['data'].items():
+                if key in self.nodes[ws]['data']:
+                    self.nodes[ws]['data'][key] = value
+                else:
+                    self.nodes[ws]['data'].update({key: value})
+                self.send_to_broker(Message.update_node(
+                    self.nodes[ws]['uid'], key, value))
+        else:
+            logger.debug("Invalid message received from node websocket")
+
+    @gen.coroutine
+    def on_broker_message(self, message):
+        """Handle a message received from the broker websocket."""
+        logger.debug("Handling message '{}' received from broker."
+                     .format(message))
+        message = json.loads(message)
+
+        if message['type'] == "new":
+            # Received when a new client connects => fetching the nodes
+            # in controller's cache
+            for ws, value in self.nodes.items():
+                yield self.fetch_nodes_cache(message['src'])
+        elif message['type'] == "update":
+            # Received when a client update a node
+            uid = message['data']['uid']
+            for ws, value in self.nodes.items():
+                if value['uid'] == uid:
+                    ws.write_message(message['data'])
+
+    @gen.coroutine
+    def fetch_nodes_cache(self, source):
+        """Send cached nodes information."""
+        logger.debug("Fetching cached information of registered nodes.")
+        for ws, node in self.nodes.items():
+            self.send_to_broker(Message.new_node(
+                node['uid'], dst=source))
+            for endpoint, value in node['data'].items():
+                self.send_to_broker(
+                    Message.update_node(
+                        node['uid'], endpoint, value, dst=source))
+
+    def remove_ws(self, ws):
+        """Remove websocket that has been closed."""
+        if ws in self.nodes:
+            self.send_to_broker(Message.out_node(self.nodes[ws]['uid']))
+            self.nodes.pop(ws)
