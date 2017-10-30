@@ -27,80 +27,31 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""CoAP gateway application module."""
+"""CoAP gateway tornado application module."""
 
-import sys
 import logging
-import tornado.platform.asyncio
-from tornado.options import define, options
+from tornado.ioloop import PeriodicCallback
 
-from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
-from pyaiot.common.helpers import start_application
+from pyaiot.gateway.common import GatewayBase
+from .coap import CoapNodesController
 
-from .coap import MAX_TIME, COAP_PORT
-from .application import CoapGatewayApplication
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)14s - '
-                           '%(levelname)5s - %(message)s')
 logger = logging.getLogger("pyaiot.gw.coap")
 
 
-def parse_command_line():
-    """Parse command line arguments for CoAP gateway application."""
-    if not hasattr(options, "config"):
-        define("config", default=None, help="Config file")
-    if not hasattr(options, "broker_host"):
-        define("broker_host", default="localhost", help="Broker host")
-    if not hasattr(options, "broker_port"):
-        define("broker_port", default=8000, help="Broker port")
-    if not hasattr(options, "coap_port"):
-        define("coap_port", default=COAP_PORT, help="Gateway CoAP server port")
-    if not hasattr(options, "max_time"):
-        define("max_time", default=MAX_TIME,
-               help="Maximum retention time (in s) for CoAP dead nodes")
-    if not hasattr(options, "key_file"):
-        define("key_file", default=DEFAULT_KEY_FILENAME,
-               help="Secret and private keys filename.")
-    if not hasattr(options, "debug"):
-        define("debug", default=False, help="Enable debug mode.")
-    options.parse_command_line()
-    if options.config:
-        options.parse_config_file(options.config)
-    # Parse the command line a second time to override config file options
-    options.parse_command_line()
+class CoapGateway(GatewayBase):
+    """Tornado based gateway application for CoAP nodes on a network."""
 
+    def __init__(self, keys, options=None):
+        self.options = options
+        super().__init__(keys, options)
+        logger.info('CoAP gateway application started')
 
-def run(arguments=[]):
-    """Start the CoAP gateway instance."""
-    if arguments != []:
-        sys.argv[1:] = arguments
+    def setup_nodes_controller(self):
+        """Instantiate and configure a CoAP nodes controller."""
+        nodes_controller = CoapNodesController(
+            on_message_cb=self.send_to_broker,
+            port=self.options.coap_port,
+            max_time=self.options.max_time)
+        PeriodicCallback(nodes_controller.check_dead_nodes, 1000).start()
 
-    try:
-        parse_command_line()
-    except SyntaxError as e:
-        logger.critical("Invalid config file: {}".format(e))
-        return
-    except FileNotFoundError as e:
-        logger.error("Config file not found: {}".format(e))
-        return
-
-    if options.debug:
-        logger.setLevel(logging.DEBUG)
-        logging.getLogger("pyaiot.gw.client").setLevel(logging.DEBUG)
-
-    try:
-        keys = check_key_file(options.key_file)
-    except ValueError as e:
-        logger.error(e)
-        return
-
-    if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
-        tornado.platform.asyncio.AsyncIOMainLoop().install()
-
-    start_application(CoapGatewayApplication(keys, options=options),
-                      port=options.coap_port, close_client=True)
-
-
-if __name__ == '__main__':
-    run()
+        return nodes_controller

@@ -147,8 +147,8 @@ class CoapServerResource(resource.Resource):
                        payload="Received '{}'".format(payload).encode('utf-8'))
 
 
-class CoapController():
-    """CoAP controller with CoAP server inside."""
+class CoapNodesController():
+    """CoAP nodes controller with a CoAP server inside."""
 
     def __init__(self, on_message_cb, port=COAP_PORT, max_time=MAX_TIME):
         # on_message_cb = send_to_broker method in gateway application

@@ -31,7 +31,7 @@
 
 import json
 import logging
-from tornado.ioloop import PeriodicCallback
+from abc import ABCMeta, abstractmethod
 from tornado import web, gen
 from tornado.websocket import websocket_connect
 
@@ -40,8 +40,8 @@ from pyaiot.common.auth import auth_token
 logger = logging.getLogger("pyaiot.gw.common")
 
 
-class GatewayBase(web.Application):
-    """Tornado based gateway application for CoAP nodes on a network."""
+class GatewayBase(web.Application, metaclass=ABCMeta):
+    """Base gateway application."""
 
     def __init__(self, keys, options=None):
         assert options
@@ -64,10 +64,12 @@ class GatewayBase(web.Application):
         super().__init__(handlers, **settings)
         logger.debug('Base Gateway application started')
 
-
+    @abstractmethod
     def setup_nodes_controller(self):
-        """Instanciate and configure an application nodes controller."""
-        return None
+        """Instantiate and configure an application nodes controller.
+
+        Has to be implemented in each concrete gateway classes.
+        """
 
     def close_client(self):
         """Close client websocket"""
