@@ -27,15 +27,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Broker tornado application module."""
+"""Websocket nodes gateway module."""
 
-import json
 import logging
 import uuid
-from tornado import gen, web, websocket
-from tornado.websocket import websocket_connect
+from tornado import gen, websocket
 
-from pyaiot.common.auth import auth_token
 from pyaiot.common.messaging import Message
 from pyaiot.gateway.common import GatewayBase
 
