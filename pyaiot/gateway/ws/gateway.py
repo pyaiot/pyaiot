@@ -79,7 +79,7 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
 class WebsocketGateway(GatewayBase):
     """Gateway application for websocket nodes on a network."""
 
-    def __init__(self, keys, options=None):
+    def __init__(self, keys, options):
         self.nodes = {}
 
         if options.debug:
