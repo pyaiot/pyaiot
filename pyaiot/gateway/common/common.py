@@ -43,9 +43,7 @@ logger = logging.getLogger("pyaiot.gw.common")
 class GatewayBase(web.Application, metaclass=ABCMeta):
     """Base gateway application."""
 
-    def __init__(self, keys, options=None):
-        assert options
-
+    def __init__(self, keys, options):
         if options.debug:
             logger.setLevel(logging.DEBUG)
 

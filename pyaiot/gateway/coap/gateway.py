@@ -41,7 +41,7 @@ logger = logging.getLogger("pyaiot.gw.coap")
 class CoapGateway(GatewayBase):
     """Tornado based gateway application for CoAP nodes on a network."""
 
-    def __init__(self, keys, options=None):
+    def __init__(self, keys, options):
         self.options = options
         super().__init__(keys, options)
         logger.info('CoAP gateway application started')

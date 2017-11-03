@@ -43,7 +43,7 @@ logger = logging.getLogger("pyaiot.gw.mqtt")
 class MQTTGateway(GatewayBase):
     """Gateway application for MQTT nodes on a network."""
 
-    def __init__(self, keys, options=None):
+    def __init__(self, keys, options):
         self.options = options
         super().__init__(keys, options)
         logger.info('MQTT gateway application started')

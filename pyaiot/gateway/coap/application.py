@@ -87,7 +87,6 @@ def run(arguments=[]):
 
     if options.debug:
         logger.setLevel(logging.DEBUG)
-        logging.getLogger("pyaiot.gw.client").setLevel(logging.DEBUG)
 
     try:
         keys = check_key_file(options.key_file)
