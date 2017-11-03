@@ -27,67 +27,194 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Broker application module."""
+"""Broker tornado application module."""
 
-import sys
+import uuid
 import logging
-from tornado.options import define, options
+from tornado import gen, web, websocket
 
-from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
-from pyaiot.common.helpers import start_application
+from pyaiot.common.auth import verify_auth_token
+from pyaiot.common.messaging import Message
 
-from .application import BrokerApplication
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)14s - '
-                           '%(levelname)5s - %(message)s')
 logger = logging.getLogger("pyaiot.broker")
 
 
-def parse_command_line():
-    """Parse command line arguments for IoT broker application."""
-    if not hasattr(options, "config"):
-        define("config", default=None, help="Config file")
-    if not hasattr(options, "port"):
-        define("broker_port", default=8000, help="Broker websocket port")
-    if not hasattr(options, "debug"):
-        define("debug", default=False, help="Enable debug mode.")
-    if not hasattr(options, "key_file"):
-        define("key_file", default=DEFAULT_KEY_FILENAME,
-               help="Secret and private keys filename.")
-    options.parse_command_line()
-    if options.config:
-        options.parse_config_file(options.config)
-    # Parse the command line a second time to override config file options
-    options.parse_command_line()
+class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
+
+    authentified = False
+
+    def check_origin(self, origin):
+        """Allow connections from anywhere."""
+        return True
+
+    @gen.coroutine
+    def open(self):
+        """Discover nodes on each opened connection."""
+        self.set_nodelay(True)
+        logger.info("New gateway websocket opened")
+
+        # Wait 2 seconds to get the gateway authentication token.
+        yield gen.sleep(2)
+        if not self.authentified:
+            self.close()
+
+    @gen.coroutine
+    def on_message(self, raw):
+        """Triggered when a message is received from the broker child."""
+        if not self.authentified:
+            if verify_auth_token(raw, self.application.keys):
+                logger.info("Gateway websocket authentication verified")
+                self.authentified = True
+                self.application.gateways.update({self: []})
+            else:
+                logger.info("Gateway websocket authentication failed, "
+                            "closing.")
+                self.close()
+        else:
+            message, reason = Message.check_message(raw)
+            if message is not None:
+                self.application.on_gateway_message(self, message)
+            else:
+                logger.debug("Invalid message, closing websocket")
+                self.close(code=1003, reason="{}.".format(reason))
+
+    def on_close(self):
+        """Remove websocket from internal list."""
+        logger.info("Gateway websocket closed")
+        self.application.remove_ws(self)
 
 
-def run(arguments=[]):
-    """Start a broker instance."""
-    if arguments != []:
-        sys.argv[1:] = arguments
+class BrokerWebsocketClientHandler(websocket.WebSocketHandler):
 
-    try:
-        parse_command_line()
-    except SyntaxError as e:
-        logger.error("Invalid config file: {}".format(e))
-        return
-    except FileNotFoundError as e:
-        logger.error("Config file not found: {}".format(e))
-        return
+    uid = None
 
-    if options.debug:
-        logger.setLevel(logging.DEBUG)
+    def check_origin(self, origin):
+        """Allow connections from anywhere."""
+        return True
 
-    try:
-        keys = check_key_file(options.key_file)
-    except ValueError as exc:
-        logger.error(exc)
-        return
+    def open(self):
+        """Discover nodes on each opened connection."""
+        self.uid = str(uuid.uuid4())
+        self.set_nodelay(True)
+        logger.info("New client connection opened '{}'".format(self.uid))
 
-    start_application(BrokerApplication(keys, options=options),
-                      port=options.broker_port)
+    @gen.coroutine
+    def on_message(self, raw):
+        """Triggered when a message is received from the web client."""
+        message, reason = Message.check_message(raw)
+        if message is not None:
+            message.update({'src': self.uid})
+            self.application.on_client_message(self, message)
+        else:
+            logger.debug("Invalid message, closing websocket")
+            self.close(code=1003, reason="{}.".format(reason))
+
+    def on_close(self):
+        """Remove websocket from internal list."""
+        logger.info("Client connection closed '{}'".format(self.uid))
+        self.application.remove_ws(self.uid)
 
 
-if __name__ == '__main__':
-    run()
+class Broker(web.Application):
+    """Pyaiot broker."""
+
+    def __init__(self, keys, options):
+        self.keys = keys
+        self.gateways = {}
+        self.clients = {}
+
+        if options.debug:
+            logger.setLevel(logging.DEBUG)
+
+        handlers = [
+            (r"/ws", BrokerWebsocketClientHandler),
+            (r"/gw", BrokerWebsocketGatewayHandler),
+        ]
+        settings = {'debug': True}
+
+        super().__init__(handlers, **settings)
+        logger.info('Application started, listening on port {}'
+                    .format(options.broker_port))
+
+    def broadcast(self, message):
+        """Broadcast message to all clients."""
+        logger.debug("Broadcasting message '{}' to web clients."
+                     .format(message))
+        for uid in self.clients.keys():
+            self.send_to_client(uid, message)
+
+    def send_to_client(self, uid, message):
+        """Send message to single client given its uid."""
+        logger.debug("Sending message '{}' to client {}."
+                     .format(message, uid))
+        self.clients[uid].write_message(message)
+
+    def on_client_message(self, ws, message):
+        """Handle a message received from a client."""
+        logger.debug("Handling message '{}' received from client websocket."
+                     .format(message))
+        if message['type'] == "new":
+            logger.info("New client connected: {}".format(ws.uid))
+            if ws.uid not in self.clients.keys():
+                self.clients.update({ws.uid: ws})
+        elif message['type'] == "update":
+            logger.debug("New message from client: {}".format(ws.uid))
+
+        # Simply forward this message to satellite gateways
+        logger.debug("Forwarding message {} to gateways".format(message))
+        for gw in self.gateways:
+            gw.write_message(Message.serialize(message))
+
+    @gen.coroutine
+    def on_gateway_message(self, ws, message):
+        """Handle a message received from a gateway.
+
+        This method redirect messages from gateways to the right destinations:
+        - for freshly new information initiated by nodes => broadcast
+        - for replies to new client connection => only send to this client
+        """
+        logger.debug("Handling message '{}' received from gateway."
+                     .format(message))
+        if message['type'] == "new":
+            # Received when notifying clients of a new node available
+            if not message['uid'] in self.gateways[ws]:
+                self.gateways[ws].append(message['uid'])
+
+            if message['dst'] == "all":
+                # Occurs when an unknown new node arrived
+                self.broadcast(Message.serialize(message))
+            elif message['dst'] in self.clients.keys():
+                # Occurs when a single client has just connected
+                self.send_to_client(
+                    message['dst'], Message.serialize(message))
+        elif (message['type'] == "out" and
+              message['uid'] in self.gateways[ws]):
+            # Node disparition are always broadcasted to clients
+            self.gateways[ws].remove(message['uid'])
+            self.broadcast(Message.serialize(message))
+        elif message['type'] == "reset":
+            # Occurs when a node has reset (reboot, firmware update):
+            # require broadcast
+            self.broadcast(Message.serialize(message))
+        elif (message['type'] in "update" and
+              message['uid'] in self.gateways[ws]):
+            if message['dst'] == "all":
+                # Occurs when a new update was pushed by a node:
+                # require broadcast
+                self.broadcast(Message.serialize(message))
+            elif message['dst'] in self.clients.keys():
+                # Occurs when a new client has just connected:
+                # Only the cached information of a node are pushed to this
+                # specific client
+                self.send_to_client(
+                    message['dst'], Message.serialize(message))
+
+    def remove_ws(self, ws):
+        """Remove websocket that has been closed."""
+        if ws in self.clients:
+            self.clients.pop(ws)
+        elif ws in self.gateways.keys():
+            # Notify clients that the nodes behind the closed gateway are out.
+            for node_uid in self.gateways[ws]:
+                self.broadcast(Message.out_node(node_uid))
+            self.gateways.pop(ws)
