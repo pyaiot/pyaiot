@@ -60,7 +60,7 @@ class DashboardHandler(web.RequestHandler):
                     title=options.title)
 
 
-class IoTDashboardApplication(web.Application):
+class Dashboard(web.Application):
     """Tornado based web application providing an IoT Dashboard."""
 
     def __init__(self):
@@ -139,7 +139,7 @@ def run(arguments=[]):
     if options.debug:
         logger.setLevel(logging.DEBUG)
 
-    start_application(IoTDashboardApplication(), port=options.web_port)
+    start_application(Dashboard(), port=options.web_port)
 
 
 if __name__ == '__main__':
