@@ -39,11 +39,8 @@ import tornado
 from tornado import web
 from tornado.options import define, options
 
-from pyaiot.common.helpers import start_application
+from pyaiot.common.helpers import start_application, parse_command_line
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)14s - '
-                           '%(levelname)5s - %(message)s')
 logger = logging.getLogger("pyaiot.dashboard")
 
 
@@ -82,10 +79,8 @@ class Dashboard(web.Application):
                     .format(options.web_port))
 
 
-def parse_command_line():
-    """Parse command line arguments for IoT broker application."""
-    if not hasattr(options, "config"):
-        define("config", default=None, help="Config file")
+def extra_args():
+    """Define extra command line arguments for dashboard application."""
     if not hasattr(options, "static_path"):
         define("static_path",
                default=os.path.join(os.path.dirname(__file__), "static"),
@@ -93,12 +88,6 @@ def parse_command_line():
     if not hasattr(options, "web_port"):
         define("web_port", default=8080,
                help="Web application HTTP port")
-    if not hasattr(options, "broker_port"):
-        define("broker_port", default=8000,
-               help="Broker port")
-    if not hasattr(options, "broker_host"):
-        define("broker_host", default="localhost",
-               help="Broker hostname")
     if not hasattr(options, "broker_ssl"):
         define("broker_ssl", type=bool, default=False,
                help="Supply the broker websocket with ssl")
@@ -114,31 +103,21 @@ def parse_command_line():
     if not hasattr(options, "favicon"):
         define("favicon", default=None,
                help="Favicon url for your dashboard site")
-    if not hasattr(options, "debug"):
-        define("debug", default=False,
-               help="Enable debug mode.")
-    options.parse_command_line()
-    if options.config:
-        options.parse_config_file(options.config)
-    # Parse the command line a second time to override config file options
-    options.parse_command_line()
 
 
 def run(arguments=[]):
     """Start an instance of a dashboard."""
     if arguments != []:
         sys.argv[1:] = arguments
-    try:
-        parse_command_line()
-    except SyntaxError as e:
-        logger.error("Invalid config file: {}".format(e))
-        return
-    except FileNotFoundError as e:
-        logger.error("Config file not found: {}".format(e))
-        return
 
-    if options.debug:
-        logger.setLevel(logging.DEBUG)
+    try:
+        parse_command_line(extra_args_func=extra_args)
+    except SyntaxError as exc:
+        logger.error("Invalid config file: {}".format(exc))
+        return
+    except FileNotFoundError as exc:
+        logger.error("Config file not found: {}".format(exc))
+        return
 
     start_application(Dashboard(), port=options.web_port)
 

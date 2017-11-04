@@ -34,8 +34,8 @@ import logging
 import tornado.platform.asyncio
 from tornado.options import define, options
 
-from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
-from pyaiot.common.helpers import start_application
+from pyaiot.common.auth import check_key_file
+from pyaiot.common.helpers import start_application, parse_command_line
 
 from .coap import MAX_TIME, COAP_PORT
 from .gateway import CoapGateway
@@ -46,29 +46,13 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger("pyaiot.gw.coap")
 
 
-def parse_command_line():
+def extra_args():
     """Parse command line arguments for CoAP gateway application."""
-    if not hasattr(options, "config"):
-        define("config", default=None, help="Config file")
-    if not hasattr(options, "broker_host"):
-        define("broker_host", default="localhost", help="Broker host")
-    if not hasattr(options, "broker_port"):
-        define("broker_port", default=8000, help="Broker port")
     if not hasattr(options, "coap_port"):
         define("coap_port", default=COAP_PORT, help="Gateway CoAP server port")
     if not hasattr(options, "max_time"):
         define("max_time", default=MAX_TIME,
                help="Maximum retention time (in s) for CoAP dead nodes")
-    if not hasattr(options, "key_file"):
-        define("key_file", default=DEFAULT_KEY_FILENAME,
-               help="Secret and private keys filename.")
-    if not hasattr(options, "debug"):
-        define("debug", default=False, help="Enable debug mode.")
-    options.parse_command_line()
-    if options.config:
-        options.parse_config_file(options.config)
-    # Parse the command line a second time to override config file options
-    options.parse_command_line()
 
 
 def run(arguments=[]):
@@ -77,21 +61,18 @@ def run(arguments=[]):
         sys.argv[1:] = arguments
 
     try:
-        parse_command_line()
-    except SyntaxError as e:
-        logger.critical("Invalid config file: {}".format(e))
+        parse_command_line(extra_args_func=extra_args)
+    except SyntaxError as exc:
+        logger.critical("Invalid config file: {}".format(exc))
         return
-    except FileNotFoundError as e:
-        logger.error("Config file not found: {}".format(e))
+    except FileNotFoundError as exc:
+        logger.error("Config file not found: {}".format(exc))
         return
-
-    if options.debug:
-        logger.setLevel(logging.DEBUG)
 
     try:
         keys = check_key_file(options.key_file)
-    except ValueError as e:
-        logger.error(e)
+    except ValueError as exc:
+        logger.error(exc)
         return
 
     if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():

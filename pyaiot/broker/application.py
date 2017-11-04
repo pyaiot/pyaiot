@@ -30,36 +30,12 @@
 """Broker application module."""
 
 import sys
-import logging
-from tornado.options import define, options
+from tornado.options import options
 
-from pyaiot.common.auth import check_key_file, DEFAULT_KEY_FILENAME
-from pyaiot.common.helpers import start_application
+from pyaiot.common.auth import check_key_file
+from pyaiot.common.helpers import start_application, parse_command_line
 
-from .broker import Broker
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)14s - '
-                           '%(levelname)5s - %(message)s')
-logger = logging.getLogger("pyaiot.broker")
-
-
-def parse_command_line():
-    """Parse command line arguments for IoT broker application."""
-    if not hasattr(options, "config"):
-        define("config", default=None, help="Config file")
-    if not hasattr(options, "port"):
-        define("broker_port", default=8000, help="Broker websocket port")
-    if not hasattr(options, "debug"):
-        define("debug", default=False, help="Enable debug mode.")
-    if not hasattr(options, "key_file"):
-        define("key_file", default=DEFAULT_KEY_FILENAME,
-               help="Secret and private keys filename.")
-    options.parse_command_line()
-    if options.config:
-        options.parse_config_file(options.config)
-    # Parse the command line a second time to override config file options
-    options.parse_command_line()
+from .broker import Broker, logger
 
 
 def run(arguments=[]):
@@ -69,15 +45,12 @@ def run(arguments=[]):
 
     try:
         parse_command_line()
-    except SyntaxError as e:
-        logger.error("Invalid config file: {}".format(e))
+    except SyntaxError as exc:
+        logger.error("Invalid config file: {}".format(exc))
         return
-    except FileNotFoundError as e:
-        logger.error("Config file not found: {}".format(e))
+    except FileNotFoundError as exc:
+        logger.error("Config file not found: {}".format(exc))
         return
-
-    if options.debug:
-        logger.setLevel(logging.DEBUG)
 
     try:
         keys = check_key_file(options.key_file)
