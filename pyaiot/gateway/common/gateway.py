@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""Common classes for gateways."""
+"""Base class for gateways."""
 
 import json
 import logging
@@ -37,7 +37,7 @@ from tornado.websocket import websocket_connect
 
 from pyaiot.common.auth import auth_token
 
-logger = logging.getLogger("pyaiot.gw.common")
+logger = logging.getLogger("pyaiot.gw.common.gateway")
 
 
 class GatewayBase(web.Application, metaclass=ABCMeta):
