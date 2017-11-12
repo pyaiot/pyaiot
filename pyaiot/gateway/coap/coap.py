@@ -40,6 +40,7 @@ from aiocoap import Context, Message, GET, PUT, CHANGED
 from aiocoap.numbers.codes import Code
 
 from pyaiot.common.messaging import Message as Msg
+from pyaiot.gateway.common import NodesControllerBase
 
 logger = logging.getLogger("pyaiot.gw.coap")
 
@@ -148,15 +149,13 @@ class CoapServerResource(resource.Resource):
                        payload="Received '{}'".format(payload).encode('utf-8'))
 
 
-class CoapNodesController():
+class CoapNodesController(NodesControllerBase):
     """CoAP nodes controller with a CoAP server inside."""
 
-    def __init__(self, on_message_cb, port=COAP_PORT, max_time=MAX_TIME):
-        # on_message_cb = send_to_broker method in gateway application
-        self._on_message_cb = on_message_cb
+    def __init__(self, gateway, port=COAP_PORT, max_time=MAX_TIME):
+        super().__init__(gateway)
         self.port = port
         self.max_time = max_time
-        self.nodes = {}
         self.setup()
 
     def setup(self):
@@ -168,16 +167,6 @@ class CoapNodesController():
                                CoapAliveResource(self))
         asyncio.async(
             Context.create_server_context(root_coap, bind=('::', self.port)))
-
-    @gen.coroutine
-    def fetch_nodes_cache(self, source):
-        """Send cached nodes information."""
-        logger.debug("Fetching cached information of registered nodes.")
-        for _, node in self.nodes.items():
-            self._on_message_cb(Msg.new_node(node['uid'], dst=source))
-            for endpoint, value in node['data'].items():
-                yield self._on_message_cb(
-                    Msg.update_node(node['uid'], endpoint, value, dst=source))
 
     @gen.coroutine
     def discover_node(self, node, uid):
@@ -208,7 +197,7 @@ class CoapNodesController():
 
             # Remove '/' from path
             path = path[1:]
-            self._on_message_cb(Msg.update_node(uid, path, payload))
+            self.send_message_to_broker(Msg.update_node(uid, path, payload))
             self.nodes[node]['data'].update({path: payload})
 
         logger.debug("CoAP node resources '{}' sent to broker"
@@ -216,15 +205,7 @@ class CoapNodesController():
 
     @gen.coroutine
     def send_data_to_node(self, data):
-        """Forward received message data to the destination node.
-
-        The message should be JSON and contain 'uid', 'path' and 'payload'
-        keys.
-
-        - 'uid' corresponds to the node uid (uuid)
-        - 'path' corresponds to the CoAP resource on the node
-        - 'payload' corresponds to the new payload for the CoAP resource.
-        """
+        """Forward received data to the destination node."""
         uid = data['uid']
         endpoint = data['endpoint']
         payload = data['payload']
@@ -242,7 +223,7 @@ class CoapNodesController():
                     payload=payload.encode('ascii'))
                 if code == Code.CHANGED:
                     self.nodes[node]['data'][endpoint] = payload
-                    yield self._on_message_cb(
+                    yield self.send_message_to_broker(
                         Msg.update_node(uid, endpoint, payload))
                 break
 
@@ -251,7 +232,7 @@ class CoapNodesController():
         node = CoapNode(address)
         if node in self.nodes and endpoint in self.nodes[node]['data']:
             self.nodes[node]['data'][endpoint] = value
-        self._on_message_cb(Msg.update_node(
+        self.send_message_to_broker(Msg.update_node(
             self.nodes[node]['uid'], endpoint, value))
 
     def handle_coap_check(self, address, reset=False):
@@ -265,10 +246,11 @@ class CoapNodesController():
             self.nodes.update({node: {'uid': node_uid,
                                       'data': {'ip': address,
                                                'protocol': PROTOCOL}}})
-            self._on_message_cb(Msg.new_node(node_uid))
-            self._on_message_cb(Msg.update_node(node_uid, "ip", address))
-            self._on_message_cb(Msg.update_node(node_uid,
-                                                "protocol", PROTOCOL))
+            self.send_message_to_broker(Msg.new_node(node_uid))
+            self.send_message_to_broker(Msg.update_node(node_uid,
+                                                        "ip", address))
+            self.send_message_to_broker(Msg.update_node(node_uid,
+                                                        "protocol", PROTOCOL))
             self.discover_node(node, node_uid)
         elif reset:
             # The data of the node need to be reset without removing it. This
@@ -278,7 +260,7 @@ class CoapNodesController():
             self.nodes[node]['data'] = {}
             self.nodes[node]['data'].update({'ip': address,
                                              'protocol': PROTOCOL})
-            self._on_message_cb(Msg.reset_node(node_uid))
+            self.send_message_to_broker(Msg.reset_node(node_uid))
             self.discover_node(node, node_uid)
         else:
             # The node simply sent a check message to notify that it's still
@@ -295,4 +277,4 @@ class CoapNodesController():
             self.nodes.pop(node)
             logger.info("Removing inactive node {}".format(uid))
             logger.debug("Available nodes {}".format(self.nodes))
-            self._on_message_cb(Msg.out_node(uid))
+            self.send_message_to_broker(Msg.out_node(uid))

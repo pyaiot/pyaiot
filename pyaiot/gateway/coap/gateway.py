@@ -48,10 +48,9 @@ class CoapGateway(GatewayBase):
 
     def setup_nodes_controller(self):
         """Instantiate and configure a CoAP nodes controller."""
-        nodes_controller = CoapNodesController(
-            on_message_cb=self.send_to_broker,
-            port=self.options.coap_port,
-            max_time=self.options.max_time)
+        nodes_controller = CoapNodesController(self,
+                                               port=self.options.coap_port,
+                                               max_time=self.options.max_time)
         PeriodicCallback(nodes_controller.check_dead_nodes, 1000).start()
 
         return nodes_controller
