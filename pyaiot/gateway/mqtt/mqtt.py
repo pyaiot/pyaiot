@@ -51,6 +51,7 @@ MQTT_PORT = 1886
 MAX_TIME = 120
 PROTOCOL = "MQTT"
 
+
 class MQTTNode(object):
     """Object defining a MQTT node."""
 
@@ -147,7 +148,8 @@ class MQTTNodesController():
                                       'data': {'protocol': PROTOCOL}}})
             logger.debug("Available nodes: {}".format(self.nodes))
             self._on_message_cb(Msg.new_node(node_uid))
-            self._on_message_cb(Msg.update_node(node_uid, "protocol", PROTOCOL))
+            self._on_message_cb(Msg.update_node(node_uid,
+                                                "protocol", PROTOCOL))
             discover_topic = 'gateway/{}/discover'.format(node_id)
             yield from self.mqtt_client.publish(discover_topic, b"resources",
                                                 qos=QOS_1)

@@ -123,6 +123,7 @@ def parse_command_line():
     # Parse the command line a second time to override config file options
     options.parse_command_line()
 
+
 def run(arguments=[]):
     """Start an instance of a dashboard."""
     if arguments != []:
