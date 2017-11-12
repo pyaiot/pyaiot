@@ -34,7 +34,7 @@ import uuid
 from tornado import gen, websocket
 
 from pyaiot.common.messaging import Message
-from pyaiot.gateway.common import GatewayBase
+from pyaiot.gateway.common import GatewayBase, NodesControllerBase
 
 logger = logging.getLogger("pyaiot.gw.ws")
 
@@ -76,12 +76,10 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         self.application.remove_ws(self)
 
 
-class WebsocketGateway(GatewayBase):
+class WebsocketGateway(GatewayBase, NodesControllerBase):
     """Gateway application for websocket nodes on a network."""
 
     def __init__(self, keys, options):
-        self.nodes = {}
-
         if options.debug:
             logger.setLevel(logging.DEBUG)
 
@@ -89,7 +87,8 @@ class WebsocketGateway(GatewayBase):
             (r"/node", WebsocketNodeHandler),
         ]
 
-        super().__init__(keys, options)
+        GatewayBase.__init__(self, keys, options, handlers=handlers)
+        NodesControllerBase.__init__(self, self)
 
         logger.info('WS gateway started, listening on port {}'
                     .format(options.gateway_port))
@@ -113,19 +112,8 @@ class WebsocketGateway(GatewayBase):
             logger.debug("Invalid message received from node websocket")
 
     @gen.coroutine
-    def fetch_nodes_cache(self, source):
-        """Send cached nodes information."""
-        logger.debug("Fetching cached information of registered nodes.")
-        for ws, node in self.nodes.items():
-            self.send_to_broker(Message.new_node(
-                node['uid'], dst=source))
-            for endpoint, value in node['data'].items():
-                self.send_to_broker(
-                    Message.update_node(
-                        node['uid'], endpoint, value, dst=source))
-
-    @gen.coroutine
     def send_data_to_node(self, data):
+        """Forward received message data to the destination node."""
         uid = data['uid']
         for ws, value in self.nodes.items():
             if value['uid'] == uid:
