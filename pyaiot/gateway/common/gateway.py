@@ -43,13 +43,12 @@ logger = logging.getLogger("pyaiot.gw.common.gateway")
 class GatewayBase(web.Application, metaclass=ABCMeta):
     """Base gateway application."""
 
-    def __init__(self, keys, options):
+    def __init__(self, keys, options, handlers=[]):
         if options.debug:
             logger.setLevel(logging.DEBUG)
 
         self.broker = None
         self.keys = keys
-        handlers = []
         settings = {'debug': True}
 
         # Setup nodes controller
