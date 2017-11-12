@@ -50,10 +50,9 @@ class MQTTGateway(GatewayBase):
 
     def setup_nodes_controller(self):
         """Instantiate and configure an MQTT nodes controller."""
-        nodes_controller = MQTTNodesController(
-            on_message_cb=self.send_to_broker,
-            port=self.options.mqtt_port,
-            max_time=self.options.max_time)
+        nodes_controller = MQTTNodesController(self,
+                                               port=self.options.mqtt_port,
+                                               max_time=self.options.max_time)
         PeriodicCallback(nodes_controller.check_dead_nodes, 1000).start()
         PeriodicCallback(nodes_controller.request_alive, 30000).start()
 

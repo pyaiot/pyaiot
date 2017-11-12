@@ -42,6 +42,7 @@ from hbmqtt.client import MQTTClient, ClientException
 from hbmqtt.mqtt.constants import QOS_1
 
 from pyaiot.common.messaging import Message as Msg
+from pyaiot.gateway.common import NodesControllerBase
 
 logger = logging.getLogger("pyaiot.gw.mqtt")
 
@@ -74,15 +75,13 @@ class MQTTNode(object):
                .format(self.node_id, self.check_time, self.resources))
 
 
-class MQTTNodesController():
+class MQTTNodesController(NodesControllerBase):
     """MQTT controller with MQTT client inside."""
 
-    def __init__(self, on_message_cb, port=MQTT_PORT, max_time=MAX_TIME):
-        # on_message_cb = send_to_broker method in gateway application
-        self._on_message_cb = on_message_cb
+    def __init__(self, gateway, port=MQTT_PORT, max_time=MAX_TIME):
+        super().__init__(gateway)
         self.port = port
         self.max_time = max_time
-        self.nodes = {}
         self.mqtt_client = MQTTClient()
         asyncio.get_event_loop().create_task(self.start())
 
@@ -147,14 +146,14 @@ class MQTTNodesController():
             self.nodes.update({node: {'uid': node_uid,
                                       'data': {'protocol': PROTOCOL}}})
             logger.debug("Available nodes: {}".format(self.nodes))
-            self._on_message_cb(Msg.new_node(node_uid))
-            self._on_message_cb(Msg.update_node(node_uid,
-                                                "protocol", PROTOCOL))
+            self.send_message_to_broker(Msg.new_node(node_uid))
+            self.send_message_to_broker(Msg.update_node(node_uid,
+                                                        "protocol", PROTOCOL))
             discover_topic = 'gateway/{}/discover'.format(node_id)
             yield from self.mqtt_client.publish(discover_topic, b"resources",
                                                 qos=QOS_1)
-            logger.debug("Published '{}' to topic: {}".format("resources",
-                         discover_topic))
+            logger.debug("Published '{}' to topic: {}"
+                         .format("resources", discover_topic))
         else:
             data = self.nodes.pop(node)
             self.nodes.update({node: data})
@@ -192,38 +191,18 @@ class MQTTNodesController():
                 self.nodes[node]['data'].update({resource: value})
 
         # Send update to broker
-        self._on_message_cb(Msg.update_node(
+        self.send_message_to_broker(Msg.update_node(
             self.nodes[node]['uid'], resource, value))
 
-    @gen.coroutine
-    def fetch_nodes_cache(self, source):
-        """Send cached nodes information."""
-        logger.debug("Fetching cached information of registered nodes '{}'."
-                     .format(self.nodes))
-        for _, value in self.nodes.items():
-            self._on_message_cb(Msg.new_node(value['uid'], dst=source))
-            for resource, data in value['data'].items():
-                self._on_message_cb(
-                    Msg.update_node(value['uid'], resource, data,
-                                    dst=source))
-
     def send_data_to_node(self, data):
-        """Forward received message data to the destination node.
-
-        The message should be JSON and contain 'uid', 'path' and 'payload'
-        keys.
-
-        - 'uid' corresponds to the node uid (uuid)
-        - 'path' corresponds to the MQTT resource the node has subscribed to.
-        - 'payload' corresponds to the new payload for the MQTT resource.
-        """
+        """Forward received data to the destination node."""
         uid = data['uid']
         endpoint = data['endpoint']
         payload = data['payload']
         logger.debug("Translating message ('{}') received to MQTT publish "
                      "request".format(data))
 
-        for node, value in self.nodes.items():
+        for node, _ in self.nodes.items():
             if self.nodes[node]['uid'] == uid:
                 node_id = node.node_id
                 logger.debug("Updating MQTT node '{}' resource '{}'"
@@ -252,7 +231,7 @@ class MQTTNodesController():
             self.nodes.pop(node)
             logger.info("Removing inactive node {}".format(uid))
             logger.debug("Available nodes {}".format(self.nodes))
-            self._on_message_cb(Msg.out_node(uid))
+            self.send_message_to_broker(Msg.out_node(uid))
 
     @asyncio.coroutine
     def _disconnect_from_node(self, node):
