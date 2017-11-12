@@ -33,7 +33,7 @@ def start_application(app, port=None, close_client=False):
 
     if not close_client:
         app.close_client = None
-    
+
     signal.signal(signal.SIGTERM,
                   partial(signal_handler, _server, app.close_client))
     signal.signal(signal.SIGINT,

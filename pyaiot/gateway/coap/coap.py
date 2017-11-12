@@ -48,6 +48,7 @@ COAP_PORT = 5683
 MAX_TIME = 120
 PROTOCOL = "CoAP"
 
+
 def _coap_endpoints(link_header):
     link = link_header.replace(' ', '')
     return link.split(',')
