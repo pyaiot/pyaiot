@@ -35,6 +35,39 @@ import logging
 logger = logging.getLogger("pyaiot.messaging")
 
 
+def check_broker_data(data):
+    """"Utility function that checks the data object.
+
+    :param data: a dict with only 'uid', 'endpoint' and 'payload' keys.
+
+    :return True of the data is correct, False otherwise
+
+    >>> check_broker_data({'uid':1, 'endpoint':'/test', 'payload': 'ok'})
+    True
+    >>> check_broker_data({'endpoint':'/test', 'payload': 'ok'})
+    False
+    >>> check_broker_data({'uid':1, 'payload': 'ok'})
+    False
+    >>> check_broker_data({'uid':1, 'endpoint':'/test'})
+    False
+    >>> check_broker_data({'uid':1, 'endpoint':'/test', 'payload': 'ok',
+    ...                    'extra': 'too many'})
+    False
+    """
+
+    if 'uid' not in data:
+        logger.debug("Invalid broker data: missing uid")
+    elif 'endpoint' not in data:
+        logger.debug("Invalid broker data: missing endpoint")
+    elif 'payload' not in data:
+        logger.debug("Invalid broker data: missing payload")
+    elif len(data.keys()) > 3:
+        logger.debug("Invalid broker data: too many keys")
+    else:
+        return True
+    return False
+
+
 class Message():
     """Utility class for generating and parsing service messages."""
 
@@ -77,8 +110,8 @@ class Message():
         reason = None
         try:
             message = json.loads(raw)
-        except TypeError as e:
-            logger.warning(e)
+        except TypeError as exc:
+            logger.warning(exc)
             reason = "Invalid message '{}'.".format(raw)
             message = None
         except json.JSONDecodeError:
