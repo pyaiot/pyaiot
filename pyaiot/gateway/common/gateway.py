@@ -36,6 +36,7 @@ from tornado import web, gen
 from tornado.websocket import websocket_connect
 
 from pyaiot.common.auth import auth_token
+from pyaiot.common.messaging import check_broker_data
 
 logger = logging.getLogger("pyaiot.gw.common.gateway")
 
@@ -112,6 +113,10 @@ class GatewayBase(web.Application, metaclass=ABCMeta):
             # Received when a new client connects => fetching the nodes
             # in controller's cache
             self._nodes_controller.fetch_nodes_cache(message['src'])
-        elif message['type'] == "update":
+        elif (message['type'] == "update" and
+              check_broker_data(message['data'])):
             # Received when a client update a node
             self._nodes_controller.send_data_to_node(message['data'])
+        else:
+            logger.debug("Invalid data received from broker '{}'."
+                         .format(message['data']))
