@@ -27,6 +27,40 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .gateway import GatewayBase
-from .nodes_controller import NodesControllerBase
-from .node import Node
+"""Class for managed node."""
+
+import logging
+import time
+
+logger = logging.getLogger("pyaiot.gw.common.node")
+
+
+class Node():
+    """Class for managed nodes."""
+
+    def __init__(self, uid):
+        self.uid = uid
+        self.last_seen = time.time()
+
+        self.resources = {}
+
+    def __eq__(self, other):
+        return self.uid == other.uid
+
+    def __gt__(self, other):
+        return self.uid > other.uid
+
+    def __repr__(self):
+        return "Node <{}>".format(self.uid)
+
+    def update_last_seen(self):
+        self.last_seen = time.time()
+
+    def set_resource_value(self, resource, value):
+        if resource not in self.resources:
+            self.resources.update({resource: value})
+        else:
+            self.resources[resource] = value
+
+    def clear_resources(self):
+        self.resources = {}
