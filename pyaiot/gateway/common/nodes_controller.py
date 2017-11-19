@@ -76,8 +76,8 @@ class NodesControllerBase(metaclass=ABCMeta):
         """
         logger.debug("Fetching cached information of registered nodes '{}'."
                      .format(self.nodes))
-        for _, node in self.nodes.items():
-            self.send_message_to_broker(Msg.new_node(node['uid'], dst=client))
-            for resource, data in node['data'].items():
+        for node in self.nodes.values():
+            self.send_message_to_broker(Msg.new_node(node.uid, dst=client))
+            for resource, value in node.resources.items():
                 self.send_message_to_broker(
-                    Msg.update_node(node['uid'], resource, data, dst=client))
+                    Msg.update_node(node.uid, resource, value, dst=client))
