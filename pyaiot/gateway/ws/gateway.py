@@ -34,7 +34,7 @@ import uuid
 from tornado import gen, websocket
 
 from pyaiot.common.messaging import Message
-from pyaiot.gateway.common import GatewayBase, NodesControllerBase
+from pyaiot.gateway.common import GatewayBase, NodesControllerBase, Node
 
 logger = logging.getLogger("pyaiot.gw.ws")
 
@@ -51,14 +51,15 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         """Discover nodes on each opened connection."""
         self.set_nodelay(True)
         logger.debug("New node websocket opened")
-        self.application.nodes.update(
-            {self: {'uid': str(uuid.uuid4()),
-                    'data': {'protocol': PROTOCOL}}})
-        node_uid = self.application.nodes[self]['uid']
-        self.application.send_to_broker(Message.new_node(node_uid))
+        node = Node(str(uuid.uuid4()))
+        node.set_resource_value('protocol', PROTOCOL)
+        self.application.nodes.update({self: node})
+
+        self.application.send_to_broker(Message.new_node(node.uid))
         yield self.write_message(Message.discover_node())
+
         self.application.send_to_broker(
-            Message.update_node(node_uid, 'protocol', PROTOCOL))
+            Message.update_node(node.uid, 'protocol', PROTOCOL))
 
     @gen.coroutine
     def on_message(self, raw):
@@ -102,12 +103,9 @@ class WebsocketGateway(GatewayBase, NodesControllerBase):
         if message['type'] == "update":
             logger.debug("New update message received from node websocket")
             for key, value in message['data'].items():
-                if key in self.nodes[ws]['data']:
-                    self.nodes[ws]['data'][key] = value
-                else:
-                    self.nodes[ws]['data'].update({key: value})
+                self.nodes[ws].set_resource_value(key, value)
                 self.send_to_broker(Message.update_node(
-                    self.nodes[ws]['uid'], key, value))
+                    self.nodes[ws].uid, key, value))
         else:
             logger.debug("Invalid message received from node websocket")
 
@@ -115,12 +113,12 @@ class WebsocketGateway(GatewayBase, NodesControllerBase):
     def send_data_to_node(self, data):
         """Forward received message data to the destination node."""
         uid = data['uid']
-        for ws, value in self.nodes.items():
-            if value['uid'] == uid:
+        for ws, node in self.nodes.items():
+            if node.uid == uid:
                 ws.write_message(data)
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""
         if ws in self.nodes:
-            self.send_to_broker(Message.out_node(self.nodes[ws]['uid']))
+            self.send_to_broker(Message.out_node(self.nodes[ws].uid))
             self.nodes.pop(ws)
