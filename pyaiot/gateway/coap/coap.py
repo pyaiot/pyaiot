@@ -170,7 +170,7 @@ class CoapNodesController(NodesControllerBase):
                 code, payload = yield _coap_resource(
                     '{0}{1}'.format(coap_node_url, path), method=GET)
             except:
-                logger.debug("Cannot discover ressource {} on node {}"
+                logger.debug("Cannot discover resource {} on node {}"
                              .format(endpoint, address))
                 return
 

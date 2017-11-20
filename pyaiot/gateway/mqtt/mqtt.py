@@ -67,7 +67,7 @@ class MQTTNodesController(NodesControllerBase):
 
     @asyncio.coroutine
     def start(self):
-        """Connect to MQTT broker and subscribe to node check ressource."""
+        """Connect to MQTT broker and subscribe to node check resource."""
         yield from self.mqtt_client.connect('mqtt://{}:{}'
                                             .format(options.mqtt_host,
                                                     options.mqtt_port))
@@ -171,7 +171,7 @@ class MQTTNodesController(NodesControllerBase):
 
     @gen.coroutine
     def update_node_resource(self, node, endpoint, payload):
-        node_id = node.ressources['id']
+        node_id = node.resources['id']
         asyncio.get_event_loop().create_task(self.mqtt_client.publish(
             'gateway/{}/{}/set'.format(node_id, endpoint),
             payload.encode(), qos=QOS_1))
