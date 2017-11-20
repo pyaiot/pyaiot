@@ -76,7 +76,7 @@ Here we describe how the CoAP gateway interacts with nodes.
 When a node starts, it notifies itself to its gateway by sending a CoAP
 post request. On reception, the gateway converts and forwards this message to
 the broker server. In the mean time, the gateway initiate a discovery of the
-ressources provided by the node (using the CoAP .well-known/core resource).
+resources provided by the node (using the CoAP .well-known/core resource).
 Once available resources on the node are known, the gateway sends to the broker
 update messages.
 The broker simply broadcasts those notification messages to all connected
