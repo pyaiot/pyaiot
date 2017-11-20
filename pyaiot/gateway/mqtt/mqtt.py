@@ -113,39 +113,35 @@ class MQTTNodesController(NodesControllerBase):
         yield from self.mqtt_client.disconnect()
 
     @asyncio.coroutine
+    def discover_node(self, node):
+        discover_topic = 'gateway/{}/discover'.format(node.resources['id'])
+        yield from self.mqtt_client.publish(discover_topic, b"resources",
+                                            qos=QOS_1)
+        logger.debug("Published '{}' to topic: {}"
+                     .format("resources", discover_topic))
+
+    @asyncio.coroutine
     def handle_node_check(self, data):
         """Handle alive message received from coap node."""
         node_id = data['id']
         if node_id not in self.node_mapping:
             node = Node(str(uuid.uuid4()))
+            node.set_resource_value('protocol', PROTOCOL)
+            node.set_resource_value('id', node_id)
             self.node_mapping.update({node_id: node})
 
             resources_topic = 'node/{}/resources'.format(node_id)
             yield from self.mqtt_client.subscribe([(resources_topic, QOS_1)])
             logger.debug("Subscribed to topic: {}".format(resources_topic))
 
-            self.nodes.update({node.uid: node})
-            node.set_resource_value('protocol', PROTOCOL)
-            node.set_resource_value('id', node_id)
+            self.add_node(node)
 
-            logger.debug("Available nodes: {}".format(self.nodes))
-            self.send_message_to_broker(Msg.new_node(node.uid))
-            for res, value in node.resources.items():
-                self.send_message_to_broker(Msg.update_node(node.uid,
-                                                            res, value))
-
-            discover_topic = 'gateway/{}/discover'.format(node_id)
-            yield from self.mqtt_client.publish(discover_topic, b"resources",
-                                                qos=QOS_1)
-            logger.debug("Published '{}' to topic: {}"
-                         .format("resources", discover_topic))
+            yield from self.discover_node(node)
         else:
             # The node simply sent a check message to notify that it's still
             # online.
-            node = self.nodes[self.node_mapping[node_id]]
+            node = self.get_node(self.node_mapping[node_id])
             node.update_last_seen()
-
-        logger.debug("Available nodes: {}".format(self.nodes))
 
     @asyncio.coroutine
     def handle_node_resources(self, topic, data):
@@ -154,7 +150,7 @@ class MQTTNodesController(NodesControllerBase):
         if self.node_mapping[node_id] not in self.nodes:
             return
 
-        node = self.nodes[self.node_mapping[node_id]]
+        node = self.get_node(self.node_mapping[node_id])
         node.resources.update(data)
         yield from self.mqtt_client.subscribe(
             [('node/{}/{}'.format(node_id, resource), QOS_1)
@@ -170,29 +166,15 @@ class MQTTNodesController(NodesControllerBase):
         if self.node_mapping[node_id] not in self.nodes:
             return
 
-        node = self.nodes[self.node_mapping[node_id]]
-        self.nodes[node.uid].set_resource_value(resource, value)
+        node = self.get_node(self.node_mapping[node_id])
+        self.send_data_from_node(node, resource, value)
 
-        # Send update to broker
-        self.send_message_to_broker(Msg.update_node(node.uid, resource, value))
-
-    def send_data_to_node(self, data):
-        """Forward received data to the destination node."""
-        uid = data['uid']
-        endpoint = data['endpoint']
-        payload = data['payload']
-        logger.debug("Translating message ('{}') received to MQTT publish "
-                     "request".format(data))
-
-        for node_uid, node in self.nodes.items():
-            if node_uid == uid:
-                node_id = node.ressources['id']
-                logger.debug("Updating MQTT node '{}' resource '{}'"
-                             .format(node_id, endpoint))
-                asyncio.get_event_loop().create_task(self.mqtt_client.publish(
-                    'gateway/{}/{}/set'.format(node_id, endpoint),
-                    payload.encode(), qos=QOS_1))
-                break
+    @gen.coroutine
+    def update_node_resource(self, node, endpoint, payload):
+        node_id = node.ressources['id']
+        asyncio.get_event_loop().create_task(self.mqtt_client.publish(
+            'gateway/{}/{}/set'.format(node_id, endpoint),
+            payload.encode(), qos=QOS_1))
 
     def request_alive(self):
         """Publish a request to trigger a check publish from nodes."""
@@ -205,13 +187,11 @@ class MQTTNodesController(NodesControllerBase):
         to_remove = [node for node in self.nodes.values()
                      if int(time.time()) > node.last_seen + self.max_time]
         for node in to_remove:
+            logger.info("Removing inactive node {}".format(node.uid))
             asyncio.get_event_loop().create_task(
                 self._disconnect_from_node(node))
             self.node_mapping.pop(node.resources['id'])
-            self.nodes.pop(node.uid)
-            logger.info("Removing inactive node {}".format(node.uid))
-            logger.debug("Available nodes {}".format(self.nodes))
-            self.send_message_to_broker(Msg.out_node(node.uid))
+            self.remove_node(node)
 
     @asyncio.coroutine
     def _disconnect_from_node(self, node):

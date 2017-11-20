@@ -31,6 +31,7 @@
 
 import logging
 import uuid
+import json
 from tornado import gen, websocket
 
 from pyaiot.common.messaging import Message
@@ -53,13 +54,9 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         logger.debug("New node websocket opened")
         node = Node(str(uuid.uuid4()))
         node.set_resource_value('protocol', PROTOCOL)
-        self.application.nodes.update({self: node})
-
-        self.application.send_to_broker(Message.new_node(node.uid))
-        yield self.write_message(Message.discover_node())
-
-        self.application.send_to_broker(
-            Message.update_node(node.uid, 'protocol', PROTOCOL))
+        self.application.add_node(node)
+        self.application.node_mapping.update({self: node.uid})
+        yield self.application.discover_node(node)
 
     @gen.coroutine
     def on_message(self, raw):
@@ -91,6 +88,8 @@ class WebsocketGateway(GatewayBase, NodesControllerBase):
         GatewayBase.__init__(self, keys, options, handlers=handlers)
         NodesControllerBase.__init__(self, self)
 
+        self.node_mapping = {}
+
         logger.info('WS gateway started, listening on port {}'
                     .format(options.gateway_port))
 
@@ -103,22 +102,28 @@ class WebsocketGateway(GatewayBase, NodesControllerBase):
         if message['type'] == "update":
             logger.debug("New update message received from node websocket")
             for key, value in message['data'].items():
-                self.nodes[ws].set_resource_value(key, value)
-                self.send_to_broker(Message.update_node(
-                    self.nodes[ws].uid, key, value))
+                node = self.get_node(self.node_mapping[ws])
+                self.send_data_from_node(node, key, value)
         else:
             logger.debug("Invalid message received from node websocket")
 
     @gen.coroutine
-    def send_data_to_node(self, data):
-        """Forward received message data to the destination node."""
-        uid = data['uid']
-        for ws, node in self.nodes.items():
+    def discover_node(self, node):
+        for ws, uid in self.node_mapping.items():
             if node.uid == uid:
-                ws.write_message(data)
+                yield ws.write_message(Message.discover_node())
+                break
+
+    @gen.coroutine
+    def update_node_resource(self, node, resource, value):
+        for ws, uid in self.node_mapping.items():
+            if node.uid == uid:
+                ws.write_message(json.dumps({"endpoint": resource,
+                                             "payload": value}))
+                break
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""
-        if ws in self.nodes:
-            self.send_to_broker(Message.out_node(self.nodes[ws].uid))
-            self.nodes.pop(ws)
+        if ws in self.node_mapping:
+            self.remove_node(self.get_node(self.node_mapping[ws]))
+            self.node_mapping.pop(ws)
