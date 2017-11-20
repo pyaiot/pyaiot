@@ -154,7 +154,7 @@ def _send_version():
 
 
 class BoardResource(resource.Resource):
-    """Test node board ressource."""
+    """Test node board resource."""
 
     def __init__(self):
         super(BoardResource, self).__init__()
@@ -167,7 +167,7 @@ class BoardResource(resource.Resource):
 
 
 class NameResource(resource.Resource):
-    """Test node name ressource."""
+    """Test node name resource."""
 
     def __init__(self):
         super(NameResource, self).__init__()
@@ -180,7 +180,7 @@ class NameResource(resource.Resource):
 
 
 class VersionResource(resource.Resource):
-    """Test node firmware version ressource."""
+    """Test node firmware version resource."""
 
     def __init__(self):
         super(VersionResource, self).__init__()
@@ -220,7 +220,7 @@ class LedResource(resource.Resource):
 
 
 class PressureResource(resource.Resource):
-    """Test node pressure ressource."""
+    """Test node pressure resource."""
 
     def __init__(self):
         super(PressureResource, self).__init__()
@@ -233,7 +233,7 @@ class PressureResource(resource.Resource):
 
 
 class TemperatureResource(resource.Resource):
-    """Test node temperature ressource."""
+    """Test node temperature resource."""
 
     def __init__(self):
         super(TemperatureResource, self).__init__()
@@ -246,7 +246,7 @@ class TemperatureResource(resource.Resource):
 
 
 class ImuResource(resource.Resource):
-    """Test node IMU ressource."""
+    """Test node IMU resource."""
 
     def __init__(self):
         super(ImuResource, self).__init__()
@@ -264,7 +264,7 @@ class ImuResource(resource.Resource):
 
 
 class RobotResource(resource.Resource):
-    """Test node Robot ressource."""
+    """Test node Robot resource."""
 
     def __init__(self):
         super(RobotResource, self).__init__()
@@ -285,7 +285,7 @@ class RobotResource(resource.Resource):
 
 
 class JavascriptResource(resource.Resource):
-    """Test node Javascript ressource."""
+    """Test node Javascript resource."""
 
     def __init__(self):
         super(JavascriptResource, self).__init__()

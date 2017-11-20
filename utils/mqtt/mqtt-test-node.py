@@ -66,7 +66,7 @@ def send_values(mqtt_client):
 
 @asyncio.coroutine
 def start_client():
-    """Connect to MQTT broker and subscribe to node ceck ressource."""
+    """Connect to MQTT broker and subscribe to node check resource."""
     global __LED_VALUE__
     mqtt_client = MQTTClient()
     yield from mqtt_client.connect(MQTT_URL)
