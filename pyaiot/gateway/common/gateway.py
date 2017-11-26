@@ -36,38 +36,78 @@ from tornado import web, gen
 from tornado.websocket import websocket_connect
 
 from pyaiot.common.auth import auth_token
-from pyaiot.common.messaging import check_broker_data
+from pyaiot.common.messaging import check_broker_data, Message
 
 logger = logging.getLogger("pyaiot.gw.common.gateway")
 
 
-class GatewayBase(web.Application, metaclass=ABCMeta):
-    """Base gateway application."""
+class GatewayBaseMixin():
+    """Class that manages the internal behaviour of a node controller."""
 
-    def __init__(self, keys, options, handlers=[]):
-        if options.debug:
-            logger.setLevel(logging.DEBUG)
+    def has_node(self, uid):
+        """Check if the node uid is already present."""
+        return uid in self.nodes
 
-        self.broker = None
-        self.keys = keys
-        settings = {'debug': True}
+    def add_node(self, node):
+        """Add a new node to the list of nodes and notify the broker."""
+        self.nodes.update({node.uid: node})
+        self.send_to_broker(Message.new_node(node.uid))
+        for res, value in node.resources.items():
+            self.send_to_broker(Message.update_node(node.uid, res, value))
 
-        # Setup nodes controller
-        self._nodes_controller = self.setup_nodes_controller()
+    def remove_node(self, node):
+        """Remove the given node from known nodes and notify the broker."""
+        self.nodes.pop(node.uid)
+        logger.debug("Remaining nodes {}".format(self.nodes))
+        self.send_to_broker(Message.out_node(node.uid))
 
-        # Create connection to broker
-        self.create_broker_connection(
-            "ws://{}:{}/gw".format(options.broker_host, options.broker_port))
+    def get_node(self, uid):
+        """Return the node matching the given uid."""
+        return self.nodes[uid]
 
-        super().__init__(handlers, **settings)
-        logger.debug('Base Gateway application started')
+    @gen.coroutine
+    def send_data_from_node(self, node, resource, value):
+        """Send data received from a node to the broker via the gateway."""
+        logger.debug("Sending data received from node '{}': '{}', '{}'."
+                     .format(node, resource, value))
+        node.set_resource_value(resource, value)
+        self.send_to_broker(Message.update_node(node.uid, resource, value))
 
-    @abstractmethod
-    def setup_nodes_controller(self):
-        """Instantiate and configure an application nodes controller.
+    @gen.coroutine
+    def send_data_to_node(self, data):
+        """Forward received data to the destination node.
 
-        Has to be implemented in each concrete gateway classes.
+        :param data: A dict representing the data to send to the node.
+                     This dict must have the 'uid', 'endpoint' and 'payload'
+                     keys.
+                    - 'uid': the node uid (uuid)
+                    - 'endpoint': the name of the exposed resource on the node
+                    - 'payload': the payload update of the endpoint
         """
+        uid = data['uid']
+        endpoint = data['endpoint']
+        payload = data['payload']
+        logger.debug("Forwarding message ('{}') received from broker to node"
+                     .format(data))
+
+        for node in self.nodes.values():
+            if node.uid == uid:
+                self.update_node_resource(node, endpoint, payload)
+                break
+
+    @gen.coroutine
+    def fetch_nodes_cache(self, client):
+        """Send cached nodes information to a given client.
+
+        :param client: the ID of the client
+        """
+        logger.debug("Fetching cached information of registered nodes '{}'."
+                     .format(self.nodes))
+        for node in self.nodes.values():
+            self.send_to_broker(Message.new_node(node.uid, dst=client))
+            for resource, value in node.resources.items():
+                self.send_to_broker(
+                    Message.update_node(node.uid, resource, value, dst=client))
 
     def close_client(self):
         """Close client websocket"""
@@ -86,7 +126,7 @@ class GatewayBase(web.Application, metaclass=ABCMeta):
                 logger.info("Connected to broker, sending auth token")
                 self.broker.write_message(auth_token(self.keys))
                 yield gen.sleep(1)
-                self._nodes_controller.fetch_nodes_cache('all')
+                self.fetch_nodes_cache('all')
                 while True:
                     message = yield self.broker.read_message()
                     if message is None:
@@ -98,7 +138,7 @@ class GatewayBase(web.Application, metaclass=ABCMeta):
 
     @gen.coroutine
     def send_to_broker(self, message):
-        """Send a message to the parent broker."""
+        """Send a string message to the parent broker."""
         if self.broker is not None:
             logger.debug("Sending message '{}' to broker.".format(message))
             self.broker.write_message(message)
@@ -112,11 +152,69 @@ class GatewayBase(web.Application, metaclass=ABCMeta):
         if message['type'] == "new":
             # Received when a new client connects => fetching the nodes
             # in controller's cache
-            self._nodes_controller.fetch_nodes_cache(message['src'])
+            self.fetch_nodes_cache(message['src'])
         elif (message['type'] == "update" and
               check_broker_data(message['data'])):
             # Received when a client update a node
-            self._nodes_controller.send_data_to_node(message['data'])
+            self.send_data_to_node(message['data'])
         else:
             logger.debug("Invalid data received from broker '{}'."
                          .format(message['data']))
+
+
+class GatewayBase(web.Application, GatewayBaseMixin, metaclass=ABCMeta):
+    """Base gateway application.
+
+    All abstractmethods should be reimplemented to match the specific
+    communication protocols used by subclasses (CoAP, MQTT, websocket, etc).
+    """
+
+    def __init__(self, keys, options, handlers=[]):
+        if options.debug:
+            logger.setLevel(logging.DEBUG)
+
+        self.options = options
+        self.nodes = {}
+        self.broker = None
+        self.keys = keys
+        settings = {'debug': True}
+
+        # Setup concrete gateway
+        self.setup()
+
+        # Create connection to broker
+        self.create_broker_connection(
+            "ws://{}:{}/gw".format(options.broker_host, options.broker_port))
+
+        super().__init__(handlers, **settings)
+        logger.debug('Base Gateway application started')
+
+    @abstractmethod
+    def update_node_resource(self, node, resource, value):
+        """Send an update to a node to change its resource with given value.
+
+        This is dependent on the protocol used to communicate with nodes (CoAP,
+        MQTT, etc) and has to be implemented in the protocol specific nodes
+        controller.
+
+        Should be a coroutine."""
+
+    @abstractmethod
+    def discover_node(self, node):
+        """Start a discovery procedure on a node.
+
+        After the discovery is done, all resources (or endpoints) exposed by a
+        node are available using the `resource` attribute of the given node.
+
+        This is dependent on the protocol used to communicate with nodes (CoAP,
+        MQTT, etc) and has to be implemented in the protocol specific nodes
+        controller.
+
+        Should be a coroutine."""
+
+    @abstractmethod
+    def setup(self):
+        """Setup protocol specific gateway parts.
+
+        Has to be implemented in each concrete gateway classes.
+        """

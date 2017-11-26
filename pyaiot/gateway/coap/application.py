@@ -37,8 +37,7 @@ from tornado.options import define, options
 from pyaiot.common.auth import check_key_file
 from pyaiot.common.helpers import start_application, parse_command_line
 
-from .coap import MAX_TIME, COAP_PORT
-from .gateway import CoapGateway
+from .gateway import CoapGateway, MAX_TIME, COAP_PORT
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '

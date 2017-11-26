@@ -35,7 +35,7 @@ import json
 from tornado import gen, websocket
 
 from pyaiot.common.messaging import Message
-from pyaiot.gateway.common import GatewayBase, NodesControllerBase, Node
+from pyaiot.gateway.common import GatewayBase, Node
 
 logger = logging.getLogger("pyaiot.gw.ws")
 
@@ -74,7 +74,7 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         self.application.remove_ws(self)
 
 
-class WebsocketGateway(GatewayBase, NodesControllerBase):
+class WebsocketGateway(GatewayBase):
     """Gateway application for websocket nodes on a network."""
 
     def __init__(self, keys, options):
@@ -86,16 +86,15 @@ class WebsocketGateway(GatewayBase, NodesControllerBase):
         ]
 
         GatewayBase.__init__(self, keys, options, handlers=handlers)
-        NodesControllerBase.__init__(self, self)
 
         self.node_mapping = {}
 
         logger.info('WS gateway started, listening on port {}'
                     .format(options.gateway_port))
 
-    def setup_nodes_controller(self):
-        """Instantiate and configure a websocket nodes controller."""
-        return self
+    def setup(self):
+        """Nothing to setup."""
+        pass
 
     def on_node_message(self, ws, message):
         """Handle a message received from a node websocket."""

@@ -28,5 +28,4 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .gateway import GatewayBase
-from .nodes_controller import NodesControllerBase
 from .node import Node
