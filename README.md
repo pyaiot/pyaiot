@@ -1,5 +1,7 @@
 ## Pyaiot, connecting nodes to the web
 
+[![Build Status](https://travis-ci.org/pyaiot/pyaiot.svg?branch=master)](https://travis-ci.org/pyaiot/pyaiot)
+
 Pyaiot provides a set of services to interact and transport data from IoT nodes
 with regular web protocols (HTTP) and technologies. Pyaiot relies on Python
 asyncio core module and on other more specific asyncio based packages such as
