@@ -41,7 +41,6 @@ from pyaiot.common.messaging import check_broker_data, Message
 logger = logging.getLogger("pyaiot.gw.common.gateway")
 
 
-
 class GatewayBaseMixin():
     """Class that manages the internal behaviour of a node controller."""
 
