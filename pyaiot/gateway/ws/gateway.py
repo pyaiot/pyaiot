@@ -39,8 +39,6 @@ from pyaiot.gateway.common import GatewayBase, Node
 
 logger = logging.getLogger("pyaiot.gw.ws")
 
-PROTOCOL = "WebSocket"
-
 
 class WebsocketNodeHandler(websocket.WebSocketHandler):
     def check_origin(self, origin):
@@ -53,10 +51,8 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         self.set_nodelay(True)
         logger.debug("New node websocket opened")
         node = Node(str(uuid.uuid4()))
-        node.set_resource_value('protocol', PROTOCOL)
-        self.application.add_node(node)
         self.application.node_mapping.update({self: node.uid})
-        yield self.application.discover_node(node)
+        self.application.add_node(node)
 
     @gen.coroutine
     def on_message(self, raw):
@@ -77,6 +73,8 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
 class WebsocketGateway(GatewayBase):
     """Gateway application for websocket nodes on a network."""
 
+    PROTOCOL = 'WebSocket'
+
     def __init__(self, keys, options):
         if options.debug:
             logger.setLevel(logging.DEBUG)
@@ -91,10 +89,6 @@ class WebsocketGateway(GatewayBase):
 
         logger.info('WS gateway started, listening on port {}'
                     .format(options.gateway_port))
-
-    def setup(self):
-        """Nothing to setup."""
-        pass
 
     def on_node_message(self, ws, message):
         """Handle a message received from a node websocket."""

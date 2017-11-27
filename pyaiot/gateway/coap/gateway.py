@@ -49,7 +49,6 @@ logger = logging.getLogger("pyaiot.gw.coap")
 
 COAP_PORT = 5683
 MAX_TIME = 120
-PROTOCOL = "CoAP"
 
 
 def _coap_endpoints(link_header):
@@ -132,16 +131,14 @@ class CoapServerResource(resource.Resource):
 class CoapGateway(GatewayBase):
     """Tornado based gateway application for managing CoAP nodes."""
 
+    PROTOCOL = 'CoAP'
+
     def __init__(self, keys, options):
         self.port = options.coap_port
         self.max_time = options.max_time
         self.node_mapping = {}  # map node address to its uuid (TODO: FIXME)
 
         super().__init__(keys, options)
-        logger.info('CoAP gateway application started')
-
-    def setup(self):
-        """Setup the coap gateway."""
 
         # Configure the CoAP server
         root_coap = resource.Site()
@@ -154,6 +151,8 @@ class CoapGateway(GatewayBase):
 
         # Start the periodic node cleanup task
         PeriodicCallback(self.check_dead_nodes, 1000).start()
+
+        logger.info('CoAP gateway application started')
 
     @gen.coroutine
     def discover_node(self, node):
@@ -214,24 +213,15 @@ class CoapGateway(GatewayBase):
         if address not in self.node_mapping:
             # This is a totally new node: create uid, initialized cached node
             # send 'new' node notification, 'update' notification.
-            node = Node(str(uuid.uuid4()))
-            node.set_resource_value('ip', address)
-            node.set_resource_value('protocol', PROTOCOL)
-
+            node = Node(str(uuid.uuid4()), ip=address)
             self.node_mapping.update({address: node.uid})
-
             self.add_node(node)
-            self.discover_node(node)
         elif reset:
             # The data of the node need to be reset without removing it. This
             # is particularly the case after a reboot of the node or a
             # firmware update of the node that triggered the reboot.
             node = self.get_node(self.node_mapping[address])
-            node.clear_resources()
-            node.set_resource_value('ip', address)
-            node.set_resource_value('protocol', PROTOCOL)
-            self.send_to_broker(Msg.reset_node(node.uid))
-            self.discover_node(node)
+            self.reset_node(node, default_resources={'ip': address})
         else:
             # The node simply sent a check message to notify that it's still
             # online.

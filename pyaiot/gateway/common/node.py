@@ -38,11 +38,11 @@ logger = logging.getLogger("pyaiot.gw.common.node")
 class Node():
     """Class for managed nodes."""
 
-    def __init__(self, uid):
+    def __init__(self, uid, **default_resources):
         self.uid = uid
         self.last_seen = time.time()
 
-        self.resources = {}
+        self.resources = default_resources
 
     def __eq__(self, other):
         return self.uid == other.uid

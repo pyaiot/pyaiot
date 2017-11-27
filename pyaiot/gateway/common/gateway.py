@@ -41,19 +41,34 @@ from pyaiot.common.messaging import check_broker_data, Message
 logger = logging.getLogger("pyaiot.gw.common.gateway")
 
 
+
 class GatewayBaseMixin():
     """Class that manages the internal behaviour of a node controller."""
+
+    PROTOCOL = None
 
     def has_node(self, uid):
         """Check if the node uid is already present."""
         return uid in self.nodes
 
+    @gen.coroutine
     def add_node(self, node):
         """Add a new node to the list of nodes and notify the broker."""
+        node.set_resource_value('protocol', self.PROTOCOL)
         self.nodes.update({node.uid: node})
         self.send_to_broker(Message.new_node(node.uid))
         for res, value in node.resources.items():
             self.send_to_broker(Message.update_node(node.uid, res, value))
+        yield from self.discover_node(node)
+
+    def reset_node(self, node, default_resources={}):
+        """Reset a node: clear the current resource and reinitialize them."""
+        node.clear_resources()
+        node.set_resource_value('protocol', self.PROTOCOL)
+        for resource, value in default_resources.items():
+            node.set_resource_value(resource, value)
+        self.send_to_broker(Message.reset_node(node.uid))
+        self.discover_node(node)
 
     def remove_node(self, node):
         """Remove the given node from known nodes and notify the broker."""
@@ -179,9 +194,6 @@ class GatewayBase(web.Application, GatewayBaseMixin, metaclass=ABCMeta):
         self.keys = keys
         settings = {'debug': True}
 
-        # Setup concrete gateway
-        self.setup()
-
         # Create connection to broker
         self.create_broker_connection(
             "ws://{}:{}/gw".format(options.broker_host, options.broker_port))
@@ -211,10 +223,3 @@ class GatewayBase(web.Application, GatewayBaseMixin, metaclass=ABCMeta):
         controller.
 
         Should be a coroutine."""
-
-    @abstractmethod
-    def setup(self):
-        """Setup protocol specific gateway parts.
-
-        Has to be implemented in each concrete gateway classes.
-        """

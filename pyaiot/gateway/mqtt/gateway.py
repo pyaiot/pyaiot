@@ -49,11 +49,12 @@ logger = logging.getLogger("pyaiot.gw.mqtt")
 MQTT_HOST = 'localhost'
 MQTT_PORT = 1886
 MAX_TIME = 120
-PROTOCOL = "MQTT"
 
 
 class MQTTGateway(GatewayBase):
     """Gateway application for MQTT nodes on a network."""
+
+    PROTOCOL = "MQTT"
 
     def __init__(self, keys, options):
         self.host = options.mqtt_host
@@ -64,10 +65,6 @@ class MQTTGateway(GatewayBase):
 
         super().__init__(keys, options)
 
-        logger.info('MQTT gateway application started')
-
-    def setup(self):
-        """Setup the MQTT gateway."""
         # Connect to the MQTT broker
         self.mqtt_client = MQTTClient()
         asyncio.get_event_loop().create_task(self.start())
@@ -75,6 +72,8 @@ class MQTTGateway(GatewayBase):
         # Start the node cleanup task
         PeriodicCallback(self.check_dead_nodes, 1000).start()
         PeriodicCallback(self.request_alive, 30000).start()
+
+        logger.info('MQTT gateway application started')
 
     @asyncio.coroutine
     def start(self):
@@ -136,18 +135,14 @@ class MQTTGateway(GatewayBase):
         """Handle alive message received from coap node."""
         node_id = data['id']
         if node_id not in self.node_mapping:
-            node = Node(str(uuid.uuid4()))
-            node.set_resource_value('protocol', PROTOCOL)
-            node.set_resource_value('id', node_id)
-            self.node_mapping.update({node_id: node})
+            node = Node(str(uuid.uuid4()), id=node_id)
+            self.node_mapping.update({node_id: node.uid})
 
             resources_topic = 'node/{}/resources'.format(node_id)
             yield from self.mqtt_client.subscribe([(resources_topic, QOS_1)])
             logger.debug("Subscribed to topic: {}".format(resources_topic))
 
             self.add_node(node)
-
-            yield from self.discover_node(node)
         else:
             # The node simply sent a check message to notify that it's still
             # online.
@@ -158,11 +153,9 @@ class MQTTGateway(GatewayBase):
     def handle_node_resources(self, topic, data):
         """Process resources published by a node."""
         node_id = topic.split("/")[1]
-        if self.node_mapping[node_id] not in self.nodes:
+        if node_id not in self.node_mapping:
             return
 
-        node = self.get_node(self.node_mapping[node_id])
-        node.resources.update(data)
         yield from self.mqtt_client.subscribe(
             [('node/{}/{}'.format(node_id, resource), QOS_1)
              for resource in data])
