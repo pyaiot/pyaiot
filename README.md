@@ -36,7 +36,7 @@ Pyaiot is built around several microservices:
 * A public web application for the **dashboard**
 * Private distributed **gateways**
 
-<img src="./misc/images/pyaiot_overview.png" width="50%">
+![Pyaiot overview]("./misc/images/pyaiot_overview.png")
 
 The role of the broker is to put in relation gateways and web clients in
 order to be able to transfer in a bi-directionnal way messages coming from
@@ -52,7 +52,7 @@ The Dashboard is a web page with some embbeded javascript that displays the
 list of available nodes and their status. It also allows to interact with the
 nodes (LED control, Robot control, etc)
 
-<img src="./misc/images/pyaiot_services.png" width="50%">
+![Pyaiot services]("./misc/images/pyaiot_services.png")
 
 3 examples of gateways are provided by pyaiot:
 * A CoAP gateway that manages a list of alive sensor nodes by running it's own
