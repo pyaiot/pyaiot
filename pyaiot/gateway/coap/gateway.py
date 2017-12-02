@@ -182,7 +182,7 @@ class CoapGateway(GatewayBase):
                 return
 
             # Remove '/' from path
-            self.send_data_from_node(node, path[1:], payload)
+            self.forward_data_from_node(node, path[1:], payload)
 
         logger.debug("CoAP node resources '{}' sent to broker"
                      .format(endpoints))
@@ -198,7 +198,7 @@ class CoapGateway(GatewayBase):
             method=PUT,
             payload=payload.encode('ascii'))
         if code == Code.CHANGED:
-            self.send_data_from_node(node, endpoint, payload)
+            self.forward_data_from_node(node, endpoint, payload)
 
     def handle_coap_post(self, address, endpoint, value):
         """Handle CoAP post message sent from coap node."""
@@ -206,7 +206,7 @@ class CoapGateway(GatewayBase):
             logger.debug("Unknown CoAP node '{}'".format(address))
             return
         node = self.get_node(self.node_mapping[address])
-        self.send_data_from_node(node, endpoint, value)
+        self.forward_data_from_node(node, endpoint, value)
 
     def handle_coap_check(self, address, reset=False):
         """Handle check message received from coap node."""

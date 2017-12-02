@@ -130,6 +130,13 @@ class MQTTGateway(GatewayBase):
         logger.debug("Published '{}' to topic: {}"
                      .format("resources", discover_topic))
 
+    @gen.coroutine
+    def update_node_resource(self, node, endpoint, payload):
+        node_id = node.resources['id']
+        asyncio.get_event_loop().create_task(self.mqtt_client.publish(
+            'gateway/{}/{}/set'.format(node_id, endpoint),
+            payload.encode(), qos=QOS_1))
+
     @asyncio.coroutine
     def handle_node_check(self, data):
         """Handle alive message received from coap node."""
@@ -171,14 +178,7 @@ class MQTTGateway(GatewayBase):
             return
 
         node = self.get_node(self.node_mapping[node_id])
-        self.send_data_from_node(node, resource, value)
-
-    @gen.coroutine
-    def update_node_resource(self, node, endpoint, payload):
-        node_id = node.resources['id']
-        asyncio.get_event_loop().create_task(self.mqtt_client.publish(
-            'gateway/{}/{}/set'.format(node_id, endpoint),
-            payload.encode(), qos=QOS_1))
+        self.forward_data_from_node(node, resource, value)
 
     def request_alive(self):
         """Publish a request to trigger a check publish from nodes."""

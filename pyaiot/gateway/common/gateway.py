@@ -58,7 +58,7 @@ class GatewayBaseMixin():
         self.send_to_broker(Message.new_node(node.uid))
         for res, value in node.resources.items():
             self.send_to_broker(Message.update_node(node.uid, res, value))
-        yield from self.discover_node(node)
+        yield self.discover_node(node)
 
     def reset_node(self, node, default_resources={}):
         """Reset a node: clear the current resource and reinitialize them."""
@@ -80,34 +80,12 @@ class GatewayBaseMixin():
         return self.nodes[uid]
 
     @gen.coroutine
-    def send_data_from_node(self, node, resource, value):
+    def forward_data_from_node(self, node, resource, value):
         """Send data received from a node to the broker via the gateway."""
         logger.debug("Sending data received from node '{}': '{}', '{}'."
                      .format(node, resource, value))
         node.set_resource_value(resource, value)
         self.send_to_broker(Message.update_node(node.uid, resource, value))
-
-    @gen.coroutine
-    def send_data_to_node(self, data):
-        """Forward received data to the destination node.
-
-        :param data: A dict representing the data to send to the node.
-                     This dict must have the 'uid', 'endpoint' and 'payload'
-                     keys.
-                    - 'uid': the node uid (uuid)
-                    - 'endpoint': the name of the exposed resource on the node
-                    - 'payload': the payload update of the endpoint
-        """
-        uid = data['uid']
-        endpoint = data['endpoint']
-        payload = data['payload']
-        logger.debug("Forwarding message ('{}') received from broker to node"
-                     .format(data))
-
-        for node in self.nodes.values():
-            if node.uid == uid:
-                self.update_node_resource(node, endpoint, payload)
-                break
 
     @gen.coroutine
     def fetch_nodes_cache(self, client):
@@ -169,8 +147,17 @@ class GatewayBaseMixin():
             self.fetch_nodes_cache(message['src'])
         elif (message['type'] == "update" and
               check_broker_data(message['data'])):
+            data = message['data']
+            logger.debug("Forwarding message ('{}') received from broker to "
+                         "node".format(data))
             # Received when a client update a node
-            self.send_data_to_node(message['data'])
+            uid = data['uid']
+            endpoint = data['endpoint']
+            payload = data['payload']
+            for node in self.nodes.values():
+                if node.uid == uid:
+                    self.update_node_resource(node, endpoint, payload)
+                    break
         else:
             logger.debug("Invalid data received from broker '{}'."
                          .format(message['data']))

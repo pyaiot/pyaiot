@@ -90,16 +90,6 @@ class WebsocketGateway(GatewayBase):
         logger.info('WS gateway started, listening on port {}'
                     .format(options.gateway_port))
 
-    def on_node_message(self, ws, message):
-        """Handle a message received from a node websocket."""
-        if message['type'] == "update":
-            logger.debug("New update message received from node websocket")
-            for key, value in message['data'].items():
-                node = self.get_node(self.node_mapping[ws])
-                self.send_data_from_node(node, key, value)
-        else:
-            logger.debug("Invalid message received from node websocket")
-
     @gen.coroutine
     def discover_node(self, node):
         for ws, uid in self.node_mapping.items():
@@ -114,6 +104,16 @@ class WebsocketGateway(GatewayBase):
                 ws.write_message(json.dumps({"endpoint": resource,
                                              "payload": value}))
                 break
+
+    def on_node_message(self, ws, message):
+        """Handle a message received from a node websocket."""
+        if message['type'] == "update":
+            logger.debug("New update message received from node websocket")
+            for key, value in message['data'].items():
+                node = self.get_node(self.node_mapping[ws])
+                self.forward_data_from_node(node, key, value)
+        else:
+            logger.debug("Invalid message received from node websocket")
 
     def remove_ws(self, ws):
         """Remove websocket that has been closed."""
