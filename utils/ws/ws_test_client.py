@@ -49,10 +49,10 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Test Websocket node")
-    parser.add_argument('--host', type=str, default="localhost",
+    parser.add_argument('--gateway-host', type=str, default="localhost",
                         help="Gateway host.")
-    parser.add_argument('--port', type=str, default="8001",
-                        help="CoGateway port")
+    parser.add_argument('--gateway-port', type=str, default="8001",
+                        help="Gateway port")
     args = parser.parse_args()
     try:
         main(args)
