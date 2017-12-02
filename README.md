@@ -2,10 +2,10 @@
 
 [![Build Status](https://travis-ci.org/pyaiot/pyaiot.svg?branch=master)](https://travis-ci.org/pyaiot/pyaiot)
 
-Pyaiot provides a set of services to interact and transport data from IoT nodes
-with regular web protocols (HTTP) and technologies. Pyaiot relies on Python
-asyncio core module and on other more specific asyncio based packages such as
-[Tornado](http://www.tornadoweb.org/en/stable/),
+Pyaiot provides a set of services for interacting and transporting data coming
+from IoT nodes using regular web protocols (HTTP) and technologies. Pyaiot
+relies on Python asyncio core module and on other more specific asyncio based
+packages such as [Tornado](http://www.tornadoweb.org/en/stable/),
 [aiocoap](http://aiocoap.readthedocs.io/en/latest/) or
 [HBMQTT](http://hbmqtt.readthedocs.io/en/latest/index.html).
 Pyaiot tries to only use standard protocols to connect the IoT nodes to the
@@ -29,25 +29,14 @@ repository, we also provide a [Micropython script](utils/pycom) that can be
 used on [Pycom nodes](https://www.pycom.io/).
 This script only works with the [mqtt gateway service](pyaiot/gateway/mqtt).
 
-### Available Demos
-
-See Pyaiot in action within 2 demos:
-* [RIOT](http://riot-os.org): You can find a permanent demo instance configured
-  as a showroom for RIOT. This showroom is available at
-  http://riot-demo.inria.fr.
-
-* [IoT-LAB open A8 demo](utils/iotlab)
-  This demo automatically submits an experiment on IoT-LAB with two open A8
-  nodes. The first node is configured as a border router and the second node
-  runs a firmware that integrates automatically in the RIOT Demo Dashboard
-  described above.
-
 ### Available services
 
 Pyaiot is built around several microservices:
-* A central **broker**
-* A **dashboard** web application
-* Distributed **gateways**
+* A public central **broker**
+* A public web application for the **dashboard**
+* Private distributed **gateways**
+
+<img src="./misc/images/pyaiot_overview.png" width="50%">
 
 The role of the broker is to put in relation gateways and web clients in
 order to be able to transfer in a bi-directionnal way messages coming from
@@ -62,6 +51,8 @@ protocols rely on HTTP websockets.
 The Dashboard is a web page with some embbeded javascript that displays the
 list of available nodes and their status. It also allows to interact with the
 nodes (LED control, Robot control, etc)
+
+<img src="./misc/images/pyaiot_services.png" width="50%">
 
 3 examples of gateways are provided by pyaiot:
 * A CoAP gateway that manages a list of alive sensor nodes by running it's own
@@ -152,6 +143,19 @@ Thanks to this, you can have gateways on different hosts connecting in a
 secured way to your central broker.
 The important thing is to have your broker reachable from the gateways and
 clients.
+
+### Available Demos
+
+See Pyaiot in action within 2 demos:
+* [RIOT](http://riot-os.org): You can find a permanent demo instance configured
+  as a showroom for RIOT. This showroom is available at
+  http://riot-demo.inria.fr.
+
+* [IoT-LAB open A8 demo](utils/iotlab)
+  This demo automatically submits an experiment on IoT-LAB with two open A8
+  nodes. The first node is configured as a border router and the second node
+  runs a firmware that integrates automatically in the RIOT Demo Dashboard
+  described above.
 
 ### Installation procedure on a standalone system:
 
@@ -284,26 +288,3 @@ needs:
 ```
     $ BROKER_PORT=8082 BROKER_HOST=localhost make run-dashboard
 ```
-
-### Setting up a Raspberry PI with 802.15.4 as border router
-
-A standalone IoT dashboard can run on a prepared raspberry pi:
-* Hardware requirements:
-  * OpenLABS 802.15.4 module installed an configured. See
-    [this wiki page](https://github.com/RIOT-Makers/wpan-raspbian/wiki/Create-a-generic-Raspbian-image-with-6LoWPAN-support) for more information.
-  * A RPI Camera installed and configured (optional)
-
-* Software requirements:
-  * Mjpg_streamer installed and running. See [the GitHub project.](https://github.com/jacksonliam/mjpg-streamer).
-
-2 useful commands to manage custom raspbian images from Linux:
-* Copy Raspberry PI SD to a compressed image on Linux:
-```
-    $ dd bs=4M if=/dev/mmcblk0 | gzip > custom_raspbian.img.gz
-```
-* Dump the compressed images to the Raspberry PI
-```
-    $ gzip -dc custom_raspbian.img.gz | sudo dd bs=4M of=/dev/mmcblk0
-```
-
-Then follow the IoT Dashboard installation steps described above.
