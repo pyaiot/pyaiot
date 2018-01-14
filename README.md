@@ -45,7 +45,7 @@ nodes, via the gateways, to clients and vice versa.
 The broker is in charge of the management of the list of gateways. The role of
 the gateways is to convert protocols used by the nodes to the web protocols
 used internally by Pyaiot to transfer information between the different
-services. In order to garantee reactivity and security, this internally used
+services. In order to guarantee reactivity and security, this internally used
 protocols rely on HTTP websockets.
 
 The Dashboard is a web page with some embbeded javascript that displays the
