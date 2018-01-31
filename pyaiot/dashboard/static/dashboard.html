@@ -248,7 +248,7 @@ var joystick = initJoystick()
                     <div class="h1">{{!node.data.illuminance}}</div>
                 </div>
                 <div class="panel-body" v-if="node.data.robot" v-show="resources.robot.visible">
-                    <div class="h5 text-muted">BuggyBot Direction Pad</div>
+                    <div class="h5 text-muted">Robot control Pad</div>
                     <!-- <div class="h1">{{!node.data.robot}}</div> -->
                     <svg class="pad" width="370" viewBox="0 0 400 270" xmlns="http://www.w3.org/2000/svg">
                         <text text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" y="211" x="200" fill="firebrick">STOP</text>
@@ -388,6 +388,7 @@ var data = {
         webcam: Resource("Webcam"),
         buggybot: Resource("BuggyBot"),
         ribot: Resource("RiBot"),
+        robot: Resource("Robot"),
         version: Resource("Version"),
         js: Resource("Javascript"),
     },
