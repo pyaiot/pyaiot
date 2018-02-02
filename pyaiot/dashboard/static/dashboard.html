@@ -11,10 +11,10 @@
     <title>{{ title }}</title>
 
     <!-- Material Design fonts -->
+    <!-- <link rel="stylesheet" type="text/css"
+          href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700"> -->
     <link rel="stylesheet" type="text/css"
-          href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700">
-    <link rel="stylesheet" type="text/css"
-          href="//fonts.googleapis.com/icon?family=Material+Icons">
+          href="{{ static_url('node_modules/material-design-icons-iconfont/dist/material-design-icons.css') }}">
 
     <!-- Bootstrap -->
     <link rel="stylesheet" type="text/css"
@@ -30,7 +30,8 @@
           href="{{ static_url('node_modules/bootstrap-material-design/dist/css/ripples.min.css') }}">
 
     <!-- Dropdown.js -->
-    <link href="//cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.css" rel="stylesheet">
+    <!-- <link href="//cdn.rawgit.com/FezVrasta/dropdown.js/master/jquery.dropdown.css" rel="stylesheet"> -->
+    <link href="{{ static_url('css/jquery.dropdown.css') }}" rel="stylesheet">
 
     <!-- Javascript modules -->
     <script type="text/javascript"
