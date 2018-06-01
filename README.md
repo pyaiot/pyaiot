@@ -55,7 +55,7 @@ nodes (LED control, Robot control, etc)
 ![Pyaiot services](./misc/images/pyaiot_services.png)
 
 3 examples of gateways are provided by pyaiot:
-* A CoAP gateway that manages a list of alive sensor nodes by running it's own
+* A CoAP gateway that manages a list of alive sensor nodes by running its own
 CoAP server
 * A MQTT gateway that manages a list of alive sensor nodes by subscribing and
 publishing messages to a MQTT broker.
@@ -68,7 +68,7 @@ Here we describe how the CoAP gateway interacts with nodes.
 
 When a node starts, it notifies itself to its gateway by sending a CoAP
 post request. On reception, the gateway converts and forwards this message to
-the broker server. In the mean time, the gateway initiate a discovery of the
+the broker server. In the mean time, the gateway initiates a discovery of the
 resources provided by the node (using the CoAP .well-known/core resource).
 Once available resources on the node are known, the gateway sends to the broker
 update messages.
@@ -79,7 +79,7 @@ To keep track of alive nodes, each node has to periodically send a notification
 message to its gateway.
 If a sensor node has not sent this notification within 120s (default,
 but this is configurable), the gateway automatically removes it from the list
-of alived nodes and notifies the broker.
+of alive nodes and notifies the broker.
 
 #### The MQTT gateway
 
@@ -90,7 +90,7 @@ A resource discovery mechanism is also required for the gateway to determine
 the list of available resources on a node. In Pyaiot, the gateway and the nodes
 are used as clients of the same MQTT broker.
 
-Since the nodes are contrained, we decided to use the
+Since the nodes are constrained, we decided to use the
 [mosquitto.rsmb broker](https://github.com/eclipse/mosquitto.rsmb). Some
 documentation and a sample systemd service file is provided in the
 [pyaiot/gateway/mqtt directory](./pyaiot/gateway/mqtt/systemd).
