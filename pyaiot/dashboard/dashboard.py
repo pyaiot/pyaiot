@@ -54,6 +54,7 @@ class DashboardHandler(web.RequestHandler):
                     camera_url=options.camera_url,
                     favicon=options.favicon,
                     logo_url=options.logo,
+                    map_api_key=options.map_api_key,
                     title=options.title)
 
 
@@ -103,6 +104,8 @@ def extra_args():
     if not hasattr(options, "favicon"):
         define("favicon", default=None,
                help="Favicon url for your dashboard site")
+    if not hasattr(options, "map_api_key"):
+        define("map_api_key", default="", help="Google Maps API key")
 
 
 def run(arguments=[]):
