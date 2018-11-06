@@ -56,8 +56,8 @@ start_experiment() {
         nodes=${nodes}"+"${node}
     done
     echo "Starting new experiment"
-    experiment-cli submit -d ${EXP_DURATION} -l saclay,a8,${nodes}
-    experiment-cli wait
+    iotlab-experiment submit -d ${EXP_DURATION} -l saclay,a8,${nodes}
+    iotlab-experiment wait
     echo "Experiment started"
 }
 
@@ -82,7 +82,7 @@ check_ssh_available() {
         if [[ $cpt -eq $zero ]]
         then
             echo -e
-            experiment-cli stop
+            iotlab-experiment stop
             echo "Could not connect to one of the nodes, exiting"
             exit 1
         fi
