@@ -146,7 +146,7 @@ class CoapGateway(GatewayBase):
                                CoapServerResource(self))
         root_coap.add_resource(('alive', ),
                                CoapAliveResource(self))
-        asyncio.async(
+        asyncio.ensure_future(
             Context.create_server_context(root_coap, bind=('::', self.port)))
 
         # Start the periodic node cleanup task
