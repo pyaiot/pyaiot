@@ -72,10 +72,6 @@ def run(arguments=[]):
         logger.error(exc)
         return
 
-    # Application ioloop initialization
-    if not tornado.platform.asyncio.AsyncIOMainLoop().initialized():
-        tornado.platform.asyncio.AsyncIOMainLoop().install()
-
     start_application(MQTTGateway(keys, options=options),
                       close_client=True)
 
