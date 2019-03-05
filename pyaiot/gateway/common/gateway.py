@@ -104,7 +104,8 @@ class GatewayBaseMixin():
     def close_client(self):
         """Close client websocket"""
         logger.warning("Closing connection with broker.")
-        self.broker.close()
+        if self.broker is not None:
+            self.broker.close()
 
     @gen.coroutine
     def create_broker_connection(self, url):
