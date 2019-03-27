@@ -101,7 +101,7 @@ class Message():
     @staticmethod
     def gateway_alive():
         """Generate a text message indicating that a gateway is alive."""
-        return Message.serialize({'type': 'gateway', 'data': 'alive'})
+        return Message.serialize({'type': 'update', 'uid': 'alive'})
 
 
     @staticmethod
