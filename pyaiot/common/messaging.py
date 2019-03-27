@@ -98,6 +98,11 @@ class Message():
                                   'endpoint': endpoint,
                                   'data': data,
                                   'dst': dst})
+    @staticmethod
+    def gateway_alive():
+        """Generate a text message indicating that a gateway is alive."""
+        return Message.serialize({'type': 'gateway', 'data': 'alive'})
+
 
     @staticmethod
     def discover_node():

@@ -33,6 +33,7 @@ import json
 import logging
 from abc import ABCMeta, abstractmethod
 from tornado import web, gen
+from tornado.ioloop import PeriodicCallback
 from tornado.websocket import websocket_connect
 
 from pyaiot.common.auth import auth_token
@@ -119,6 +120,8 @@ class GatewayBaseMixin():
                 logger.info("Connected to broker, sending auth token")
                 self.broker.write_message(auth_token(self.keys))
                 yield gen.sleep(1)
+                # Start the periodic send of websocket alive messages
+                PeriodicCallback(self.send_alive, 15000).start()
                 self.fetch_nodes_cache('all')
                 while True:
                     message = yield self.broker.read_message()
@@ -128,6 +131,9 @@ class GatewayBaseMixin():
                     self.on_broker_message(message)
 
             yield gen.sleep(3)
+
+    def send_alive(self):
+        self.send_to_broker(Message.gateway_alive())
 
     @gen.coroutine
     def send_to_broker(self, message):
