@@ -41,6 +41,8 @@ from pyaiot.common.messaging import check_broker_data, Message
 
 logger = logging.getLogger("pyaiot.gw.common.gateway")
 
+ALIVE_PERIOD = 30
+
 
 class GatewayBaseMixin():
     """Class that manages the internal behaviour of a node controller."""
@@ -121,7 +123,7 @@ class GatewayBaseMixin():
                 self.broker.write_message(auth_token(self.keys))
                 yield gen.sleep(1)
                 # Start the periodic send of websocket alive messages
-                PeriodicCallback(self.send_alive, 15000).start()
+                PeriodicCallback(self.send_alive, ALIVE_PERIOD * 1000).start()
                 self.fetch_nodes_cache('all')
                 while True:
                     message = yield self.broker.read_message()
