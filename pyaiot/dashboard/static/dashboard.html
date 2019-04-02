@@ -908,6 +908,12 @@ function remove_charts(node_uid) {
     if (node_uid in pres_charts) {
         delete pres_charts[node_uid]
     }
+    if (node_uid in eco2_charts) {
+        delete eco2_charts[node_uid]
+    }
+    if (node_uid in tvoc_charts) {
+        delete tvoc_charts[node_uid]
+    }
     if (node_uid in hum_charts) {
         delete hum_charts[node_uid]
     }
