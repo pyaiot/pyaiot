@@ -196,9 +196,9 @@ var joystick = initJoystick()
                                         <th>OS</th>
                                         <td>{{! node.data.os }}</td>
                                     </tr>
-                                    <tr v-if="node.data.appid">
-                                        <th>Application ID</th>
-                                        <td>{{! node.data.appid }}</td>
+                                    <tr v-if="node.data.vendor">
+                                        <th>Vendor</th>
+                                        <td>{{! node.data.vendor }}</td>
                                     </tr>
                                     <tr v-if="node.data.version">
                                         <th>Version</th>
@@ -224,6 +224,14 @@ var joystick = initJoystick()
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="panel-body" v-if="node.data.vendor" v-show="resources.vendor.visible">
+                    <div class="h5 text-muted">Vendor</div>
+                    <div class="h4">{{!node.data.vendor}}</div>
+                </div>
+                <div class="panel-body" v-if="node.data.version" v-show="resources.version.visible">
+                    <div class="h5 text-muted">Version</div>
+                    <div class="h4">{{!node.data.version}}</div>
                 </div>
                 <div class="panel-body" v-if="node.data.position" v-show="resources.position.visible">
                     <div class="h5 text-muted">Position</div>
@@ -404,6 +412,7 @@ var data = {
         buggybot: Resource("BuggyBot"),
         ribot: Resource("RiBot"),
         robot: Resource("Robot"),
+        vendor: Resource("Vendor"),
         version: Resource("Version"),
         js: Resource("Javascript"),
     },
