@@ -239,6 +239,16 @@ var joystick = initJoystick()
                     <div class="h1">{{!node.data.pressure}}</div>
                     <canvas class="chart" :id="'pres_chart'+node.uid"></canvas>
                 </div>
+                <div class="panel-body has-chart" v-if="node.data.eco2" v-show="resources.eco2.visible">
+                    <div class="h5 text-muted">eCO2</div>
+                    <div class="h1">{{!node.data.eco2}}</div>
+                    <canvas class="chart" :id="'eco2_chart'+node.uid"></canvas>
+                </div>
+                <div class="panel-body has-chart" v-if="node.data.tvoc" v-show="resources.tvoc.visible">
+                    <div class="h5 text-muted">TVOC</div>
+                    <div class="h1">{{!node.data.tvoc}}</div>
+                    <canvas class="chart" :id="'tvoc_chart'+node.uid"></canvas>
+                </div>
                 <div class="panel-body has-chart" v-if="node.data.humidity" v-show="resources.humidity.visible">
                     <div class="h5 text-muted">Relative humidity</div>
                     <div class="h1">{{!node.data.humidity}}</div>
@@ -367,6 +377,8 @@ var gyr_charts = {}
 var temp_charts = {}
 var pres_charts = {}
 var hum_charts = {}
+var eco2_charts = {}
+var tvoc_charts = {}
 var teapot_charts = {}
 
 var js_scripts = {}
@@ -383,6 +395,8 @@ var data = {
         humidity: Resource("Humidity"),
         illuminance: Resource("Illuminance"),
         uvindex: Resource("UV-Index"),
+        eco2: Resource("eCO2"),
+        tvoc: Resource("TVOC"),
         imu: Resource("IMU"),
         text: Resource("Text"),
         position: Resource("Position"),
@@ -560,6 +574,24 @@ function update_charts(msg) {
         update_hum_charts(msg)
     }
 
+    // eco2 charts management
+        if (msg.endpoint === "eco2") {
+        if (!(msg.uid in eco2_charts)) {
+            setup_eco2_charts(msg.uid)
+        }
+
+        update_eco2_charts(msg)
+    }
+
+    // tvoc charts management
+    if (msg.endpoint === "tvoc") {
+        if (!(msg.uid in tvoc_charts)) {
+            setup_tvoc_charts(msg.uid)
+        }
+
+        update_tvoc_charts(msg)
+    }
+
     // javascript editor management
     if (msg.endpoint === "js") {
         if (!(msg.uid in js_scripts)) {
@@ -672,6 +704,77 @@ function setup_hum_charts(node_uid) {
 function update_hum_charts(msg) {
     hum_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -3));
 }
+
+function setup_eco2_charts(node_uid) {
+    var eco2_canva = document.getElementById('eco2_chart' + node_uid)
+    eco2_canva.setAttribute('width', eco2_canva.clientWidth)
+    eco2_canva.setAttribute('height', eco2_canva.clientHeight)
+    if (eco2_canva) {
+        eco2_charts[node_uid] = [
+            new SmoothieChart({ millisPerPixel:1000,
+                                labels: {
+                                    fillStyle:'#545454',
+                                    precision:0
+                                },
+                                grid: {
+                                    strokeStyle: 'transparent',
+                                    fillStyle:'transparent',
+                                    borderVisible:false,
+                                    sharpLines:true
+                                },
+                                minValue: 400,
+                                maxValue: 8192
+                            }),
+            new TimeSeries()
+        ]
+        eco2_charts[node_uid][0].addTimeSeries(eco2_charts[node_uid][1], {
+                strokeStyle: 'rgba(63, 167, 36, 1)',
+                fillStyle: 'rgba(63, 167, 36, 0.2)',
+                lineWidth: 1.5
+            });
+        eco2_charts[node_uid][0].streamTo(eco2_canva, 500);
+    }
+}
+
+function update_eco2_charts(msg) {
+    eco2_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -2));
+}
+
+function setup_tvoc_charts(node_uid) {
+    var tvoc_canva = document.getElementById('tvoc_chart' + node_uid)
+    tvoc_canva.setAttribute('width', tvoc_canva.clientWidth)
+    tvoc_canva.setAttribute('height', tvoc_canva.clientHeight)
+    if (tvoc_canva) {
+        tvoc_charts[node_uid] = [
+            new SmoothieChart({ millisPerPixel:1000,
+                                labels: {
+                                    fillStyle:'#545454',
+                                    precision:0
+                                },
+                                grid: {
+                                    strokeStyle: 'transparent',
+                                    fillStyle:'transparent',
+                                    borderVisible:false,
+                                    sharpLines:true
+                                },
+                                minValue: 0,
+                                maxValue: 1187
+                            }),
+            new TimeSeries()
+        ]
+        tvoc_charts[node_uid][0].addTimeSeries(tvoc_charts[node_uid][1], {
+                strokeStyle: 'rgba(63, 167, 36, 1)',
+                fillStyle: 'rgba(63, 167, 36, 0.2)',
+                lineWidth: 1.5
+            });
+        tvoc_charts[node_uid][0].streamTo(tvoc_canva, 500);
+    }
+}
+
+function update_tvoc_charts(msg) {
+    tvoc_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -2));
+}
+
 
 function setup_teapot_charts(node_uid) {
     teapot_charts[node_uid] = new Teapot('teapot_' + node_uid)
