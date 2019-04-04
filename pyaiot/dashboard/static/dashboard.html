@@ -584,7 +584,7 @@ function update_charts(msg) {
     }
 
     // eco2 charts management
-        if (msg.endpoint === "eco2") {
+    if (msg.endpoint === "eco2") {
         if (!(msg.uid in eco2_charts)) {
             setup_eco2_charts(msg.uid)
         }
@@ -711,7 +711,7 @@ function setup_hum_charts(node_uid) {
 }
 
 function update_hum_charts(msg) {
-    hum_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -3));
+    hum_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -1));
 }
 
 function setup_eco2_charts(node_uid) {
@@ -737,8 +737,8 @@ function setup_eco2_charts(node_uid) {
             new TimeSeries()
         ]
         eco2_charts[node_uid][0].addTimeSeries(eco2_charts[node_uid][1], {
-                strokeStyle: 'rgba(63, 167, 36, 1)',
-                fillStyle: 'rgba(63, 167, 36, 0.2)',
+                strokeStyle: 'rgba(255, 69, 0, 1)',
+                fillStyle: 'rgba(255, 140, 0, 0.2)',
                 lineWidth: 1.5
             });
         eco2_charts[node_uid][0].streamTo(eco2_canva, 500);
@@ -746,7 +746,7 @@ function setup_eco2_charts(node_uid) {
 }
 
 function update_eco2_charts(msg) {
-    eco2_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -2));
+    eco2_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -3));
 }
 
 function setup_tvoc_charts(node_uid) {
@@ -772,8 +772,8 @@ function setup_tvoc_charts(node_uid) {
             new TimeSeries()
         ]
         tvoc_charts[node_uid][0].addTimeSeries(tvoc_charts[node_uid][1], {
-                strokeStyle: 'rgba(63, 167, 36, 1)',
-                fillStyle: 'rgba(63, 167, 36, 0.2)',
+                strokeStyle: 'rgba(142, 255, 140, 1)',
+                fillStyle: 'rgba(142, 255, 140, 0.2)',
                 lineWidth: 1.5
             });
         tvoc_charts[node_uid][0].streamTo(tvoc_canva, 500);
@@ -781,7 +781,7 @@ function setup_tvoc_charts(node_uid) {
 }
 
 function update_tvoc_charts(msg) {
-    tvoc_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -2));
+    tvoc_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -3));
 }
 
 
