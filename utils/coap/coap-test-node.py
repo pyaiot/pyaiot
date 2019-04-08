@@ -28,15 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import sys
-import asyncio
 import json
 import logging
 import random
 import argparse
-
-import tornado.platform.asyncio
-from tornado import gen
-from tornado.ioloop import PeriodicCallback
+import asyncio
 
 import aiocoap
 import aiocoap.resource as resource
@@ -71,14 +67,15 @@ args = parser.parse_args()
 
 COAP_GATEWAY = 'coap://{}:{}'.format(args.gateway_host, args.gateway_port)
 
+NODE_UID = "1234"
 
-@asyncio.coroutine
-def _coap_resource(url, method=GET, payload=b''):
-    protocol = yield from Context.create_client_context(loop=None)
+
+async def _coap_resource(url, method=GET, payload=b''):
+    protocol = await Context.create_client_context(loop=None)
     request = Message(code=method, payload=payload)
     request.set_request_uri(url)
     try:
-        response = yield from protocol.request(request).response
+        response = await protocol.request(request).response
     except Exception as e:
         code = "Failed to fetch resource"
         payload = '{0}'.format(e)
@@ -86,42 +83,38 @@ def _coap_resource(url, method=GET, payload=b''):
         code = response.code
         payload = response.payload.decode('utf-8')
     finally:
-        yield from protocol.shutdown()
+        await protocol.shutdown()
 
     internal_logger.debug('Code: {0} - Payload: {1}'.format(code, payload))
 
     return code, payload
 
 
-@gen.coroutine
-def _send_alive():
-    _, _ = yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "alive"),
-                                     method=POST,
-                                     payload='Alive'.encode('utf-8'))
+async def _send_alive():
+    _, _ = await _coap_resource(
+        '{}/{}'.format(COAP_GATEWAY, "alive"), method=POST,
+        payload='Alive:{}'.format(NODE_UID).encode('utf-8'))
 
 
-@gen.coroutine
-def _send_temperature():
+async def _send_temperature():
     payload = ("temperature:{}°C"
                .format(random.randrange(20, 30, 1))
                .encode('utf-8'))
-    _, _ = yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
-                                     method=POST,
-                                     payload=payload)
+    _, _ = await _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                                method=POST,
+                                payload=payload)
 
 
-@gen.coroutine
-def _send_pressure():
+async def _send_pressure():
     payload = ("pressure:{}hPa"
                .format(random.randrange(990, 1015, 1))
                .encode('utf-8'))
-    _, _ = yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
-                                     method=POST,
-                                     payload=payload)
+    _, _ = await _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                                method=POST,
+                                payload=payload)
 
 
-@gen.coroutine
-def _send_imu():
+async def _send_imu():
     imu = json.dumps([{"type": "acc",
                        "values": [random.randrange(-500, 500, 1),
                                   random.randrange(-500, 500, 1),
@@ -135,22 +128,21 @@ def _send_imu():
                                   random.randrange(-500, 500, 1),
                                   random.randrange(-500, 500, 1)]}]
                      )
-    _, _ = yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
-                                     method=POST,
-                                     payload="imu:{}"
-                                     .format(imu).encode('utf-8'))
+    _, _ = await _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                                method=POST,
+                                payload="imu:{}"
+                                .format(imu).encode('utf-8'))
 
 
-@gen.coroutine
-def _send_version():
+async def _send_version():
     payload = ("version:{}.{}.{}"
                .format(random.randrange(1, 9, 1),
                        random.randrange(1, 9, 1),
                        random.randrange(1, 9, 1))
                .encode('utf-8'))
-    _, _ = yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
-                                     method=POST,
-                                     payload=payload)
+    _, _ = await _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                                method=POST,
+                                payload=payload)
 
 
 class BoardResource(resource.Resource):
@@ -160,8 +152,7 @@ class BoardResource(resource.Resource):
         super(BoardResource, self).__init__()
         self.value = "test_board".encode('utf-8')
 
-    @asyncio.coroutine
-    def render_get(self, request):
+    async def render_get(self, request):
         response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
         return response
 
@@ -173,8 +164,7 @@ class NameResource(resource.Resource):
         super(NameResource, self).__init__()
         self.value = "Python Test Node".encode('utf-8')
 
-    @asyncio.coroutine
-    def render_get(self, request):
+    async def render_get(self, request):
         response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
         return response
 
@@ -186,8 +176,7 @@ class VersionResource(resource.Resource):
         super(VersionResource, self).__init__()
         self.value = "1.0.0".encode('utf-8')
 
-    @asyncio.coroutine
-    def render_get(self, request):
+    async def render_get(self, request):
         response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
         return response
 
@@ -202,19 +191,17 @@ class LedResource(resource.Resource):
         super(LedResource, self).__init__()
         self.value = "0".encode("utf-8")
 
-    @asyncio.coroutine
-    def render_get(self, request):
+    async def render_get(self, request):
         response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
         return response
 
-    @asyncio.coroutine
-    def render_put(self, request):
+    async def render_put(self, request):
         self.value = request.payload.decode()
         payload = ("Updated").encode('utf-8')
 
-        yield from _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
-                                  method=POST, payload="led:{}"
-                                  .format(self.value).encode())
+        await _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
+                            method=POST, payload="led:{}"
+                            .format(self.value).encode())
 
         return aiocoap.Message(code=aiocoap.CHANGED, payload=payload)
 
@@ -226,8 +213,7 @@ class PressureResource(resource.Resource):
         super(PressureResource, self).__init__()
         self.value = "1015.03hPa".encode("utf-8")
 
-    @asyncio.coroutine
-    def render_get(self, request):
+    async def render_get(self, request):
         response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
         return response
 
@@ -239,8 +225,7 @@ class TemperatureResource(resource.Resource):
         super(TemperatureResource, self).__init__()
         self.value = "23°C".encode("utf-8")
 
-    @asyncio.coroutine
-    def render_get(self, request):
+    async def render_get(self, request):
         response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
         return response
 
@@ -257,8 +242,7 @@ class ImuResource(resource.Resource):
                                  {"type": "gyro",
                                   "values": [1, 0, 0]}]).encode("utf-8")
 
-    @asyncio.coroutine
-    def render_get(self, request):
+    async def render_get(self, request):
         response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
         return response
 
@@ -270,14 +254,12 @@ class RobotResource(resource.Resource):
         super(RobotResource, self).__init__()
         self.action = "s".encode("utf-8")
 
-    @asyncio.coroutine
-    def render_get(self, request):
+    async def render_get(self, request):
         response = aiocoap.Message(code=aiocoap.CONTENT,
                                    payload=self.action)
         return response
 
-    @asyncio.coroutine
-    def render_put(self, request):
+    async def render_put(self, request):
         self.action = request.payload
         payload = ("Updated").encode('utf-8')
         response = aiocoap.Message(code=aiocoap.CONTENT, payload=payload)
@@ -307,14 +289,12 @@ this.blink = function () {
 this.blink();
         """.encode("utf-8")
 
-    @asyncio.coroutine
-    def render_get(self, request):
+    async def render_get(self, request):
         response = aiocoap.Message(code=aiocoap.CONTENT,
                                    payload=self.script)
         return response
 
-    @asyncio.coroutine
-    def render_put(self, request):
+    async def render_put(self, request):
         self.script = request.payload
         print("New script:\n '{}'".format(self.script))
         payload = ("Updated").encode('utf-8')
@@ -322,20 +302,26 @@ this.blink();
         return response
 
 
+async def periodic(func, delay):
+    while True:
+        await func()
+        await asyncio.sleep(delay / 1000.0)
+
+
 if __name__ == '__main__':
     try:
         # Tornado ioloop initialization
         ioloop = asyncio.get_event_loop()
-        tornado.platform.asyncio.AsyncIOMainLoop().install()
-        PeriodicCallback(_send_alive, 30000).start()
+        tasks = []
+        tasks.append(ioloop.create_task(periodic(_send_alive, 30000)))
         if args.temperature:
-            PeriodicCallback(_send_temperature, 5000).start()
+            tasks.append(ioloop.create_task(periodic(_send_temperature, 5000)))
         if args.pressure:
-            PeriodicCallback(_send_pressure, 5000).start()
+            tasks.append(ioloop.create_task(periodic(_send_pressure, 5000)))
         if args.imu:
-            PeriodicCallback(_send_imu, 200).start()
+            tasks.append(ioloop.create_task(periodic(_send_imu, 200)))
         if args.version:
-            PeriodicCallback(_send_version, 2000).start()
+            tasks.append(ioloop.create_task(periodic(_send_version, 2000)))
 
         # Aiocoap server initialization
         root = resource.Site()
@@ -358,11 +344,13 @@ if __name__ == '__main__':
         root.add_resource(('.well-known', 'core'),
                           resource.WKCResource(
                               root.get_resources_as_linkheader))
-        asyncio.async(aiocoap.Context.create_server_context(root))
+        asyncio.ensure_future(aiocoap.Context.create_server_context(root))
 
         _send_alive()
         ioloop.run_forever()
     except KeyboardInterrupt:
         print("Exiting")
+        for task in tasks:
+            task.cancel()
         ioloop.stop()
         sys.exit()

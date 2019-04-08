@@ -45,16 +45,14 @@ NODE_RESOURCES = {'name': {'delay': 0,
                   }
 
 
-@asyncio.coroutine
-def send_check(mqtt_client):
+async def send_check(mqtt_client):
     while True:
         check_data = json.dumps({'id': NODE_ID})
         asyncio.get_event_loop().create_task(publish(
             mqtt_client, 'node/check', check_data))
-        yield from asyncio.sleep(DELAY_CHECK)
+        await asyncio.sleep(DELAY_CHECK)
 
 
-@asyncio.coroutine
 def send_values(mqtt_client):
     for resource in NODE_RESOURCES:
         topic = 'node/{}/{}'.format(NODE_ID, resource)
@@ -64,24 +62,23 @@ def send_values(mqtt_client):
             publish_continuous(mqtt_client, topic, value, delay))
 
 
-@asyncio.coroutine
-def start_client():
+async def start_client():
     """Connect to MQTT broker and subscribe to node check resource."""
     global __LED_VALUE__
     mqtt_client = MQTTClient()
-    yield from mqtt_client.connect(MQTT_URL)
+    await mqtt_client.connect(MQTT_URL)
     # Subscribe to 'gateway/check' with QOS=1
-    yield from mqtt_client.subscribe([('gateway/{}/discover'
-                                       .format(NODE_ID), QOS_1)])
-    yield from mqtt_client.subscribe([('gateway/{}/led/set'
-                                       .format(NODE_ID), QOS_1)])
+    await mqtt_client.subscribe([('gateway/{}/discover'
+                                  .format(NODE_ID), QOS_1)])
+    await mqtt_client.subscribe([('gateway/{}/led/set'
+                                  .format(NODE_ID), QOS_1)])
     asyncio.get_event_loop().create_task(send_check(mqtt_client))
     asyncio.get_event_loop().create_task(send_values(mqtt_client))
     while True:
         try:
             logger.debug("Waiting for incoming MQTT messages from gateway")
             # Blocked here until a message is received
-            message = yield from mqtt_client.deliver_message()
+            message = await mqtt_client.deliver_message()
         except ClientException as ce:
             logger.error("Client exception: {}".format(ce))
             break
@@ -116,23 +113,21 @@ def start_client():
             logger.debug("Topic not supported: {}".format(topic_name))
 
 
-@asyncio.coroutine
-def publish(mqtt_client, topic, value):
+async def publish(mqtt_client, topic, value):
     if hasattr(value, 'encode'):
         value = value.encode()
-    yield from mqtt_client.publish(topic, value, qos=QOS_1)
+    await mqtt_client.publish(topic, value, qos=QOS_1)
     logger.debug("Published '{}' to topic '{}'".format(value.decode(), topic))
 
 
-@asyncio.coroutine
-def publish_continuous(mqtt_client, topic, value, delay=0):
+async def publish_continuous(mqtt_client, topic, value, delay=0):
     while True:
         data = json.dumps({'value': value()}, ensure_ascii=False)
-        yield from mqtt_client.publish(topic, data.encode('utf-8'), qos=QOS_1)
+        await mqtt_client.publish(topic, data.encode('utf-8'), qos=QOS_1)
         logger.debug("Published '{}' to topic '{}'".format(data, topic))
         if delay == 0:
             break
-        yield from asyncio.sleep(delay)
+        await asyncio.sleep(delay)
 
 
 if __name__ == '__main__':
