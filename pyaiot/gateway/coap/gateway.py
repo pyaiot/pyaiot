@@ -56,13 +56,12 @@ def _coap_endpoints(link_header):
     return link.split(',')
 
 
-@gen.coroutine
-def _coap_resource(url, method=GET, payload=b''):
-    protocol = yield from Context.create_client_context()
+async def _coap_resource(url, method=GET, payload=b''):
+    protocol = await Context.create_client_context()
     request = Message(code=method, payload=payload)
     request.set_request_uri(url)
     try:
-        response = yield from protocol.request(request).response
+        response = await protocol.request(request).response
     except Exception as exc:
         code = "Failed to fetch resource"
         payload = '{0}'.format(exc)
@@ -70,7 +69,7 @@ def _coap_resource(url, method=GET, payload=b''):
         code = response.code
         payload = response.payload.decode('utf-8')
     finally:
-        yield from protocol.shutdown()
+        await protocol.shutdown()
 
     logger.debug('Code: {0} - Payload: {1}'.format(code, payload))
 
@@ -84,18 +83,19 @@ class CoapAliveResource(resource.Resource):
         super(CoapAliveResource, self).__init__()
         self._gateway = gateway
 
-    @asyncio.coroutine
-    def render_post(self, request):
+    async def render_post(self, request):
         """Triggered when a node post an alive check to the gateway."""
         payload = request.payload.decode('utf8')
         try:
-            remote = request.remote[0]
+            addr = request.remote[0]
         except TypeError:
-            remote = request.remote.sockaddr[0]
-        logger.debug("CoAP Alive POST received from {}".format(remote))
+            addr = request.remote.sockaddr[0]
+        logger.debug("CoAP Alive POST received from {}".format(addr))
 
         # Let the controller handle this message
-        self._gateway.handle_coap_check(remote, reset=(payload == 'reset'))
+        uid = payload.split(':')[-1]
+        await self._gateway.handle_coap_check(
+            uid, addr, reset=(payload.startswith('reset')))
 
         # Kindly reply the message has been processed
         return Message(code=CHANGED,
@@ -109,8 +109,7 @@ class CoapServerResource(resource.Resource):
         super(CoapServerResource, self).__init__()
         self._gateway = gateway
 
-    @asyncio.coroutine
-    def render_post(self, request):
+    async def render_post(self, request):
         """Triggered when a node post a new value to the gateway."""
 
         payload = request.payload.decode('utf-8')
@@ -154,13 +153,12 @@ class CoapGateway(GatewayBase):
 
         logger.info('CoAP gateway application started')
 
-    @gen.coroutine
-    def discover_node(self, node):
+    async def discover_node(self, node):
         """Discover resources available on a node."""
         address = node.resources['ip']
         coap_node_url = 'coap://[{}]'.format(address)
         logger.debug("Discovering CoAP node {}".format(address))
-        _, payload = yield _coap_resource('{0}/.well-known/core'
+        _, payload = await _coap_resource('{0}/.well-known/core'
                                           .format(coap_node_url),
                                           method=GET)
 
@@ -174,7 +172,7 @@ class CoapGateway(GatewayBase):
             path = elems.pop(0).replace('<', '').replace('>', '')
 
             try:
-                code, payload = yield _coap_resource(
+                code, payload = await _coap_resource(
                     '{0}{1}'.format(coap_node_url, path), method=GET)
             except:
                 logger.debug("Cannot discover resource {} on node {}"
@@ -187,13 +185,12 @@ class CoapGateway(GatewayBase):
         logger.debug("CoAP node resources '{}' sent to broker"
                      .format(endpoints))
 
-    @gen.coroutine
-    def update_node_resource(self, node, endpoint, payload):
+    async def update_node_resource(self, node, endpoint, payload):
         """"""
         address = node.resources['ip']
         logger.debug("Updating CoAP node '{}' resource '{}'"
                      .format(address, endpoint))
-        code, p = yield _coap_resource(
+        code, p = await _coap_resource(
             'coap://[{0}]/{1}'.format(address, endpoint),
             method=PUT,
             payload=payload.encode('ascii'))
@@ -208,14 +205,14 @@ class CoapGateway(GatewayBase):
         node = self.get_node(self.node_mapping[address])
         self.forward_data_from_node(node, endpoint, value)
 
-    def handle_coap_check(self, address, reset=False):
+    async def handle_coap_check(self, uid, address, reset=False):
         """Handle check message received from coap node."""
-        if address not in self.node_mapping:
+        if uid not in self.node_mapping:
             # This is a totally new node: create uid, initialized cached node
             # send 'new' node notification, 'update' notification.
-            node = Node(str(uuid.uuid4()), ip=address)
-            self.node_mapping.update({address: node.uid})
-            self.add_node(node)
+            node = Node(uid, ip=address)
+            self.node_mapping.update({address: uid})
+            await self.add_node(node)
         elif reset:
             # The data of the node need to be reset without removing it. This
             # is particularly the case after a reboot of the node or a
