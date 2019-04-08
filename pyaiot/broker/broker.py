@@ -41,42 +41,56 @@ logger = logging.getLogger("pyaiot.broker")
 
 class BrokerWebsocketGatewayHandler(websocket.WebSocketHandler):
 
-    authentified = False
-
     def check_origin(self, origin):
         """Allow connections from anywhere."""
         return True
 
-    @gen.coroutine
-    def open(self):
+    def _check_subprotocols(self, subprotocols):
+        if len(subprotocols) != 2 or subprotocols[0].strip() != 'token':
+            logger.warning("Reject websocket connection: invalib subprotocol")
+            self.set_status(401)  # Authentication failed
+            self.finish("Invalid subprotocols")
+            return False
+
+        req_token = subprotocols[1].strip()
+        if not verify_auth_token(req_token, self.application.keys):
+            logger.info("Gateway websocket authentication failed, "
+                        "invalid token.")
+            self.set_status(401)  # Authentication failed
+            self.finish("Invalid token")
+            return False
+
+        logger.debug("Gateway websocket connection verified")
+        return True
+
+    async def get(self, *args, **kwargs):
+        """Triggered before any websocket connection is opened."""
+        logger.info("Websocket connection request")
+
+        # Verify token provided in subprotocols, since there's an asynchronous
+        # call to the API, we wait for it to complete.
+        subprotocols = self.request.headers.get(
+            "Sec-WebSocket-Protocol", "").split(',')
+        if not self._check_subprotocols(subprotocols):
+            return
+
+        # Let parent class correctly configure the websocket connection
+        await super(BrokerWebsocketGatewayHandler, self).get(*args, **kwargs)
+
+    async def open(self):
         """Discover nodes on each opened connection."""
         self.set_nodelay(True)
+        self.application.gateways.update({self: []})
         logger.info("New gateway websocket opened")
 
-        # Wait 2 seconds to get the gateway authentication token.
-        yield gen.sleep(2)
-        if not self.authentified:
-            self.close()
-
-    @gen.coroutine
     def on_message(self, raw):
         """Triggered when a message is received from the broker child."""
-        if not self.authentified:
-            if verify_auth_token(raw, self.application.keys):
-                logger.info("Gateway websocket authentication verified")
-                self.authentified = True
-                self.application.gateways.update({self: []})
-            else:
-                logger.info("Gateway websocket authentication failed, "
-                            "closing.")
-                self.close()
+        message, reason = Message.check_message(raw)
+        if message is not None:
+            self.application.on_gateway_message(self, message)
         else:
-            message, reason = Message.check_message(raw)
-            if message is not None:
-                self.application.on_gateway_message(self, message)
-            else:
-                logger.debug("Invalid message, closing websocket")
-                self.close(code=1003, reason="{}.".format(reason))
+            logger.debug("Invalid message, closing websocket")
+            self.close(code=1003, reason="{}.".format(reason))
 
     def on_close(self):
         """Remove websocket from internal list."""
@@ -98,7 +112,6 @@ class BrokerWebsocketClientHandler(websocket.WebSocketHandler):
         self.set_nodelay(True)
         logger.info("New client connection opened '{}'".format(self.uid))
 
-    @gen.coroutine
     def on_message(self, raw):
         """Triggered when a message is received from the web client."""
         message, reason = Message.check_message(raw)
@@ -165,7 +178,6 @@ class Broker(web.Application):
         for gw in self.gateways:
             gw.write_message(Message.serialize(message))
 
-    @gen.coroutine
     def on_gateway_message(self, ws, message):
         """Handle a message received from a gateway.
 
