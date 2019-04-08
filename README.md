@@ -1,14 +1,14 @@
-## Pyaiot, connecting nodes to the web
+## Pyaiot, connecting small things to the web
 
 [![Build Status](https://travis-ci.org/pyaiot/pyaiot.svg?branch=master)](https://travis-ci.org/pyaiot/pyaiot)
 
 Pyaiot provides a set of services for interacting and transporting data coming
-from IoT nodes using regular web protocols (HTTP) and technologies. Pyaiot
+from IoT devices using regular web protocols (HTTP). Pyaiot
 relies on Python asyncio core module and on other more specific asyncio based
 packages such as [Tornado](http://www.tornadoweb.org/en/stable/),
 [aiocoap](http://aiocoap.readthedocs.io/en/latest/) or
 [HBMQTT](http://hbmqtt.readthedocs.io/en/latest/index.html).
-Pyaiot tries to only use standard protocols to connect the IoT nodes to the
+Pyaiot tries to only use standard protocols to connect the IoT devices to the
 web: CoAP, MQTT, HTTP, etc
 
 ### The nodes
@@ -130,9 +130,9 @@ broker.
 Before any installation, a pair of keys needs to be generated using the
 provided tool `aiot-generate-keys`:
 
-```
-    bin/aiot-generate-keys
-```
+`
+    $ bin/aiot-generate-keys
+
 
 The tool writes the keys in the user home directory in `~/pyaiot/keys`.
 By default, the broker and gateway services look in this location but one can
@@ -157,103 +157,58 @@ See Pyaiot in action within 2 demos:
   runs a firmware that integrates automatically in the RIOT Demo Dashboard
   described above.
 
-### Installation procedure on a standalone system:
-
-Here are the steps to install Pyaiot on a standalone system. The final
-setup will be as follows:
-* `aiot-broker` and `aiot-dashboard` running as systemd services
-* the `aiot-broker` websocket server listening on port 8082
-* the `aiot-dashboard` web application listening on port 8080. All served pages
-  open a websocket client on the port 8082 of the broker
-* the `aiot-coap-gateway` listening on UDP 5683 CoAP port
-* the `aiot-ws-gateway` websocket server listening on port 8083
-
-The gateway services are optional.
-
-For a custom setup, please edit the `Environment` option of the
-[aiot-broker](systemd/aiot-broker.service),
-[aiot-dashboard](systemd/aiot-dashboard.service),
-[aiot-coap-gateway](systemd/aiot-coap-gateway.service) and
-[aiot-ws-gateway](systemd/aiot-ws-gateway.service) systemd service files
-**before** deploying. The broker port should be the same in both service files
-if you want them to work together.
-
-Here are the installation steps:
+### Usage
 
 1. Clone this repository
-<pre>
-    $ git clone https://github.com/pyaiot/pyaiot.git
-</pre>
-2. Deploy the system (works for debian/raspbian/ubuntu):
-<pre>
-    $ make deploy
-</pre>
-3. Verify that the services are correctly running:
-<pre>
-    $ sudo systemctl status aiot-broker.service
-    ● aiot-broker.service - Pyaiot Broker Application
-       Loaded: loaded (/lib/systemd/system/aiot-broker.service; enabled)
-       Active: active (running) since dim. 2016-12-18 14:59:56 CET; 35min ago
-     Main PID: 32411 (python3)
-       CGroup: /system.slice/aiot-broker.service
-               └─32411 /usr/bin/python3 /usr/local/bin/aiot-broker --port=8082 --debug
-    [...]
-    $ sudo systemctl status aiot-dashboard.service
-    ● aiot-dashboard.service - Pyaiot Dashboard Application
-       Loaded: loaded (/lib/systemd/system/aiot-dashboard.service; enabled)
-       Active: active (running) since dim. 2016-12-18 14:52:29 CET; 41min ago
-     Main PID: 32321 (python3)
-       CGroup: /system.slice/aiot-dashboard.service
-               └─32321 /usr/bin/python3 /usr/local/bin/aiot-dashboard --port=8080 --broker-port=8082 --broker...
-    [...]
-</pre>
-4. Deploy a coap gateway (optional):
-<pre>
-    $ make setup-coap-gateway-service
-</pre>
-5. Deploy a ws gateway (optional):
-<pre>
-    $ make setup-ws-gateway-service
-</pre>
 
-You can also update the `Environment` option in the services definition files
-**after** deployment. The services files are located in `/lib/systemd/system.
-Note that you'll have to reload the systemd daemon services and restart
-services:
-```
-    $ sudo systemctl daemon-reload
-    $ sudo systemctl restart aiot-broker
-    $ sudo systemctl restart aiot-dashboard
-    $ sudo systemctl restart aiot-coap-gateway-service
-    $ sudo systemctl restart aiot-ws-gateway-service
-```
+      $ git clone https://github.com/pyaiot/pyaiot.git
 
-_**Example**_: Environments used in the online RIOT demo
-* aiot-broker:
-```
-Environment='BROKER_PORT=8082'
-```
-* aiot-dashboard:
-```
-Environment='STATIC_PATH=/home/pi/demos/pyaiot/dashboard/static' \
-        'HTTP_PORT=8080' \
-        'BROKER_PORT=80' \  # This is because the broker is behind an apache proxy
-        'BROKER_HOST=riot-demo.inria.fr' \
-        'APP_TITLE=RIOT Demo Dashboard' \
-        'APP_LOGO=/static/assets/logo-riot.png' \
-        'APP_FAVICON=/static/assets/favicon192.png'
-```
-* aiot-coap-gateway:
-```
-Environment='BROKER_HOST=riot-demo.inria.fr' \
-            'BROKER_PORT=80'
-```
-* aiot-ws-gateway:
-```
-Environment='BROKER_HOST=riot-demo.inria.fr' \
-            'BROKER_PORT=80' \
-            'GATEWAY_PORT=8083'
-```
+2. Install the command line tools (only Python 3 is supported)
+
+      $ pip3 install . --user
+
+3. Generate authentication keys
+
+      $ aiot-generate-keys
+
+4. Start the broker
+
+      $ aiot-broker --debug
+      2019-04-08 16:11:58,816 -  pyaiot.broker -  INFO - Application started, listening on port 8000
+
+  You can get more information on available option using `--help`:
+
+      $ aiot-broker --help
+      [...]
+      --broker-host                    Broker host (default localhost)
+      --broker-port                    Broker websocket port (default 8000)
+      --config                         Config file
+      --debug                          Enable debug mode. (default False)
+      --key-file                       Secret and private keys filename. (default
+                                       /home/<user>/.pyaiot/keys)
+
+5. Start one of the gateways, let's say the coap gateway
+
+      $ aiot-coap-gateway --debug --coap-port=5684
+
+  By default the CoAP server running with gateway is using port 5683, but here
+  we specify another one, to not conflict with the test coap node that will be
+  started below.
+
+6. Start a CoAP test node, just for testing if you don't have a real hardware.
+  This test node simulates a compatible interface and is handy for debugging
+  purposes.
+
+      $ python3 utils/coap/coap-test-node.py --gateway-port=5684  --temperature --pressure
+
+7. Setup and start a local web dashboard
+
+      $ cd pyaiot/dashboard/static
+      $ npm install
+      $ aiot-dashboard --debug
+
+  Then open http://localhost:8080/ in your web browser.
+
 
 ### Dashboard local development against an external IoT broker instance
 
@@ -265,26 +220,10 @@ that itself connects to the broker.
 This way your dashboard will display the available nodes on the online RIOT
 demo.
 
-In this configuration, you don't need to install all the services but you still
-need to install the required development dependencies the first time:
-```
-    $ make install-dev
-```
-
 Then you can start the dashboard application:
 ```
-    $ make run-dashboard
+    $ aiot-dashboard --debug --broker-host=riot-demo.inria.fr --broker-port=80
 ```
 and open a web browser at [http://localhost:8080](http://localhost:8080).
-When the web page is loaded, thanks to its embedded javascript, it directly
-connects to the broker websocket server and starts to communicate with the
-nodes.
-
-Of course the default environment variables can be changed in order to fit your
-needs:
-`BROKER_PORT`, `BROKER_HOST`, `DASHBOARD_PORT`, `DASHBOARD_TITLE`,
-`DASHBOARD_LOGO`, `DASHBOARD_FAVICON`, `CAMERA_URL`.
-
-```
-    $ BROKER_PORT=8082 BROKER_HOST=localhost make run-dashboard
-```
+When the web page is loaded, it directly connects to the broker websocket
+server and starts communicating with the devices.
