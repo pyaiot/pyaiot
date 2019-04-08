@@ -45,7 +45,6 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         """Allow connections from anywhere."""
         return True
 
-    @gen.coroutine
     def open(self):
         """Discover nodes on each opened connection."""
         self.set_nodelay(True)
@@ -54,7 +53,6 @@ class WebsocketNodeHandler(websocket.WebSocketHandler):
         self.application.node_mapping.update({self: node.uid})
         self.application.add_node(node)
 
-    @gen.coroutine
     def on_message(self, raw):
         """Triggered when a message is received from the web client."""
         message, reason = Message.check_message(raw)
@@ -90,14 +88,12 @@ class WebsocketGateway(GatewayBase):
         logger.info('WS gateway started, listening on port {}'
                     .format(options.gateway_port))
 
-    @gen.coroutine
-    def discover_node(self, node):
+    async def discover_node(self, node):
         for ws, uid in self.node_mapping.items():
             if node.uid == uid:
-                yield ws.write_message(Message.discover_node())
+                await ws.write_message(Message.discover_node())
                 break
 
-    @gen.coroutine
     def update_node_resource(self, node, resource, value):
         for ws, uid in self.node_mapping.items():
             if node.uid == uid:
