@@ -137,37 +137,38 @@ See Pyaiot in action within 2 demos:
 ### Usage
 
 1. Clone this repository
-
-      $ git clone https://github.com/pyaiot/pyaiot.git
-
+  ```
+  $ git clone https://github.com/pyaiot/pyaiot.git
+  ```
 2. Install the command line tools (only Python 3 is supported)
-
-      $ pip3 install . --user
-
+  ```
+  $ pip3 install . --user
+  ```
 3. Generate authentication keys
-
-      $ aiot-generate-keys
-
+  ```
+  $ aiot-generate-keys
+  ```
 4. Start the broker
-
-      $ aiot-broker --debug
-      2019-04-08 16:11:58,816 -  pyaiot.broker -  INFO - Application started, listening on port 8000
+  ```
+  $ aiot-broker --debug
+  2019-04-08 16:11:58,816 -  pyaiot.broker -  INFO - Application started, listening on port 8000
+  ```
 
   You can get more information on available option using `--help`:
-
-      $ aiot-broker --help
-      [...]
-      --broker-host                    Broker host (default localhost)
-      --broker-port                    Broker websocket port (default 8000)
-      --config                         Config file
-      --debug                          Enable debug mode. (default False)
-      --key-file                       Secret and private keys filename. (default
-                                       /home/<user>/.pyaiot/keys)
-
+  ```
+  $ aiot-broker --help
+  [...]
+  --broker-host                    Broker host (default localhost)
+  --broker-port                    Broker websocket port (default 8000)
+  --config                         Config file
+  --debug                          Enable debug mode. (default False)
+  --key-file                       Secret and private keys filename. (default
+                                   /home/<user>/.pyaiot/keys)
+  ```
 5. Start one of the gateways, let's say the coap gateway
-
-      $ aiot-coap-gateway --debug --coap-port=5684
-
+  ```
+  $ aiot-coap-gateway --debug --coap-port=5684
+  ```
   By default the CoAP server running with gateway is using port 5683, but here
   we specify another one, to not conflict with the test coap node that will be
   started below.
@@ -175,15 +176,15 @@ See Pyaiot in action within 2 demos:
 6. Start a CoAP test node, just for testing if you don't have a real hardware.
   This test node simulates a compatible interface and is handy for debugging
   purposes.
-
-      $ python3 utils/coap/coap-test-node.py --gateway-port=5684  --temperature --pressure
-
+  ```
+  $ python3 utils/coap/coap-test-node.py --gateway-port=5684  --temperature --pressure
+  ```
 7. Setup and start a local web dashboard
-
-      $ cd pyaiot/dashboard/static
-      $ npm install
-      $ aiot-dashboard --debug
-
+  ```
+  $ cd pyaiot/dashboard/static
+  $ npm install
+  $ aiot-dashboard --debug
+```
   Then open http://localhost:8080/ in your web browser.
 
 
