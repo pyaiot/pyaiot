@@ -35,7 +35,6 @@ import uuid
 import json
 import asyncio
 
-from tornado import gen
 from tornado.ioloop import PeriodicCallback
 
 from hbmqtt.client import MQTTClient, ClientException
@@ -75,19 +74,18 @@ class MQTTGateway(GatewayBase):
 
         logger.info('MQTT gateway application started')
 
-    @asyncio.coroutine
-    def start(self):
+    async def start(self):
         """Connect to MQTT broker and subscribe to node check resource."""
-        yield from self.mqtt_client.connect('mqtt://{}:{}'
+        await self.mqtt_client.connect('mqtt://{}:{}'
                                             .format(self.host,
                                                     self.port))
         # Subscribe to 'gateway/check' with QOS=1
-        yield from self.mqtt_client.subscribe([('node/check', QOS_1)])
+        await self.mqtt_client.subscribe([('node/check', QOS_1)])
         while True:
             try:
                 logger.debug("Waiting for MQTT messages published by nodes")
                 # Blocked here until a message is received
-                message = yield from self.mqtt_client.deliver_message()
+                message = await self.mqtt_client.deliver_message()
             except ClientException as ce:
                 logger.error("Client exception: {}".format(ce))
                 break
@@ -116,29 +114,25 @@ class MQTTGateway(GatewayBase):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self._disconnect())
 
-    @asyncio.coroutine
-    def _disconnect(self):
+    async def _disconnect(self):
         for node in self.nodes:
-            yield from self._disconnect_from_node(node)
-        yield from self.mqtt_client.disconnect()
+            await self._disconnect_from_node(node)
+        await self.mqtt_client.disconnect()
 
-    @asyncio.coroutine
-    def discover_node(self, node):
+    async def discover_node(self, node):
         discover_topic = 'gateway/{}/discover'.format(node.resources['id'])
-        yield from self.mqtt_client.publish(discover_topic, b"resources",
+        await self.mqtt_client.publish(discover_topic, b"resources",
                                             qos=QOS_1)
         logger.debug("Published '{}' to topic: {}"
                      .format("resources", discover_topic))
 
-    @gen.coroutine
     def update_node_resource(self, node, endpoint, payload):
         node_id = node.resources['id']
         asyncio.get_event_loop().create_task(self.mqtt_client.publish(
             'gateway/{}/{}/set'.format(node_id, endpoint),
             payload.encode(), qos=QOS_1))
 
-    @asyncio.coroutine
-    def handle_node_check(self, data):
+    async def handle_node_check(self, data):
         """Handle alive message received from coap node."""
         node_id = data['id']
         if node_id not in self.node_mapping:
@@ -146,7 +140,7 @@ class MQTTGateway(GatewayBase):
             self.node_mapping.update({node_id: node.uid})
 
             resources_topic = 'node/{}/resources'.format(node_id)
-            yield from self.mqtt_client.subscribe([(resources_topic, QOS_1)])
+            await self.mqtt_client.subscribe([(resources_topic, QOS_1)])
             logger.debug("Subscribed to topic: {}".format(resources_topic))
 
             self.add_node(node)
@@ -156,17 +150,16 @@ class MQTTGateway(GatewayBase):
             node = self.get_node(self.node_mapping[node_id])
             node.update_last_seen()
 
-    @asyncio.coroutine
-    def handle_node_resources(self, topic, data):
+    async def handle_node_resources(self, topic, data):
         """Process resources published by a node."""
         node_id = topic.split("/")[1]
         if node_id not in self.node_mapping:
             return
 
-        yield from self.mqtt_client.subscribe(
+        await self.mqtt_client.subscribe(
             [('node/{}/{}'.format(node_id, resource), QOS_1)
              for resource in data])
-        yield from self.mqtt_client.publish('gateway/{}/discover'
+        await self.mqtt_client.publish('gateway/{}/discover'
                                             .format(node_id), b"values",
                                             qos=QOS_1)
 
@@ -197,11 +190,10 @@ class MQTTGateway(GatewayBase):
             self.node_mapping.pop(node.resources['id'])
             self.remove_node(node)
 
-    @asyncio.coroutine
-    def _disconnect_from_node(self, node):
+    async def _disconnect_from_node(self, node):
         node_id = node.resources['id']
-        yield from self.mqtt_client.unsubscribe(
+        await self.mqtt_client.unsubscribe(
             ['node/{}/resource'.format(node_id)])
         for resource in node.resources:
-            yield from self.mqtt_client.unsubscribe(
+            await self.mqtt_client.unsubscribe(
                 ['node/{}/{}'.format(node_id, resource)])
