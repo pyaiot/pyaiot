@@ -200,7 +200,7 @@ demo.
 
 Then you can start the dashboard application:
 ```
-    $ aiot-dashboard --debug --broker-host=riot-demo.inria.fr --broker-port=80
+$ aiot-dashboard --debug --broker-host=riot-demo.inria.fr --broker-port=80
 ```
 and open a web browser at [http://localhost:8080](http://localhost:8080).
 When the web page is loaded, it directly connects to the broker websocket
