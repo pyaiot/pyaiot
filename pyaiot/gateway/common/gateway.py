@@ -31,6 +31,7 @@
 
 import json
 import logging
+import asyncio
 from abc import ABCMeta, abstractmethod
 from tornado import web, gen
 from tornado.ioloop import PeriodicCallback
@@ -53,15 +54,14 @@ class GatewayBaseMixin():
         """Check if the node uid is already present."""
         return uid in self.nodes
 
-    @gen.coroutine
-    def add_node(self, node):
+    async def add_node(self, node):
         """Add a new node to the list of nodes and notify the broker."""
         node.set_resource_value('protocol', self.PROTOCOL)
         self.nodes.update({node.uid: node})
         self.send_to_broker(Message.new_node(node.uid))
         for res, value in node.resources.items():
             self.send_to_broker(Message.update_node(node.uid, res, value))
-        yield self.discover_node(node)
+        await self.discover_node(node)
 
     def reset_node(self, node, default_resources={}):
         """Reset a node: clear the current resource and reinitialize them."""
@@ -82,7 +82,6 @@ class GatewayBaseMixin():
         """Return the node matching the given uid."""
         return self.nodes[uid]
 
-    @gen.coroutine
     def forward_data_from_node(self, node, resource, value):
         """Send data received from a node to the broker via the gateway."""
         logger.debug("Sending data received from node '{}': '{}', '{}'."
@@ -90,7 +89,6 @@ class GatewayBaseMixin():
         node.set_resource_value(resource, value)
         self.send_to_broker(Message.update_node(node.uid, resource, value))
 
-    @gen.coroutine
     def fetch_nodes_cache(self, client):
         """Send cached nodes information to a given client.
 
@@ -110,41 +108,42 @@ class GatewayBaseMixin():
         if self.broker is not None:
             self.broker.close()
 
-    @gen.coroutine
-    def create_broker_connection(self, url):
+    async def create_broker_connection(self, url):
         """Create an asynchronous connection to the broker."""
         while True:
             try:
-                self.broker = yield websocket_connect(url)
+                self.broker = await websocket_connect(
+                    url, subprotocols=['token',
+                                       auth_token(self.keys).decode()])
             except ConnectionRefusedError:
                 logger.warning("Cannot connect, retrying in 3s")
             else:
-                logger.info("Connected to broker, sending auth token")
-                self.broker.write_message(auth_token(self.keys))
-                yield gen.sleep(1)
+                logger.info("Connected to broker, waiting for incoming "
+                            "messages")
                 # Start the periodic send of websocket alive messages
-                PeriodicCallback(self.send_alive, ALIVE_PERIOD * 1000).start()
+                callback = PeriodicCallback(self.send_alive, ALIVE_PERIOD * 1000)
+                callback.start()
                 self.fetch_nodes_cache('all')
                 while True:
-                    message = yield self.broker.read_message()
+                    message = await self.broker.read_message()
                     if message is None:
                         logger.warning("Connection with broker lost.")
+                        callback.stop()
                         break
-                    self.on_broker_message(message)
+                    await self.on_broker_message(message)
 
-            yield gen.sleep(3)
+            await gen.sleep(3)
 
     def send_alive(self):
         self.send_to_broker(Message.gateway_alive())
 
-    @gen.coroutine
     def send_to_broker(self, message):
         """Send a string message to the parent broker."""
         if self.broker is not None:
             logger.debug("Sending message '{}' to broker.".format(message))
             self.broker.write_message(message)
 
-    def on_broker_message(self, message):
+    async def on_broker_message(self, message):
         """Handle a message received from the broker websocket."""
         logger.debug("Handling message '{}' received from broker."
                      .format(message))
@@ -165,7 +164,7 @@ class GatewayBaseMixin():
             payload = data['payload']
             for node in self.nodes.values():
                 if node.uid == uid:
-                    self.update_node_resource(node, endpoint, payload)
+                    await self.update_node_resource(node, endpoint, payload)
                     break
         else:
             logger.debug("Invalid data received from broker '{}'."
@@ -190,8 +189,8 @@ class GatewayBase(web.Application, GatewayBaseMixin, metaclass=ABCMeta):
         settings = {'debug': True}
 
         # Create connection to broker
-        self.create_broker_connection(
-            "ws://{}:{}/gw".format(options.broker_host, options.broker_port))
+        asyncio.ensure_future(self.create_broker_connection(
+            "ws://{}:{}/gw".format(options.broker_host, options.broker_port)))
 
         super().__init__(handlers, **settings)
         logger.debug('Base Gateway application started')
