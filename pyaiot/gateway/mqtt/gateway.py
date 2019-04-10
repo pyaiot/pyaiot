@@ -77,8 +77,7 @@ class MQTTGateway(GatewayBase):
     async def start(self):
         """Connect to MQTT broker and subscribe to node check resource."""
         await self.mqtt_client.connect('mqtt://{}:{}'
-                                            .format(self.host,
-                                                    self.port))
+                                       .format(self.host, self.port))
         # Subscribe to 'gateway/check' with QOS=1
         await self.mqtt_client.subscribe([('node/check', QOS_1)])
         while True:
@@ -121,8 +120,7 @@ class MQTTGateway(GatewayBase):
 
     async def discover_node(self, node):
         discover_topic = 'gateway/{}/discover'.format(node.resources['id'])
-        await self.mqtt_client.publish(discover_topic, b"resources",
-                                            qos=QOS_1)
+        await self.mqtt_client.publish(discover_topic, b"resources", qos=QOS_1)
         logger.debug("Published '{}' to topic: {}"
                      .format("resources", discover_topic))
 
@@ -160,8 +158,7 @@ class MQTTGateway(GatewayBase):
             [('node/{}/{}'.format(node_id, resource), QOS_1)
              for resource in data])
         await self.mqtt_client.publish('gateway/{}/discover'
-                                            .format(node_id), b"values",
-                                            qos=QOS_1)
+                                       .format(node_id), b"values", qos=QOS_1)
 
     def handle_node_update(self, topic_name, data):
         """Handle CoAP post message sent from coap node."""

@@ -121,7 +121,8 @@ class GatewayBaseMixin():
                 logger.info("Connected to broker, waiting for incoming "
                             "messages")
                 # Start the periodic send of websocket alive messages
-                callback = PeriodicCallback(self.send_alive, ALIVE_PERIOD * 1000)
+                callback = PeriodicCallback(self.send_alive,
+                                            ALIVE_PERIOD * 1000)
                 callback.start()
                 self.fetch_nodes_cache('all')
                 while True:
