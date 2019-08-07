@@ -135,6 +135,7 @@ class CoapGateway(GatewayBase):
     def __init__(self, keys, options):
         self.port = options.coap_port
         self.max_time = options.max_time
+        self.interface = options.interface
         self.node_mapping = {}  # map node address to its uuid (TODO: FIXME)
 
         super().__init__(keys, options)
@@ -156,8 +157,8 @@ class CoapGateway(GatewayBase):
     async def discover_node(self, node):
         """Discover resources available on a node."""
         address = node.resources['ip']
-        if options.interface is not None:
-            interface = '%{}'.format(options.interface)
+        if self.interface is not None:
+            interface = '%{}'.format(self.interface)
         else:
             interface = ''
         coap_node_url = 'coap://[{}]'.format(address, interface)
