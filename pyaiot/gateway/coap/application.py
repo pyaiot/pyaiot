@@ -48,7 +48,11 @@ logger = logging.getLogger("pyaiot.gw.coap")
 def extra_args():
     """Parse command line arguments for CoAP gateway application."""
     if not hasattr(options, "coap_port"):
-        define("coap_port", default=COAP_PORT, help="Gateway CoAP server port")
+        define("coap_port", default=COAP_PORT,
+               help="Gateway CoAP server port")
+    if not hasattr(options, "interface"):
+        define("interface", default=None,
+               help="Gateway CoAP 6LowPAN interface")
     if not hasattr(options, "max_time"):
         define("max_time", default=MAX_TIME,
                help="Maximum retention time (in s) for CoAP dead nodes")

@@ -156,7 +156,11 @@ class CoapGateway(GatewayBase):
     async def discover_node(self, node):
         """Discover resources available on a node."""
         address = node.resources['ip']
-        coap_node_url = 'coap://[{}]'.format(address)
+        if options.interface is not None:
+            interface = '%{}'.format(options.interface)
+        else:
+            interface = ''
+        coap_node_url = 'coap://[{}]'.format(address, interface)
         logger.debug("Discovering CoAP node {}".format(address))
         _, payload = await _coap_resource('{0}/.well-known/core'
                                           .format(coap_node_url),
