@@ -161,7 +161,7 @@ class CoapGateway(GatewayBase):
             interface = '%{}'.format(self.interface)
         else:
             interface = ''
-        coap_node_url = 'coap://[{}]'.format(address, interface)
+        coap_node_url = 'coap://[{}{}]'.format(address, interface)
         logger.debug("Discovering CoAP node {}".format(address))
         _, payload = await _coap_resource('{0}/.well-known/core'
                                           .format(coap_node_url),
