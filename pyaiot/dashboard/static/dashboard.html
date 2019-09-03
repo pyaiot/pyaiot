@@ -232,6 +232,23 @@ var joystick = initJoystick()
                 <div class="panel-body" v-if="node.data.version" v-show="resources.version.visible">
                     <div class="h5 text-muted">Version</div>
                     <div class="h4">{{!node.data.version}}</div>
+                    <div class="h5 text-muted" v-if="node.data.suit_state" v-show="node.data.suit_state != '0'">Update Status</div>
+                    <button v-if="node.data.suit_state" v-show="node.data.suit_state != '0'" type="button" class="btn btn-primary btn-block">
+                        <span v-if="node.data.suit_state == 1" > Update Triggered</span>
+                        <span v-if="node.data.suit_state == 2" > Validating Signature</span>
+                        <span v-if="node.data.suit_state == 3" > Signature Validation ERROR</span>
+                        <span v-if="node.data.suit_state == 5" > Sequence Number ERROR</span>
+                        <span v-if="node.data.suit_state == 6" > Download Started</span>
+                        <span v-if="node.data.suit_state == 8" > Download ERROR, FAILED</span>
+                        <span v-if="node.data.suit_state == 9" > Validating Digest</span>
+                        <span v-if="node.data.suit_state == 10" > Digest Validation ERROR</span>
+                        <span v-if="node.data.suit_state == 11" > Download Completed</span>
+                    </button>
+                    <div class="progress" v-if="node.data.dwnld" v-show="node.data.suit_state == 6" style="height:20px;">
+                        <div :id="'progress_bar_'+node.uid"class="progress-bar" role="progressbar" style="height:20px;width: 0%;">
+                            <span>{{!node.data.dwnld}}%</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="panel-body" v-if="node.data.position" v-show="resources.position.visible">
                     <div class="h5 text-muted">Position</div>
@@ -415,6 +432,8 @@ var data = {
         vendor: Resource("Vendor"),
         version: Resource("Version"),
         js: Resource("Javascript"),
+        suit_state: Resource("SuitState"),
+        dwnld: Resource("SuitDownload"),
     },
     nodes: [],
     showMap: initMap == "true",
@@ -543,6 +562,13 @@ function receive_message(msg) {
     Vue.nextTick(refresh_layout)
 }
 
+function update_progress_bar(msg, node_uid) {
+  var elem = document.getElementById('progress_bar_' + node_uid);
+  if(elem) {
+    elem.style.width = msg.data + '%';
+  }
+}
+
 function update_charts(msg) {
     // imu charts management
     if (msg.endpoint === "imu") {
@@ -599,6 +625,11 @@ function update_charts(msg) {
         }
 
         update_tvoc_charts(msg)
+    }
+
+    // suit progress bar
+    if (msg.endpoint === "dwnld") {
+        update_progress_bar(msg, msg.uid)
     }
 
     // javascript editor management
