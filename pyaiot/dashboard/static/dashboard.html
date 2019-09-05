@@ -746,7 +746,11 @@ function setup_eco2_charts(node_uid) {
 }
 
 function update_eco2_charts(msg) {
-    eco2_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -3));
+    var eco2 = msg.data.split("ppm")[0]
+    if (eco2 === '') {
+        return
+    }
+    eco2_charts[msg.uid][1].append(new Date().getTime(), eco2);
 }
 
 function setup_tvoc_charts(node_uid) {
@@ -781,7 +785,11 @@ function setup_tvoc_charts(node_uid) {
 }
 
 function update_tvoc_charts(msg) {
-    tvoc_charts[msg.uid][1].append(new Date().getTime(), msg.data.slice(0, -3));
+    var tvoc = msg.data.split("ppb")[0]
+    if (tvoc === '') {
+        return
+    }
+    tvoc_charts[msg.uid][1].append(new Date().getTime(), tvoc);
 }
 
 
