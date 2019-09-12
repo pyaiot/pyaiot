@@ -212,6 +212,10 @@ var joystick = initJoystick()
                                         <th>MCU</th>
                                         <td>{{! node.data.mcu }}</td>
                                     </tr>
+                                    <tr v-if="node.uid">
+                                        <th>UID</th>
+                                        <td>{{! node.uid }}</td>
+                                    </tr>
                                     <tr v-if="node.data.ip">
                                         <th>IP</th>
                                         <td>{{! node.data.ip }}</td>
