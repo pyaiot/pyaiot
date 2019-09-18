@@ -278,6 +278,16 @@ var joystick = initJoystick()
                     <div class="h1">{{!node.data.tvoc}}</div>
                     <canvas class="chart" :id="'tvoc_chart'+node.uid"></canvas>
                 </div>
+                <div class="panel-body has-chart" v-if="node.data.tsp" v-show="resources.tsp.visible">
+                    <div class="h5 text-muted">Small Particles (1~2 um)</div>
+                    <div class="h1">{{!node.data.tsp}}</div>
+                    <canvas class="chart" :id="'tsp_chart'+node.uid"></canvas>
+                </div>
+                <div class="panel-body has-chart" v-if="node.data.tlp" v-show="resources.tlp.visible">
+                    <div class="h5 text-muted">Large Particles (3~10 um)</div>
+                    <div class="h1">{{!node.data.tlp}}</div>
+                    <canvas class="chart" :id="'tlp_chart'+node.uid"></canvas>
+                </div>
                 <div class="panel-body has-chart" v-if="node.data.humidity" v-show="resources.humidity.visible">
                     <div class="h5 text-muted">Relative humidity</div>
                     <div class="h1">{{!node.data.humidity}}</div>
@@ -408,6 +418,8 @@ var pres_charts = {}
 var hum_charts = {}
 var eco2_charts = {}
 var tvoc_charts = {}
+var tsp_charts = {}
+var tlp_charts = {}
 var teapot_charts = {}
 
 var js_scripts = {}
@@ -426,6 +438,8 @@ var data = {
         uvindex: Resource("UV-Index"),
         eco2: Resource("eCO2"),
         tvoc: Resource("TVOC"),
+        tsp: Resource("TSP"),
+        tlp: Resource("TLP"),
         imu: Resource("IMU"),
         text: Resource("Text"),
         position: Resource("Position"),
@@ -631,6 +645,24 @@ function update_charts(msg) {
         update_tvoc_charts(msg)
     }
 
+    // tsp charts management
+    if (msg.endpoint === "tsp") {
+        if (!(msg.uid in tsp_charts)) {
+            setup_tsp_charts(msg.uid)
+        }
+
+        update_tsp_charts(msg)
+    }
+
+    // tlp charts management
+    if (msg.endpoint === "tlp") {
+        if (!(msg.uid in tlp_charts)) {
+            setup_tlp_charts(msg.uid)
+        }
+
+        update_tlp_charts(msg)
+    }
+
     // suit progress bar
     if (msg.endpoint === "dwnld") {
         update_progress_bar(msg, msg.uid)
@@ -819,12 +851,95 @@ function setup_tvoc_charts(node_uid) {
     }
 }
 
+
 function update_tvoc_charts(msg) {
     var tvoc = msg.data.split("ppb")[0]
     if (tvoc === '') {
         return
     }
     tvoc_charts[msg.uid][1].append(new Date().getTime(), tvoc);
+}
+
+
+function setup_tsp_charts(node_uid) {
+    var tsp_canva = document.getElementById('tsp_chart' + node_uid)
+    tsp_canva.setAttribute('width', tsp_canva.clientWidth)
+    tsp_canva.setAttribute('height', tsp_canva.clientHeight)
+    if (tsp_canva) {
+        tsp_charts[node_uid] = [
+            new SmoothieChart({ millisPerPixel:1000,
+                                labels: {
+                                    fillStyle:'#545454',
+                                    precision:0
+                                },
+                                grid: {
+                                    strokeStyle: 'transparent',
+                                    fillStyle:'transparent',
+                                    borderVisible:false,
+                                    sharpLines:true
+                                },
+                                minValue: 0,
+                                maxValue: 1187
+                            }),
+            new TimeSeries()
+        ]
+        tsp_charts[node_uid][0].addTimeSeries(tsp_charts[node_uid][1], {
+                strokeStyle: 'rgba(142, 255, 140, 1)',
+                fillStyle: 'rgba(142, 255, 140, 0.2)',
+                lineWidth: 1.5
+            });
+        tsp_charts[node_uid][0].streamTo(tsp_canva, 500);
+    }
+}
+
+
+function update_tsp_charts(msg) {
+    var tsp = msg.data.split("g/m3")[0]
+    if (tsp === '') {
+        return
+    }
+    tsp_charts[msg.uid][1].append(new Date().getTime(), tsp);
+}
+
+
+function setup_tlp_charts(node_uid) {
+    var tlp_canva = document.getElementById('tlp_chart' + node_uid)
+    tlp_canva.setAttribute('width', tlp_canva.clientWidth)
+    tlp_canva.setAttribute('height', tlp_canva.clientHeight)
+    if (tlp_canva) {
+        tlp_charts[node_uid] = [
+            new SmoothieChart({ millisPerPixel:1000,
+                                labels: {
+                                    fillStyle:'#545454',
+                                    precision:0
+                                },
+                                grid: {
+                                    strokeStyle: 'transparent',
+                                    fillStyle:'transparent',
+                                    borderVisible:false,
+                                    sharpLines:true
+                                },
+                                minValue: 0,
+                                maxValue: 1187
+                            }),
+            new TimeSeries()
+        ]
+        tlp_charts[node_uid][0].addTimeSeries(tlp_charts[node_uid][1], {
+                strokeStyle: 'rgba(142, 255, 140, 1)',
+                fillStyle: 'rgba(142, 255, 140, 0.2)',
+                lineWidth: 1.5
+            });
+        tlp_charts[node_uid][0].streamTo(tlp_canva, 500);
+    }
+}
+
+
+function update_tlp_charts(msg) {
+    var tlp = msg.data.split("g/m3")[0]
+    if (tlp === '') {
+        return
+    }
+    tlp_charts[msg.uid][1].append(new Date().getTime(), tlp);
 }
 
 
@@ -956,6 +1071,12 @@ function remove_charts(node_uid) {
     }
     if (node_uid in tvoc_charts) {
         delete tvoc_charts[node_uid]
+    }
+    if (node_uid in tsp_charts) {
+        delete tsp_charts[node_uid]
+    }
+    if (node_uid in tlp_charts) {
+        delete tlp_charts[node_uid]
     }
     if (node_uid in hum_charts) {
         delete hum_charts[node_uid]
