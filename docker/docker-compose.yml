@@ -1,0 +1,30 @@
+version: "3"
+
+services:
+  broker:
+    image: pyaiot/broker
+    container_name: pyaiot-broker
+    restart: always
+    ports:
+      - 8000:8000
+
+  dashboard:
+    image: pyaiot/dashboard
+    container_name: pyaiot-dashboard
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      BROKER_HOST: "localhost"
+      BROKER_PORT: "8000"
+      MAP_API_KEY: "edit_me"
+
+  coap-gw:
+    image: pyaiot/coap-gw
+    container_name: pyaiot-coap-gw
+    restart: always
+    ports:
+      - 5684:5683/udp
+    environment:
+      BROKER_HOST: "pyaiot-broker"
+      BROKER_PORT: "8000"
