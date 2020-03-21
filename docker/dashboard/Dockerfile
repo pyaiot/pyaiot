@@ -1,6 +1,6 @@
 FROM pyaiot/base:latest
 
-MAINTAINER Alexandre Abadie <alexandre.abadie@inria.fr>
+LABEL maintainer="alexandre.abadie@inria.fr"
 
 RUN apt-get install -y curl
 RUN curl -sL https://deb.nodesource.com/setup_13.x | bash -
