@@ -31,17 +31,14 @@
 
 import logging
 import time
-import uuid
 import asyncio
 import aiocoap.resource as resource
 
-from tornado import gen
 from tornado.ioloop import PeriodicCallback
 
 from aiocoap import Context, Message, GET, PUT, CHANGED
 from aiocoap.numbers.codes import Code
 
-from pyaiot.common.messaging import Message as Msg
 from pyaiot.gateway.common import GatewayBase, Node
 
 logger = logging.getLogger("pyaiot.gw.coap")
@@ -179,7 +176,7 @@ class CoapGateway(GatewayBase):
             try:
                 code, payload = await _coap_resource(
                     '{0}{1}'.format(coap_node_url, path), method=GET)
-            except:
+            except Exception:
                 logger.debug("Cannot discover resource {} on node {}"
                              .format(endpoint, address))
                 return

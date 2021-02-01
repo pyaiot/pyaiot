@@ -32,7 +32,7 @@
 import logging
 import uuid
 import json
-from tornado import gen, websocket
+from tornado import websocket
 
 from pyaiot.common.messaging import Message
 from pyaiot.gateway.common import GatewayBase, Node

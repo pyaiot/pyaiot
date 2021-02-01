@@ -31,7 +31,6 @@
 
 import sys
 import logging
-import tornado.platform.asyncio
 from tornado.options import define, options
 
 from pyaiot.common.auth import check_key_file

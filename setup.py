@@ -53,6 +53,7 @@ def get_version(package):
             if line.startswith('__version__'):
                 return eval(line.split('=')[-1])
 
+
 if __name__ == '__main__':
 
     setup(name=PACKAGE,

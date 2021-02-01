@@ -95,7 +95,7 @@ class MQTTGateway(GatewayBase):
             topic_name = packet.variable_header.topic_name
             try:
                 data = json.loads(packet.payload.data.decode('utf-8'))
-            except:
+            except Exception:
                 # Skip data if not valid
                 continue
             logger.debug("Received message from node: {} => {}"

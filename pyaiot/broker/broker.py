@@ -31,7 +31,7 @@
 
 import uuid
 import logging
-from tornado import gen, web, websocket
+from tornado import web, websocket
 
 from pyaiot.common.auth import verify_auth_token
 from pyaiot.common.messaging import Message

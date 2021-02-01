@@ -27,5 +27,5 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .gateway import GatewayBase
-from .node import Node
+from .gateway import GatewayBase  # noqa: F401
+from .node import Node  # noqa: F401
