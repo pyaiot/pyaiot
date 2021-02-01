@@ -1,6 +1,6 @@
 ## Pyaiot, connecting small things to the web
 
-[![Build Status](https://github.com/payiot/pyaiot/workflows/python/badge.svg)](https://github.com/pyaiot/pyaiot/actions?query=workflow%3Apython+branch%3Amaster)
+[![Build Status](https://github.com/pyaiot/pyaiot/workflows/python/badge.svg)](https://github.com/pyaiot/pyaiot/actions?query=workflow%3Apython+branch%3Amaster)
 
 Pyaiot provides a set of services for interacting and transporting data coming
 from IoT devices using regular web protocols (HTTP). Pyaiot
