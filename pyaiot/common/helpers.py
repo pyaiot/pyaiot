@@ -22,7 +22,8 @@ def parse_command_line(extra_args_func=None):
     if not hasattr(options, "broker_host"):
         define("broker_host", default="localhost", help="Broker host")
     if not hasattr(options, "broker_port"):
-        define("broker_port", default=8000, help="Broker websocket port")
+        define("broker_port", default=8000, type=str,
+               help="Broker websocket port")
     if not hasattr(options, "debug"):
         define("debug", default=False, help="Enable debug mode.")
     if not hasattr(options, "key_file"):
