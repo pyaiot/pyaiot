@@ -14,7 +14,7 @@
     "codemirror": "5.30.0",
     "font-awesome": "^4.6.3",
     "handlebars": "^4.0.5",
-    "jquery": "^2.2.4",
+    "jquery": ">=3.5.0",
     "masonry-layout": "^4.1.1",
     "material-design-icons-iconfont": "^3.0.3",
     "material-design-lite": "^1.1.3",
