@@ -1,4 +1,6 @@
-FROM pyaiot/base:latest
+ARG DOCKERHUB_REGISTRY="pyaiot"
+FROM ${DOCKERHUB_REGISTRY}/base:latest
+
 
 LABEL maintainer="alexandre.abadie@inria.fr"
 
@@ -6,7 +8,8 @@ RUN apt-get install -y curl
 RUN curl -sL https://deb.nodesource.com/setup_13.x | bash -
 RUN apt-get install -y nodejs
 
-RUN cd /opt && git clone https://github.com/pyaiot/pyaiot
+ARG GIT_REMOTE="pyaiot"
+RUN cd /opt && git clone https://github.com/${GIT_REMOTE}/pyaiot
 RUN cd /opt/pyaiot/pyaiot/dashboard/static && npm install && cd
 
 ADD run.sh /run.sh
