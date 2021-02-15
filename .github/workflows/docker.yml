@@ -39,7 +39,7 @@ jobs:
           file: ./docker/base/Dockerfile
           platforms: linux/arm64/v8,linux/amd64
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/base:latest
+          tags: pyaiot/base:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
 
@@ -81,6 +81,6 @@ jobs:
           file: ./docker/${{ matrix.images }}/Dockerfile
           platforms: linux/arm64/v8,linux/amd64
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.images }}:latest
+          tags: pyaiot/${{ matrix.images }}:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
