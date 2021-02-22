@@ -78,7 +78,7 @@ def run(arguments=[]):
         return
 
     start_application(CoapGateway(keys, options=options),
-                      port=options.coap_port, close_client=True)
+                      port=None, close_client=True)
 
 
 if __name__ == '__main__':
