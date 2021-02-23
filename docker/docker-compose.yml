@@ -17,6 +17,8 @@ services:
     environment:
       BROKER_HOST: "localhost"
       BROKER_PORT: "8000"
+      BROKER_SSL: "False"
+      WEB_PORT: "8080"
       MAP_API_KEY: "edit_me"
 
   coap-gw:
