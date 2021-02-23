@@ -3,6 +3,7 @@
 STATIC_PATH       ?= ./pyaiot/dashboard/static/
 BROKER_PORT       ?= 80
 BROKER_HOST       ?= riot-demo.inria.fr
+BROKER_SSL        ?= False
 DASHBOARD_PORT    ?= 8080
 DASHBOARD_TITLE   ?= "Local RIOT Demo Dashboard"
 DASHBOARD_LOGO    ?= /static/assets/logo-riot.png
@@ -83,7 +84,7 @@ run-ws-gateway:
 .PHONY: run-dashboard
 run-dashboard:
 	aiot-dashboard --static-path=${STATIC_PATH}                   \
-		--web-port=${DASHBOARD_PORT}                                  \
+		--web-port=${DASHBOARD_PORT} --broker-ssl=${BROKER_SSL}   \
 		--broker-port=${BROKER_PORT} --broker-host=${BROKER_HOST} \
 		--camera-url=${CAMERA_URL} --title=${DASHBOARD_TITLE}     \
 		--logo=${DASHBOARD_LOGO} --favicon=${DASHBOARD_FAVICON}   \
