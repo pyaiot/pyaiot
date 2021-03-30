@@ -9,6 +9,7 @@ RUN curl -sL https://deb.nodesource.com/setup_13.x | bash -
 RUN apt-get install -y nodejs
 
 ARG GIT_REMOTE="pyaiot"
+ADD https://api.github.com/repos/${GIT_REMOTE}/pyaiot/git/refs/heads/master version.json
 RUN cd /opt && git clone https://github.com/${GIT_REMOTE}/pyaiot
 RUN cd /opt/pyaiot/pyaiot/dashboard/static && npm install && cd
 
