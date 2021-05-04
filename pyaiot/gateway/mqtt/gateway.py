@@ -154,7 +154,7 @@ class MQTTGateway(GatewayBase):
 
         for resource in data:
             await self.mqtt_client.subscribe(
-                node/{}/{}'.format(node_id, resource), 1
+                'node/{}/{}'.format(node_id, resource), 1
             )
         await self.mqtt_client.publish('gateway/{}/discover'
                                        .format(node_id), "values", qos=1)
