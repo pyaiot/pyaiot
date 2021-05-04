@@ -70,7 +70,7 @@ class MQTTGateway(GatewayBase):
         self.mqtt_client.on_message = self.on_message
         self.mqtt_client.on_disconnect = self.on_disconnect
         self.mqtt_client.on_subscribe = self.on_subscribe
-     
+
         asyncio.get_event_loop().create_task(self.start())
 
         # Start the node cleanup task
