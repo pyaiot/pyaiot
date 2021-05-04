@@ -37,8 +37,7 @@ import asyncio
 
 from tornado.ioloop import PeriodicCallback
 
-from hbmqtt.client import MQTTClient, ClientException
-from hbmqtt.mqtt.constants import QOS_1
+from gmqtt import Client as MQTTClient
 
 from pyaiot.gateway.common import Node, GatewayBase
 
@@ -65,7 +64,13 @@ class MQTTGateway(GatewayBase):
         super().__init__(keys, options)
 
         # Connect to the MQTT broker
-        self.mqtt_client = MQTTClient()
+        self.mqtt_client= MQTTClient("client-id")
+
+        mqtt_client.on_connect = on_connect
+        mqtt_client.on_message = on_message
+        mqtt_client.on_disconnect = on_disconnect
+        mqtt_client.on_subscribe = on_subscribe
+     
         asyncio.get_event_loop().create_task(self.start())
 
         # Start the node cleanup task
@@ -75,39 +80,33 @@ class MQTTGateway(GatewayBase):
         logger.info('MQTT gateway application started')
 
     async def start(self):
-        """Connect to MQTT broker and subscribe to node check resource."""
-        await self.mqtt_client.connect('mqtt://{}:{}'
-                                       .format(self.host, self.port))
-        # Subscribe to 'gateway/check' with QOS=1
-        await self.mqtt_client.subscribe([('node/check', QOS_1)])
-        while True:
-            try:
-                logger.debug("Waiting for MQTT messages published by nodes")
-                # Blocked here until a message is received
-                message = await self.mqtt_client.deliver_message()
-            except ClientException as ce:
-                logger.error("Client exception: {}".format(ce))
-                break
-            except Exception as exc:
-                logger.error("General exception: {}".format(exc))
-                break
-            packet = message.publish_packet
-            topic_name = packet.variable_header.topic_name
-            try:
-                data = json.loads(packet.payload.data.decode('utf-8'))
-            except Exception:
-                # Skip data if not valid
-                continue
-            logger.debug("Received message from node: {} => {}"
-                         .format(topic_name, data))
-            if topic_name.endswith("/check"):
-                asyncio.get_event_loop().create_task(
-                    self.handle_node_check(data))
-            elif topic_name.endswith("/resources"):
-                asyncio.get_event_loop().create_task(
-                    self.handle_node_resources(topic_name, data))
-            else:
-                self.handle_node_update(topic_name, data)
+        await self.mqtt_client.connect('{}:{}'.format(self.host, self.port))
+
+    def on_connect(self, client, flags, rc, properties):
+        self.mqtt_client.subscribe([('node/check', 1)])
+
+    def on_message(self, client, topic, payload, qos, properties):
+        try:
+            data = json.loads(payload)
+        except Exception:
+            # Skip data if not valid
+            return
+        logger.debug("Received message from node: {} => {}"
+                     .format(topic, data))
+        if topic.endswith("/check"):
+            asyncio.get_event_loop().create_task(
+                self.handle_node_check(data))
+        elif topic.endswith("/resources"):
+            asyncio.get_event_loop().create_task(
+                self.handle_node_resources(topic, data))
+        else:
+            self.handle_node_update(topic, data)
+
+    def on_disconnect(self, client, packet, exc=None):
+        print('Disconnected')
+
+    def on_subscribe(self, client, mid, qos, properties):
+        print('SUBSCRIBED')
 
     def close(self):
         loop = asyncio.get_event_loop()
