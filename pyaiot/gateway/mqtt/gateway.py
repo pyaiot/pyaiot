@@ -64,12 +64,12 @@ class MQTTGateway(GatewayBase):
         super().__init__(keys, options)
 
         # Connect to the MQTT broker
-        self.mqtt_client= MQTTClient("client-id")
+        self.mqtt_client = MQTTClient("client-id")
 
-        self.mqtt_client.on_connect = on_connect
-        self.mqtt_client.on_message = on_message
-        self.mqtt_client.on_disconnect = on_disconnect
-        self.mqtt_client.on_subscribe = on_subscribe
+        self.mqtt_client.on_connect = self.on_connect
+        self.mqtt_client.on_message = self.on_message
+        self.mqtt_client.on_disconnect = self.on_disconnect
+        self.mqtt_client.on_subscribe = self.on_subscribe
      
         asyncio.get_event_loop().create_task(self.start())
 
@@ -152,9 +152,10 @@ class MQTTGateway(GatewayBase):
         if node_id not in self.node_mapping:
             return
 
-        await self.mqtt_client.subscribe(
-            [('node/{}/{}'.format(node_id, resource), QOS_1)
-             for resource in data])
+        for resource in data:
+            await self.mqtt_client.subscribe(
+                node/{}/{}'.format(node_id, resource), 1
+            )
         await self.mqtt_client.publish('gateway/{}/discover'
                                        .format(node_id), "values", qos=1)
 
