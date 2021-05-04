@@ -66,10 +66,10 @@ class MQTTGateway(GatewayBase):
         # Connect to the MQTT broker
         self.mqtt_client= MQTTClient("client-id")
 
-        mqtt_client.on_connect = on_connect
-        mqtt_client.on_message = on_message
-        mqtt_client.on_disconnect = on_disconnect
-        mqtt_client.on_subscribe = on_subscribe
+        self.mqtt_client.on_connect = on_connect
+        self.mqtt_client.on_message = on_message
+        self.mqtt_client.on_disconnect = on_disconnect
+        self.mqtt_client.on_subscribe = on_subscribe
      
         asyncio.get_event_loop().create_task(self.start())
 
@@ -83,7 +83,7 @@ class MQTTGateway(GatewayBase):
         await self.mqtt_client.connect('{}:{}'.format(self.host, self.port))
 
     def on_connect(self, client, flags, rc, properties):
-        self.mqtt_client.subscribe([('node/check', 1)])
+        self.mqtt_client.subscribe('node/check', 1)
 
     def on_message(self, client, topic, payload, qos, properties):
         try:
@@ -119,15 +119,14 @@ class MQTTGateway(GatewayBase):
 
     async def discover_node(self, node):
         discover_topic = 'gateway/{}/discover'.format(node.resources['id'])
-        await self.mqtt_client.publish(discover_topic, b"resources", qos=QOS_1)
+        await self.mqtt_client.publish(discover_topic, "resources", qos=1)
         logger.debug("Published '{}' to topic: {}"
                      .format("resources", discover_topic))
 
     def update_node_resource(self, node, endpoint, payload):
         node_id = node.resources['id']
         asyncio.get_event_loop().create_task(self.mqtt_client.publish(
-            'gateway/{}/{}/set'.format(node_id, endpoint),
-            payload.encode(), qos=QOS_1))
+            'gateway/{}/{}/set'.format(node_id, endpoint), payload, qos=1))
 
     async def handle_node_check(self, data):
         """Handle alive message received from coap node."""
@@ -137,7 +136,7 @@ class MQTTGateway(GatewayBase):
             self.node_mapping.update({node_id: node.uid})
 
             resources_topic = 'node/{}/resources'.format(node_id)
-            await self.mqtt_client.subscribe([(resources_topic, QOS_1)])
+            await self.mqtt_client.subscribe(resources_topic, 1)
             logger.debug("Subscribed to topic: {}".format(resources_topic))
 
             self.add_node(node)
@@ -157,7 +156,7 @@ class MQTTGateway(GatewayBase):
             [('node/{}/{}'.format(node_id, resource), QOS_1)
              for resource in data])
         await self.mqtt_client.publish('gateway/{}/discover'
-                                       .format(node_id), b"values", qos=QOS_1)
+                                       .format(node_id), "values", qos=1)
 
     def handle_node_update(self, topic_name, data):
         """Handle CoAP post message sent from coap node."""
@@ -173,7 +172,7 @@ class MQTTGateway(GatewayBase):
         """Publish a request to trigger a check publish from nodes."""
         logger.debug("Request check message from all MQTT nodes")
         asyncio.get_event_loop().create_task(
-            self.mqtt_client.publish('gateway/check', b'', qos=QOS_1))
+            self.mqtt_client.publish('gateway/check', '', qos=1))
 
     def check_dead_nodes(self):
         """Check and remove nodes that are not alive anymore."""
