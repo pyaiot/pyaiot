@@ -38,6 +38,7 @@ import aiocoap
 import aiocoap.resource as resource
 from aiocoap import Context, Message, GET, POST
 
+
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '
                            '%(levelname)5s - %(message)s')
