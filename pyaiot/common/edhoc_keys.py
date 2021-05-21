@@ -37,7 +37,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives import serialization
 
-from cose.keys.curves import Ed25519
+from cose.curves import Ed25519
 from cose.keys import OKPKey, CoseKey
 from cose.keys.keyparam import KpKid
 from edhoc.roles.edhoc import CoseHeaderMap

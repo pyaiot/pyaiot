@@ -32,16 +32,20 @@
 import logging
 import time
 
+from pyaiot.common.crypto import CryptoCtx
+
 logger = logging.getLogger("pyaiot.gw.common.node")
 
 
 class Node():
     """Class for managed nodes."""
 
+    GW_RECV_CTX_ID = b'\xea\xea\xd4H\xe0V\xef\x83'
+
     def __init__(self, uid, **default_resources):
         self.uid = uid
         self.last_seen = time.time()
-
+        self.ctx = CryptoCtx(self.GW_RECV_CTX_ID, uid.encode('utf-8'))
         self.resources = default_resources
 
     def __eq__(self, other):
@@ -64,3 +68,6 @@ class Node():
 
     def clear_resources(self):
         self.resources = {}
+
+    def has_crypto_ctx(self):
+        return self.ctx.recv_ctx_key != None
