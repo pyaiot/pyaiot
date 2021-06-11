@@ -61,16 +61,16 @@ class GatewayBaseMixin():
         self.send_to_broker(Message.new_node(node.uid))
         for res, value in node.resources.items():
             self.send_to_broker(Message.update_node(node.uid, res, value))
-        await self.discover_node(node)
+        await self.discover_node(node, handshake=True)
 
-    def reset_node(self, node, default_resources={}):
+    async def reset_node(self, node, default_resources={}):
         """Reset a node: clear the current resource and reinitialize them."""
         node.clear_resources()
         node.set_resource_value('protocol', self.PROTOCOL)
         for resource, value in default_resources.items():
             node.set_resource_value(resource, value)
         self.send_to_broker(Message.reset_node(node.uid))
-        self.discover_node(node)
+        await self.discover_node(node, handshake=True)
 
     def remove_node(self, node):
         """Remove the given node from known nodes and notify the broker."""
@@ -207,7 +207,7 @@ class GatewayBase(web.Application, GatewayBaseMixin, metaclass=ABCMeta):
         Should be a coroutine."""
 
     @abstractmethod
-    def discover_node(self, node):
+    def discover_node(self, node, handshake=False):
         """Start a discovery procedure on a node.
 
         After the discovery is done, all resources (or endpoints) exposed by a

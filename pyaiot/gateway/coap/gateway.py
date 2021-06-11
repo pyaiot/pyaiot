@@ -36,17 +36,18 @@ import aiocoap.resource as resource
 
 from tornado.ioloop import PeriodicCallback
 
+from pyaiot.common.crypto import CryptoCtx
 from aiocoap import Context, Message, GET, PUT, CHANGED
 from aiocoap.numbers.codes import Code
 
 from pyaiot.gateway.common import GatewayBase, Node
+from . import initiator
 
 logger = logging.getLogger("pyaiot.gw.coap")
 
 
 COAP_PORT = 5683
 MAX_TIME = 120
-
 
 def _coap_endpoints(link_header):
     link = link_header.replace(' ', '')
@@ -108,12 +109,25 @@ class CoapServerResource(resource.Resource):
 
     async def render_post(self, request):
         """Triggered when a node post a new value to the gateway."""
-
-        payload = request.payload.decode('utf-8')
+        payload = request.payload
         try:
             remote = request.remote[0]
         except TypeError:
             remote = request.remote.sockaddr[0]
+        try:
+            node = self._gateway.get_node(self._gateway.node_mapping[remote])
+            if node.has_crypto_ctx():
+                try:
+                    payload = node.ctx.decrypt_msg(payload)
+                    logger.info("Decoded payload {}".format(payload))
+                except:
+                    logger.info("Unable to parse message")
+                    payload = payload.decode('utf-8')
+            else:
+                payload = payload.decode('utf-8')
+        except KeyError:
+            pass
+
         logger.debug("CoAP POST received from {} with payload: {}"
                      .format(remote, payload))
 
@@ -129,11 +143,12 @@ class CoapGateway(GatewayBase):
 
     PROTOCOL = 'CoAP'
 
-    def __init__(self, keys, options):
+    def __init__(self, keys, edhoc_keys, options):
         self.port = options.coap_port
         self.max_time = options.max_time
         self.interface = options.interface
         self.node_mapping = {}  # map node address to its uuid (TODO: FIXME)
+        self.edhoc_keys = edhoc_keys
 
         super().__init__(keys, options)
 
@@ -151,7 +166,19 @@ class CoapGateway(GatewayBase):
 
         logger.info('CoAP gateway application started')
 
-    async def discover_node(self, node):
+
+    async def edhoc_handshake(self, node, address):
+        """Perform EDHOC handshake with node"""
+        if not node.has_crypto_ctx():
+            logger.info("Performing Handshake")
+            salt, secret = await initiator.handshake(address,
+                                                     self.edhoc_keys.authcred,
+                                                     self.edhoc_keys.authkey)
+            node.ctx.generate_aes_ccm_keys(salt, secret)
+            logger.info("Handshake successfull")
+
+
+    async def discover_node(self, node, handshake):
         """Discover resources available on a node."""
         address = node.resources['ip']
         if self.interface is not None:
@@ -159,7 +186,7 @@ class CoapGateway(GatewayBase):
         else:
             interface = ''
         coap_node_url = 'coap://[{}{}]'.format(address, interface)
-        logger.debug("Discovering CoAP node {}".format(address))
+        logger.info("Discovering CoAP node {}".format(address))
         _, payload = await _coap_resource('{0}/.well-known/core'
                                           .format(coap_node_url),
                                           method=GET)
@@ -172,14 +199,21 @@ class CoapGateway(GatewayBase):
         for endpoint in endpoints:
             elems = endpoint.split(';')
             path = elems.pop(0).replace('<', '').replace('>', '')
-
+            if '/.well-known/edhoc' in endpoint and handshake:
+                await self.edhoc_handshake(node, '[{}{}]'.format(address, interface))
             try:
-                code, payload = await _coap_resource(
+                _, payload = await _coap_resource(
                     '{0}{1}'.format(coap_node_url, path), method=GET)
             except Exception:
                 logger.debug("Cannot discover resource {} on node {}"
                              .format(endpoint, address))
                 return
+
+            if node.has_crypto_ctx():
+                try:
+                    payload = node.ctx.decrypt_msg(payload)
+                except:
+                    logger.info("Data is not encrypted")
 
             # Remove '/' from path
             self.forward_data_from_node(node, path[1:], payload)
@@ -192,10 +226,14 @@ class CoapGateway(GatewayBase):
         address = node.resources['ip']
         logger.debug("Updating CoAP node '{}' resource '{}'"
                      .format(address, endpoint))
-        code, p = await _coap_resource(
+
+        if node.has_crypto_ctx():
+            payload = node.ctx.encrypt_msg(payload)
+
+        code, _ = await _coap_resource(
             'coap://[{0}]/{1}'.format(address, endpoint),
             method=PUT,
-            payload=payload.encode('ascii'))
+            payload=payload.encode('utf-8'))
         if code == Code.CHANGED:
             self.forward_data_from_node(node, endpoint, payload)
 
@@ -220,7 +258,7 @@ class CoapGateway(GatewayBase):
             # is particularly the case after a reboot of the node or a
             # firmware update of the node that triggered the reboot.
             node = self.get_node(self.node_mapping[address])
-            self.reset_node(node, default_resources={'ip': address})
+            await self.reset_node(node, default_resources={'ip': address})
         else:
             # The node simply sent a check message to notify that it's still
             # online.

@@ -33,10 +33,26 @@ import logging
 import random
 import argparse
 import asyncio
+from pathlib import Path
 
 import aiocoap
 import aiocoap.resource as resource
 from aiocoap import Context, Message, GET, POST
+
+from pyaiot.common.crypto import CryptoCtx
+from pyaiot.common.edhoc_keys import (get_edhoc_keys,
+                                      add_peer_cred,
+                                      rmv_peer_cred,
+                                      generate_ed25519_priv_key)
+from pyaiot.gateway.coap.responder import EdhocResource
+
+from cryptography.hazmat.primitives import serialization
+from cose.curves import Ed25519
+from cose.keys import OKPKey
+from cose.keys.keyparam import KpKid
+from edhoc.roles.edhoc import CoseHeaderMap
+from cose.headers import KID
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)14s - '
@@ -62,12 +78,18 @@ parser.add_argument('--js', action="store_true",
                     help="Activate Javascript endpoint.")
 parser.add_argument('--version', action="store_true",
                     help="Activate Version endpoint.")
+parser.add_argument('--edhoc', action="store_true",
+                    help="Activate EDHOC endpoint.")
 args = parser.parse_args()
 
 
 COAP_GATEWAY = 'coap://{}:{}'.format(args.gateway_host, args.gateway_port)
 
 NODE_UID = "1234"
+
+GW_RECV_CTX_ID = b'\xea\xea\xd4H\xe0V\xef\x83'
+CRYPTO_CTX = CryptoCtx(NODE_UID.encode('utf-8'), GW_RECV_CTX_ID)
+DEFAULT_COAP_TEST_NODE_RPK_KID = b'2b'
 
 
 async def _coap_resource(url, method=GET, payload=b''):
@@ -97,9 +119,13 @@ async def _send_alive():
 
 
 async def _send_temperature():
-    payload = ("temperature:{}°C"
-               .format(random.randrange(20, 30, 1))
-               .encode('utf-8'))
+    value = "temperature:{}°C".format(random.randrange(20, 30, 1))
+    if CRYPTO_CTX.recv_ctx_key != None:
+        payload = CRYPTO_CTX.encrypt_msg(value)
+    else:
+        return
+        payload = value.encode('utf-8')
+    print("sending: {}".format(payload))
     _, _ = await _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
                                 method=POST,
                                 payload=payload)
@@ -200,8 +226,8 @@ class LedResource(resource.Resource):
         payload = ("Updated").encode('utf-8')
 
         await _coap_resource('{}/{}'.format(COAP_GATEWAY, "server"),
-                            method=POST, payload="led:{}"
-                            .format(self.value).encode())
+                             method=POST, payload="led:{}"
+                             .format(self.value).encode())
 
         return aiocoap.Message(code=aiocoap.CHANGED, payload=payload)
 
@@ -223,10 +249,16 @@ class TemperatureResource(resource.Resource):
 
     def __init__(self):
         super(TemperatureResource, self).__init__()
-        self.value = "23°C".encode("utf-8")
+        self.value = "23°C".encode('utf-8')
 
     async def render_get(self, request):
-        response = aiocoap.Message(code=aiocoap.CONTENT, payload=self.value)
+        value = self.value
+        if CRYPTO_CTX.recv_ctx_key != None:
+            payload = CRYPTO_CTX.encrypt_msg(
+                payload.decode('utf-8'))
+        else:
+            payload = value
+        response = aiocoap.Message(code=aiocoap.CONTENT, payload=payload)
         return response
 
 
@@ -309,6 +341,26 @@ async def periodic(func, delay):
 
 
 if __name__ == '__main__':
+    authkey = generate_ed25519_priv_key()
+    authcred = authkey.public_key()
+    rpk_bytes = authcred.public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw,
+    )
+    rmv_peer_cred(DEFAULT_COAP_TEST_NODE_RPK_KID)
+    add_peer_cred(rpk_bytes, DEFAULT_COAP_TEST_NODE_RPK_KID)
+    x = authcred.public_bytes(serialization.Encoding.Raw,
+                              serialization.PublicFormat.Raw)
+    authcred = OKPKey(crv=Ed25519, x=x, optional_params={
+                      KpKid: DEFAULT_COAP_TEST_NODE_RPK_KID})
+    d = authkey.private_bytes(serialization.Encoding.Raw,
+                              serialization.PrivateFormat.Raw,
+                              serialization.NoEncryption())
+    x = authkey.public_key().public_bytes(serialization.Encoding.Raw,
+                                          serialization.PublicFormat.Raw)
+    authkey = OKPKey(crv=Ed25519, d=d, x=x, optional_params={
+                     KpKid: DEFAULT_COAP_TEST_NODE_RPK_KID})
+
     try:
         # Tornado ioloop initialization
         ioloop = asyncio.get_event_loop()
@@ -341,9 +393,13 @@ if __name__ == '__main__':
             root.add_resource(('js', ), JavascriptResource())
         if args.version:
             root.add_resource(('version', ), VersionResource())
+        if args.edhoc:
+            root.add_resource(('.well-known', 'edhoc'),
+                              EdhocResource(authcred, authkey,
+                                            crypto_ctx=CRYPTO_CTX))
         root.add_resource(('.well-known', 'core'),
                           resource.WKCResource(
-                              root.get_resources_as_linkheader))
+                              root.get_resources_as_linkheader, impl_info=None))
         asyncio.ensure_future(aiocoap.Context.create_server_context(root))
 
         _send_alive()

@@ -34,6 +34,7 @@ import logging
 from tornado.options import define, options
 
 from pyaiot.common.auth import check_key_file
+from pyaiot.common.edhoc_keys import get_edhoc_keys
 from pyaiot.common.helpers import start_application, parse_command_line
 
 from .gateway import CoapGateway, MAX_TIME, COAP_PORT
@@ -73,11 +74,12 @@ def run(arguments=[]):
 
     try:
         keys = check_key_file(options.key_file)
+        edhoc_keys = get_edhoc_keys()
     except ValueError as exc:
         logger.error(exc)
         return
 
-    start_application(CoapGateway(keys, options=options),
+    start_application(CoapGateway(keys, edhoc_keys, options=options),
                       port=None, close_client=True)
 
 

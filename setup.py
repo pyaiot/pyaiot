@@ -73,12 +73,15 @@ if __name__ == '__main__':
                    pjoin('bin', 'aiot-mqtt-gateway'),
                    pjoin('bin', 'aiot-ws-gateway'),
                    pjoin('bin', 'aiot-dashboard'),
+                   pjoin('bin', 'aiot-generate-edhoc'),
+                   pjoin('bin', 'aiot-add-key'),
                    pjoin('bin', 'aiot-generate-keys')],
           install_requires=[
             'tornado>=6.0',
-            'aiocoap>=0.3',
-            'gmqtt',
-            'cryptography>=1.7.2'
+            'aiocoap>=0.4',
+            'hbmqtt>=0.8',
+            'cryptography>=1.7.2',
+            'edhoc @ git+https://github.com/openwsn-berkeley/py-edhoc.git'
           ],
           classifiers=[
             'Development Status :: 4 - Beta',
