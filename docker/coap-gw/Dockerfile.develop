@@ -1,0 +1,14 @@
+FROM python:3.7-slim-stretch
+
+RUN apt-get update && apt-get install -y git && apt-get autoremove && apt-get autoclean
+COPY . opt/
+RUN cd opt && pip3 install . && cd
+
+RUN aiot-generate-keys
+
+ADD /docker/coap-gw/run.sh /run.sh
+RUN chmod +x /run.sh
+
+EXPOSE 5683/udp
+
+CMD ["/run.sh"]
