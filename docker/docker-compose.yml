@@ -20,6 +20,7 @@ services:
       BROKER_SSL: "False"
       WEB_PORT: "8080"
       MAP_API_KEY: "edit_me"
+      STATIC_PATH: "/opt/dashboard/static"
 
   coap-gw:
     image: pyaiot/coap-gw

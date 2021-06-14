@@ -1,4 +1,5 @@
-FROM pyaiot/base:latest
+ARG DOCKERHUB_REGISTRY="pyaiot"
+FROM ${DOCKERHUB_REGISTRY}/base:latest
 
 LABEL maintainer="alexandre.abadie@inria.fr"
 
